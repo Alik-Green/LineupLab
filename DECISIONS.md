@@ -1,0 +1,11 @@
+# Decisions and evidence
+
+1. **Missing fixtures:** the checkout and remote main contain no ZIP or sample JSONs. Do not fabricate “real pack” results. Implement the supplied schema, generate explicitly synthetic security/round-trip fixtures, and leave real-pack counts, visual comparisons and lens-anchor verification pending.
+2. **Game safety:** no game process handles, memory reads, hooks or injection. Window-title enumeration is used only to choose a monitor. Capture is ordinary pixels; the overlay requests Windows capture exclusion. Valorant must use Borderless/Windowed mode.
+3. **Portable core:** Tauri shells are excluded from the core Cargo workspace so `cargo test -p lineuplab-core` does not require WebView/Android toolchains. They reference the same core by path and retain independent lockfiles.
+4. **Images:** original imported bytes are immutable and SHA-256 addressed. Derivatives live separately. Unknown JSON fields and original attribute string forms survive export; new fields are confined to `x_lineuplab`.
+5. **Lens coordinates:** use top-left inset placement provisionally, normalized to image width (size) and image width/height (position). The requested legacy fixture is unavailable, so this is not represented as verified reverse engineering.
+6. **Conflict resolution:** compare UTC timestamp, then revision, then deviceId. Deletes are tombstones. Probable duplicates are warnings, not automatic deduplication.
+7. **Environment:** only the session's allowed package hosts are used. Rust is installed outside the repository; CI uses official rustup and normal registries. No Riot art is committed.
+8. **Capture adapter location:** the `CaptureProvider` trait and deterministic mock live in core; the small xcap/Win32 implementation lives in the Windows desktop shell. This keeps even cross-target Cargo resolution portable.
+9. **Current roster defaults:** the 30-agent roster available on 2026-11-06 includes Miks and Hush. Defaults are keyed by display name and resolved against the live UUID catalog; a wildcard handles future agents. New-agent lineupability choices are conservative and user-editable, not claims about optimal lineups. Roster cross-check: https://dotesports.com/valorant/news/all-known-agents-in-valorant (updated 2026-11-01).

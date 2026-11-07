@@ -1,0 +1,284 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "agent": "*",
+      "slots": {
+        "Ability1": false,
+        "Ability2": false,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Breach",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": true
+      }
+    },
+    {
+      "agent": "Brimstone",
+      "slots": {
+        "Ability1": false,
+        "Ability2": false,
+        "Grenade": true,
+        "Ultimate": true
+      }
+    },
+    {
+      "agent": "Clove",
+      "slots": {
+        "Ability1": false,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Cypher",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Deadlock",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Fade",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Gekko",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Harbor",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Iso",
+      "slots": {
+        "Ability1": false,
+        "Ability2": false,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "KAY/O",
+      "slots": {
+        "Ability1": true,
+        "Ability2": false,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Killjoy",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Neon",
+      "slots": {
+        "Ability1": false,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Omen",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": true
+      }
+    },
+    {
+      "agent": "Raze",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": true
+      }
+    },
+    {
+      "agent": "Sage",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Skye",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Sova",
+      "slots": {
+        "Ability1": true,
+        "Ability2": false,
+        "Grenade": true,
+        "Ultimate": true
+      }
+    },
+    {
+      "agent": "Viper",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": true
+      }
+    },
+    {
+      "agent": "Vyse",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Yoru",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Astra",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": true
+      }
+    },
+    {
+      "agent": "Tejo",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": true
+      }
+    },
+    {
+      "agent": "Waylay",
+      "slots": {
+        "Ability1": false,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Veto",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Jett",
+      "slots": {
+        "Ability1": false,
+        "Ability2": false,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Phoenix",
+      "slots": {
+        "Ability1": false,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Reyna",
+      "slots": {
+        "Ability1": false,
+        "Ability2": false,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Chamber",
+      "slots": {
+        "Ability1": false,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Miks",
+      "slots": {
+        "Ability1": true,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    },
+    {
+      "agent": "Hush",
+      "slots": {
+        "Ability1": false,
+        "Ability2": true,
+        "Grenade": true,
+        "Ultimate": false
+      }
+    }
+  ]
+}

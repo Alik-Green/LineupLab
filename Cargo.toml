@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = ["core"]
+# Each Tauri shell has its own lockfile; the portable core remains testable on Linux.
+exclude = ["desktop/src-tauri", "mobile/src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[profile.release]
+lto = "thin"
+strip = true
+codegen-units = 1

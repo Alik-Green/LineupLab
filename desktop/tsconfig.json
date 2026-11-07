@@ -1,0 +1,1 @@
+{ "extends": "../ui/tsconfig.json", "compilerOptions": { "baseUrl": "..", "paths": { "@ui/*": ["ui/src/*"], "@data/*": ["core/data/*"] } }, "include": ["src", "../ui/src", "vite.config.ts", "../core/data/*.json"] }
