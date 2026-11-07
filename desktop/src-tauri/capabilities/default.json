@@ -10,6 +10,10 @@
     "core:default",
     "dialog:default",
     "clipboard-manager:default",
-    "global-shortcut:default"
+    "global-shortcut:default",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging"
   ]
 }

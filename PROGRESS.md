@@ -68,3 +68,7 @@ Entries are updated only after commands actually run. Platform-specific checks a
 - Diagnosed raw catalog paths, incomplete ability/role/map DTOs, narrow asset scope and silent sequential downloads (`docs/IMAGE_LOADING.md`).
 - Added cache-first `ValImage`/`useCachedImage`, bounded concurrent asset downloader with progress events, first-run screen, Settings → Data cache size/re-download/self-test, native asset diagnostics and error logging on desktop + Android.
 - Verified: 28 Rust tests, 15 UI tests, typecheck/builds; Playwright mocked-Tauri self-test rendered 87/87 fixture catalog images with no broken images/CSP errors. Screenshots in `docs/screenshots/`. Real Windows/Android device verification still pending.
+
+## 2026-11-07 · UI redesign M2 complete (tokens, components, shell)
+- Added design tokens, self-hosted fonts, component library (Button/IconButton/Chip/Segmented/IconPicker/Card/Modal/Drawer/Toast/Tooltip/Tabs/Stepper/Kbd/Skeleton/EmptyState/Slider/Toggle/fields), global shell with data/sync status and native window controls, Android bottom nav scaffold.
+- Verified: typecheck, 15 UI tests, desktop/mobile builds. Screen-by-screen visual review continues in M3–M8.
