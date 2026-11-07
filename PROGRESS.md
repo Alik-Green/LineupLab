@@ -24,3 +24,9 @@ Entries are updated only after commands actually run. Platform-specific checks a
 - Verified: `cargo test --workspace --offline --lib --bins --tests` → 17 tests passed (6 foundation + 11 pack). Tests cover slot mapping, round-trip, unknown fields/string forms, conflicts/undo, security rejects, missing media, lines, WebP original recovery and synthetic annotation rendering.
 - Generated `docs/annotation_sample.png` from synthetic Corrode aim data; documented format and open questions in `docs/PACK_FORMAT.md`.
 - Follow-up: verified Abyss identity calibration against public `displayIcon` orientation; added real Abyss/Corrode UUIDs to synthetic fixtures, calibration entries and a regression test. No Riot art committed (`docs/COORDINATE_CHECK.md`).
+
+## 2026-11-07 · Milestone 3 complete (shared UI + annotation editor)
+- Shared React/TypeScript UI: typed legacy-compatible models, Tauri/browser library adapters, persistent browse filters/search/tags/favorites, icon selectors, interactive minimap, virtualized land-preview grid, hover previews, annotated detail carousel/video/actions.
+- Non-destructive `AnnotatedImage` (exact legacy circle fields + unknown-key preservation, draggable clamped square lens cropping the original, lines/arrows/labels/styles) and full annotation editor (tools, colors/hex, snapping, undo/redo, duplicate/nudge/delete, color keys, copy-to-slot).
+- Create/edit flow: five capture/drop/paste slots, mode-aware required slots, draggable minimap pins, metadata/attributes/steps, draft recovery, Save/Save & Next/Discard, lineup undo/redo. Android shell is browse-only (mutation UI hidden).
+- Verified: `npm run typecheck`, `npm test` (9 UI tests), desktop/mobile Vite builds, Rust suite still 18 tests. Live browser demo runs on port 5173 (synthetic placeholders; Tauri commands land with the desktop shell).

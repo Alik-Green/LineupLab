@@ -1,0 +1,74 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { AbilityMode, Catalog, LibraryAdapter, Lineup, SlotId } from '../types';
+import { SLOT_LABELS, SLOT_ORDER } from '../types';
+import { newLineup } from '../lib/adapter';
+import { useHistory } from '../lib/history';
+import { useMediaUrl } from '../lib/hooks';
+import { AnnotatedImage } from './AnnotatedImage';
+import { AnnotationEditor } from './AnnotationEditor';
+import { Minimap } from './Minimap';
+
+export function Editor({ adapter, lineupId, catalog, modes, onSaved, onCancel }: { adapter: LibraryAdapter; lineupId?: string | null; catalog: Catalog | null; modes: AbilityMode[]; onSaved(next?: boolean): void; onCancel(): void }) {
+  const initial = useMemo(() => newLineup(), []);
+  const h = useHistory<Lineup>(initial); const [loaded, setLoaded] = useState(!lineupId); const [active, setActive] = useState<SlotId>('stand1');
+  const [busy, setBusy] = useState(false); const [message, setMessage] = useState(''); const [draftFound, setDraftFound] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null); const l = h.state;
+  const draftKey = `lineuplab.draft.${lineupId ?? 'new'}`;
+  useEffect(() => { let live = true; (async () => { if (lineupId) { const existing = await adapter.getLineup(lineupId); if (live && existing) h.reset(existing); } try { const raw = localStorage.getItem(draftKey); if (raw && live) { const d = JSON.parse(raw) as Lineup; if (d.updatedAt > (existingTime.current ?? '')) setDraftFound(true); } } catch { /* ignore */ } if (live) setLoaded(true); })(); return () => { live = false; }; // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lineupId]);
+  const existingTime = useRef<string | undefined>(undefined);
+  useEffect(() => { if (loaded) existingTime.current = l.updatedAt; }, [loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!loaded) return; const t = setTimeout(() => localStorage.setItem(draftKey, JSON.stringify({ ...l, draft: true })), 400); return () => clearTimeout(t); }, [l, loaded, draftKey]);
+  const mode = modes.find(m => m.id === l.mode) ?? modes[0];
+  const required = mode?.requiredSlots ?? ['stand1', 'aim1', 'landing'];
+  const missing = required.filter(s => !l.slots[s].image);
+  const map = catalog?.maps.find(m => m.uuid === l.mapUuid); const mapUrl = useMediaUrl(adapter, map?.displayIcon);
+  const slotUrl = useMediaUrl(adapter, l.slots[active].image);
+  const patch = (p: Partial<Lineup>) => h.set(prev => ({ ...prev, ...p }));
+  const setSlotImage = useCallback(async (slot: SlotId, file: File) => { setBusy(true); try { const hash = await adapter.putImage(new Uint8Array(await file.arrayBuffer()), file.type || 'image/png'); h.set(prev => ({ ...prev, slots: { ...prev.slots, [slot]: { ...prev.slots[slot], image: hash } } })); setMessage(`${SLOT_LABELS[slot]} image added`); } catch (e) { setMessage(String(e)); } finally { setBusy(false); } }, [adapter, h]);
+  const capture = async (slot: SlotId) => { setBusy(true); try { const t = performance.now(); const r = await adapter.captureMonitor(); h.set(prev => ({ ...prev, slots: { ...prev.slots, [slot]: { ...prev.slots[slot], image: r.hash } } })); setMessage(`Captured ${r.width}×${r.height} in ${Math.round(performance.now() - t)} ms`); } catch (e) { setMessage(String(e)); } finally { setBusy(false); } };
+  useEffect(() => { const onPaste = (e: ClipboardEvent) => { const item = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/')); const file = item?.getAsFile(); if (file) { e.preventDefault(); void setSlotImage(active, file); } }; window.addEventListener('paste', onPaste); return () => window.removeEventListener('paste', onPaste); }, [active, setSlotImage]);
+  const save = async (next: boolean) => {
+    if (!l.title.trim()) { setMessage('Title is required.'); return; } if (!l.mapUuid || !l.agentUuid) { setMessage('Map and agent are required.'); return; }
+    if (missing.length) { setMessage(`Missing required slots: ${missing.map(s => SLOT_LABELS[s]).join(', ')}`); return; }
+    setBusy(true); try { const saved = await adapter.saveLineup(l); localStorage.removeItem(draftKey); h.reset(saved); setMessage('Saved.'); if (next) { const fresh = { ...newLineup(), mapUuid: l.mapUuid, agentUuid: l.agentUuid, abilitySlot: l.abilitySlot, mode: l.mode, side: l.side, site: l.site }; h.reset(fresh); setActive('stand1'); } else onSaved(false); } catch (e) { setMessage(String(e)); } finally { setBusy(false); }
+  };
+  const discard = () => { localStorage.removeItem(draftKey); if (lineupId) adapter.getLineup(lineupId).then(x => h.reset(x ?? newLineup())); else h.reset(newLineup()); setDraftFound(false); setMessage('Draft discarded.'); };
+  if (!loaded) return <p className="p-8 text-slate-400">Loading…</p>;
+  return <div className="grid gap-4 xl:grid-cols-[1fr_320px]" data-testid="editor">
+    <div className="space-y-3">
+      {draftFound && <div className="flex items-center gap-2 rounded-lg border border-amber-700 bg-amber-950/50 p-2 text-sm">Recovered draft available. <button className="rounded bg-amber-600 px-2 py-0.5 text-xs" onClick={() => { const d = JSON.parse(localStorage.getItem(draftKey)!); h.reset(d); setDraftFound(false); }}>Restore</button><button className="rounded bg-slate-800 px-2 py-0.5 text-xs" onClick={() => { localStorage.removeItem(draftKey); setDraftFound(false); }}>Ignore</button></div>}
+      <div className="flex flex-wrap items-center gap-2">
+        <input aria-label="Title" placeholder="Lineup title" value={l.title} onChange={e => patch({ title: e.target.value })} className="min-w-64 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-lg font-semibold" />
+        <button onClick={h.undo} disabled={!h.canUndo} className="rounded bg-slate-800 px-3 py-2 text-sm disabled:opacity-40">Undo</button><button onClick={h.redo} disabled={!h.canRedo} className="rounded bg-slate-800 px-3 py-2 text-sm disabled:opacity-40">Redo</button>
+        <button onClick={() => save(false)} disabled={busy} className="rounded bg-cyan-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Save</button><button onClick={() => save(true)} disabled={busy} className="rounded bg-cyan-800 px-3 py-2 text-sm disabled:opacity-50">Save & Next</button><button onClick={discard} className="rounded bg-slate-800 px-3 py-2 text-sm">Discard</button><button onClick={onCancel} className="rounded bg-slate-800 px-3 py-2 text-sm">Close</button>
+      </div>
+      <div className="flex flex-wrap gap-1">{SLOT_ORDER.map(s => { const req = required.includes(s); const has = !!l.slots[s].image; return <button key={s} onClick={() => setActive(s)} className={`rounded-lg px-3 py-1.5 text-sm ${active === s ? 'bg-cyan-500 text-slate-950' : 'bg-slate-800'} ${req && !has ? 'ring-1 ring-red-500' : ''}`}>{SLOT_LABELS[s]}{req ? ' *' : ''}{has ? ' ✓' : ''}</button>; })}</div>
+      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-3" onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f?.type.startsWith('image/')) void setSlotImage(active, f); }}>
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-sm"><span className="font-semibold">{SLOT_LABELS[active]}</span><button onClick={() => capture(active)} disabled={busy} className="rounded bg-slate-800 px-2 py-1 text-xs">Capture monitor</button><button onClick={() => fileRef.current?.click()} className="rounded bg-slate-800 px-2 py-1 text-xs">Choose image</button><span className="text-xs text-slate-500">or drop / paste an image</span><input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) void setSlotImage(active, f); e.target.value = ''; }} />{l.slots[active].image && <button onClick={() => h.set(prev => ({ ...prev, slots: { ...prev.slots, [active]: { ...prev.slots[active], image: null } } }))} className="ml-auto rounded bg-red-900/50 px-2 py-1 text-xs">Remove</button>}</div>
+        {slotUrl ? <AnnotationEditor key={`${l.id}-${active}`} src={slotUrl} activeSlot={active} slot={l.slots[active]} onChange={s => h.set(prev => ({ ...prev, slots: { ...prev.slots, [active]: s } }))} onCopyTo={(target, circles, lines) => h.set(prev => ({ ...prev, slots: { ...prev.slots, [target]: { ...prev.slots[target], circles: [...prev.slots[target].circles, ...circles.map(c => ({ ...c, id: crypto.randomUUID() }))], lines: [...prev.slots[target].lines, ...lines.map(x => ({ ...x, id: crypto.randomUUID() }))] } } }))} /> : <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-slate-700 text-slate-500">Capture, drop or paste the {SLOT_LABELS[active].toLowerCase()} screenshot</div>}
+      </div>
+      {message && <p className="text-sm text-cyan-300" role="status">{message}</p>}
+      <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-3"><h3 className="mb-2 text-sm font-semibold">Steps</h3>{l.steps.map((s, i) => <div key={i} className="mb-1 flex gap-2"><span className="text-slate-500">{i + 1}.</span><input value={s.text} onChange={e => patch({ steps: l.steps.map((x, j) => j === i ? { ...x, text: e.target.value } : x) })} className="flex-1 rounded bg-slate-800 px-2 py-1 text-sm" /><button onClick={() => patch({ steps: l.steps.filter((_, j) => j !== i).map((x, j) => ({ ...x, order: j + 1 })) })} className="text-red-400">✕</button></div>)}<button onClick={() => patch({ steps: [...l.steps, { order: l.steps.length + 1, text: '' }] })} className="text-xs text-cyan-400">+ Add step</button></section>
+    </div>
+    <aside className="space-y-3">
+      <div className="grid grid-cols-2 gap-2 rounded-xl border border-slate-800 bg-slate-900/50 p-3 text-sm">
+        <label>Map<select aria-label="Map" value={l.mapUuid} onChange={e => patch({ mapUuid: e.target.value })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1.5"><option value="">Select…</option>{catalog?.maps.map(m => <option key={m.uuid} value={m.uuid}>{m.displayName}{m.isArchived ? ' (archived)' : ''}</option>)}</select></label>
+        <label>Agent<select aria-label="Agent" value={l.agentUuid} onChange={e => patch({ agentUuid: e.target.value })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1.5"><option value="">Select…</option>{catalog?.agents.map(a => <option key={a.uuid} value={a.uuid}>{a.displayName}{a.isArchived ? ' (archived)' : ''}</option>)}</select></label>
+        <label>Ability<select value={l.abilitySlot} onChange={e => patch({ abilitySlot: e.target.value })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1.5">{['Grenade', 'Ability1', 'Ability2', 'Ultimate'].map(a => <option key={a}>{a}</option>)}</select></label>
+        <label>Mode<select value={l.mode} onChange={e => patch({ mode: e.target.value })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1.5">{modes.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select></label>
+        <label>Side<select value={l.side} onChange={e => patch({ side: e.target.value as Lineup['side'] })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1.5">{['attack', 'defense', 'both'].map(s => <option key={s}>{s}</option>)}</select></label>
+        <label>Site<input value={l.site} onChange={e => patch({ site: e.target.value })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1.5" /></label>
+        <label>Difficulty<select value={l.difficulty} onChange={e => patch({ difficulty: e.target.value })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1.5">{['easy', 'medium', 'hard'].map(d => <option key={d}>{d}</option>)}</select></label>
+        <label>Throw<select value={l.throwType} onChange={e => patch({ throwType: e.target.value })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1.5">{['normal', 'run', 'jump', 'crouch'].map(t => <option key={t}>{t}</option>)}</select></label>
+        <label className="col-span-2">Tags (comma-separated)<input value={l.tags.join(', ')} onChange={e => patch({ tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1.5" /></label>
+        <label className="col-span-2">Author<input value={l.author} onChange={e => patch({ author: e.target.value })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1.5" /></label>
+        <label className="col-span-2 flex items-center gap-2"><input type="checkbox" checked={l.isFavorite} onChange={e => patch({ isFavorite: e.target.checked })} /> Favorite</label>
+      </div>
+      {mode && Object.keys(mode.attributes).length > 0 && <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-3 text-sm"><h3 className="mb-2 font-semibold">{mode.label} attributes</h3>{Object.entries(mode.attributes).map(([k, spec]) => <label key={k} className="mb-2 block text-xs">{k}{spec.type === 'boolean' ? <input type="checkbox" checked={Boolean(l.attributes[k] ?? spec.default)} onChange={e => patch({ attributes: { ...l.attributes, [k]: e.target.checked } })} className="ml-2" /> : <input type="number" min={spec.min} max={spec.max} value={Number(l.attributes[k] ?? spec.default ?? 0)} onChange={e => patch({ attributes: { ...l.attributes, [k]: Number(e.target.value) } })} className="mt-0.5 w-full rounded bg-slate-800 px-2 py-1" />}</label>)}</div>}
+      <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-3"><h3 className="mb-2 text-sm font-semibold">Minimap pins <span className="text-xs font-normal text-slate-500">(drag)</span></h3><Minimap src={mapUrl} lineups={[]} editablePins={{ stand1Pos: l.stand1Pos, aim1Pos: l.aim1Pos, stand2Pos: l.stand2Pos, aim2Pos: l.aim2Pos, landPos: l.landPos }} onPinChange={(key, p) => patch({ [key]: p } as Partial<Lineup>)} /><div className="mt-2 flex flex-wrap gap-1 text-xs">{(['stand1Pos', 'aim1Pos', 'stand2Pos', 'aim2Pos', 'landPos'] as const).map(k => <button key={k} onClick={() => patch({ [k]: l[k] ? null : { x: 0.5, y: 0.5 } } as Partial<Lineup>)} className={`rounded px-2 py-0.5 ${l[k] ? 'bg-cyan-700' : 'bg-slate-800'}`}>{k.replace('Pos', '')}</button>)}</div></div>
+      <label className="block rounded-xl border border-slate-800 bg-slate-900/50 p-3 text-sm">Notes<textarea value={l.notes} onChange={e => patch({ notes: e.target.value })} rows={5} className="mt-1 w-full rounded bg-slate-800 px-2 py-1" /></label>
+      {missing.length > 0 && <p className="text-xs text-amber-400">Required: {missing.map(s => SLOT_LABELS[s]).join(', ')}</p>}
+    </aside>
+  </div>;
+}
