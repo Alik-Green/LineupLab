@@ -16,7 +16,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          cargo test --workspace --locked --lib --bins --tests > core-test.log 2>&1
+          cargo test --workspace --lib --bins --tests > core-test.log 2>&1
           code=$?
           tail -n 40 core-test.log
           if [ $code -ne 0 ]; then tail -n 40 core-test.log | while IFS= read -r line; do echo "::error::$line"; done; exit $code; fi
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          cargo test --workspace --locked --doc > doc-test.log 2>&1
+          cargo test --workspace --doc > doc-test.log 2>&1
           code=$?
           tail -n 30 doc-test.log
           if [ $code -ne 0 ]; then tail -n 30 doc-test.log | while IFS= read -r line; do echo "::error::$line"; done; exit $code; fi
@@ -52,7 +52,7 @@ jobs:
           npm run tauri --workspace desktop -- build > windows-build.log 2>&1
           code=$?
           tail -n 60 windows-build.log
-          if [ $code -ne 0 ]; then grep -E 'error|Error|failed' windows-build.log | head -25 | while IFS= read -r line; do echo "::error::$line"; done; tail -n 25 windows-build.log | while IFS= read -r line; do echo "::error::$line"; done; exit $code; fi
+          if [ $code -ne 0 ]; then sed 's/\x1b\[[0-9;]*m//g' windows-build.log | tail -n 45 | while IFS= read -r line; do echo "::error::DIAG $line"; done; exit $code; fi
       - uses: actions/upload-artifact@v4
         with: { name: windows-installer, path: 'desktop/src-tauri/target/release/bundle/nsis/*.exe' }
   desktop-ubuntu:
@@ -74,4 +74,4 @@ jobs:
           cargo check --manifest-path desktop/src-tauri/Cargo.toml > desktop-check.log 2>&1
           code=$?
           tail -n 60 desktop-check.log
-          if [ $code -ne 0 ]; then grep -E '^error' -A4 desktop-check.log | head -60 | while IFS= read -r line; do echo "::error::$line"; done; exit $code; fi
+          if [ $code -ne 0 ]; then sed 's/\x1b\[[0-9;]*m//g' desktop-check.log | tail -n 45 | while IFS= read -r line; do echo "::error::DIAG $line"; done; exit $code; fi
