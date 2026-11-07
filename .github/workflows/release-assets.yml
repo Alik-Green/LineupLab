@@ -79,10 +79,12 @@ jobs:
           mapfile -t APKS < <(find extracted/android -type f -iname '*.apk' | sort)
           printf 'Windows candidates: %s\n' "${EXES[@]}"
           printf 'APK candidates: %s\n' "${APKS[@]}"
-          test "${#EXES[@]}" -eq 1
+          printf 'Windows candidates: %s\n' "${EXES[@]}" | while IFS= read -r line; do echo "::notice title=Release inventory::$line"; done
+          printf 'APK candidates: %s\n' "${APKS[@]}" | while IFS= read -r line; do echo "::notice title=Release inventory::$line"; done
+          if [ "${#EXES[@]}" -ne 1 ]; then echo "::error::Expected one Windows installer, found ${#EXES[@]}"; exit 1; fi
           if [ "${#APKS[@]}" -eq 1 ]; then APK="${APKS[0]}"; else
             mapfile -t UNIVERSAL < <(printf '%s\n' "${APKS[@]}" | grep -E 'universal.*release.*\.apk$' | grep -v unsigned || true)
-            test "${#UNIVERSAL[@]}" -eq 1
+            if [ "${#UNIVERSAL[@]}" -ne 1 ]; then echo "::error::Expected one signed universal release APK, found ${#UNIVERSAL[@]} of ${#APKS[@]} APKs"; exit 1; fi
             APK="${UNIVERSAL[0]}"
           fi
           python3 - "${EXES[0]}" "$APK" <<'PY'
@@ -92,7 +94,9 @@ jobs:
           assert len(data) > 1_000_000 and data[:2] == b'MZ', 'Invalid Windows executable'
           pe = struct.unpack_from('<I', data, 0x3c)[0]
           assert data[pe:pe+4] == b'PE\0\0', 'Missing PE header'
-          assert struct.unpack_from('<H', data, pe+4)[0] == 0x8664, 'Installer is not x64'
+          machine = struct.unpack_from('<H', data, pe+4)[0]
+assert machine in (0x14c, 0x8664), 'Unknown installer machine'  # NSIS uses an x86 stub even for x64 payloads.
+print(f'PE machine={machine:#x}; NSIS marker={b"Nullsoft" in data or b"NSIS" in data}')
           assert b'Nullsoft' in data or b'NSIS' in data, 'NSIS signature not found'
           assert zipfile.is_zipfile(apk), 'Invalid APK ZIP'
           with zipfile.ZipFile(apk) as z:
@@ -111,7 +115,7 @@ jobs:
             APKSIGNER=/usr/local/lib/android/sdk/build-tools/34.0.0/apksigner
             AAPT=/usr/local/lib/android/sdk/build-tools/34.0.0/aapt
           fi
-          "$APKSIGNER" verify --verbose --print-certs "$APK" > apk-signature.txt
+          if ! "$APKSIGNER" verify --verbose --print-certs "$APK" > apk-signature.txt 2>&1; then cat apk-signature.txt; while IFS= read -r line; do echo "::error::APK signature: $line"; done < apk-signature.txt; exit 1; fi
           cat apk-signature.txt
           "$AAPT" dump badging "$APK" > apk-badging.txt
           grep -E "^package:|^sdkVersion:|^targetSdkVersion:|^native-code:" apk-badging.txt
