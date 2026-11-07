@@ -43,3 +43,7 @@ Import/Export uses two asymmetric cards: the import side owns the dropzone and a
 ## Overlay
 
 The overlay is a compact, translucent instrument panel rather than a second app window: a single header row (title, mode, controls, hide), a dense checklist with 72px capture thumbnails and required-progress bar in Create, and a fitted 16:9 annotated image with a one-line step caption in View. Flipping View swaps the image for a small minimap plus scrollable steps/notes. All text is at least 13px and every control is 40px; content scale enlarges text/thumbnails without shrinking below the readability floor. Settings pairs the monitor placement preview with a full-size content preview so opacity, corner, scale and annotation visibility can be judged without launching the native window.
+
+## Android companion
+
+The companion is browse-only and thumb-first: a sticky bottom tab bar (Browse/Sync/Settings), a single-column card feed with always-visible actions, and a Filters drawer instead of the desktop sidebar. A list/map segmented toggle swaps the feed for a square minimap with enlarged markers and no legend overlay. Lineup detail and filters are full-width drawers with 48px controls and a sticky footer action. Sync reduces to the pairing card (discover → address/code → pair → sync), and Settings keeps only companion-relevant tabs.

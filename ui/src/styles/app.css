@@ -244,7 +244,7 @@ input, select, textarea { font: inherit; }
 .ll-lineup-card__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; color: var(--ll-muted); font-size: 12px; }
 .ll-lineup-card__meta .ll-chip { min-height: 24px; padding: 0 8px; font-size: 11px; }
 .ll-dots { display: inline-flex; gap: 3px; } .ll-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--ll-border); } .ll-dots i.on { background: var(--ll-warning); }
-.ll-lineup-card__actions { position: absolute; top: 8px; left: 10px; display: flex; gap: 2px; padding: 2px; background: rgb(14 16 21 / .85); border: 1px solid var(--ll-border); border-radius: var(--ll-radius); opacity: 0; transition: opacity 150ms ease; }
+.ll-lineup-card__actions { position: absolute; top: 8px; left: 10px; z-index: 3; display: flex; gap: 2px; padding: 2px; background: rgb(14 16 21 / .85); border: 1px solid var(--ll-border); border-radius: var(--ll-radius); opacity: 0; transition: opacity 150ms ease; }
 .ll-lineup-card:hover .ll-lineup-card__actions, .ll-lineup-card:focus-within .ll-lineup-card__actions { opacity: 1; }
 .ll-lineup-card__actions .ll-icon-btn { width: 32px; height: 32px; min-width: 32px; }
 .ll-lineup-card.is-compact .ll-lineup-card__body { padding: 8px; } .ll-lineup-card.is-compact .ll-lineup-card__title { font-size: 13px; }
@@ -497,3 +497,48 @@ html.ll-overlay-window, html.ll-overlay-window body, html.ll-overlay-window #roo
 .ll-overlay-preview-card { align-self: start; }
 @media (prefers-reduced-motion: reduce) { .ll-ov-root { transition: none; } }
 html[data-motion="reduce"] .ll-ov-root { transition: none; }
+
+/* Android companion (M7): single-column browse, filter drawer, map/list toggle, full-screen detail. */
+html[data-platform="mobile"] { --ll-control-h: 48px; }
+.ll-app[data-platform="mobile"] .ll-topbar { height: 56px; padding: 0 12px; gap: 8px; }
+.ll-app[data-platform="mobile"] .ll-logo { font-size: 20px; }
+.ll-app[data-platform="mobile"] .ll-page { padding: 16px 16px calc(88px + env(safe-area-inset-bottom)); }
+.ll-app[data-platform="mobile"] .ll-bottom-nav button { min-height: 64px; font-size: 13px; }
+.ll-app[data-platform="mobile"] .ll-segmented__item { min-height: 42px; padding: 4px 12px; }
+.ll-mbrowse { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ll-mbrowse__head { display: flex; flex-direction: column; gap: 10px; }
+.ll-mbrowse__title .ll-h1 { font-size: 26px; }
+.ll-search--mobile { width: 100%; min-height: 48px; }
+.ll-search--mobile input { flex: 1; width: auto; min-width: 0; font-size: 16px; }
+.ll-mbrowse__controls { display: flex; align-items: stretch; gap: 8px; }
+.ll-mbrowse__controls > .ll-field { flex: 1; min-width: 0; }
+.ll-mbrowse__controls .ll-select { width: 100%; font-size: 16px; }
+.ll-mbrowse__controls .ll-btn { flex: none; }
+.ll-mbrowse__controls .ll-segmented { flex: none; align-self: stretch; }
+.ll-mbrowse__list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.ll-mbrowse .ll-lineup-card { height: auto; }
+.ll-mbrowse .ll-lineup-card__actions { opacity: 1; }
+.ll-mbrowse .ll-lineup-card__img { flex: none; height: 200px; }
+.ll-mbrowse .ll-lineup-card__title { font-size: 17px; }
+.ll-mbrowse__mapwrap { display: flex; flex-direction: column; gap: 8px; }
+.ll-mbrowse__map { width: 100%; height: auto; aspect-ratio: 1; min-height: 0; }
+.ll-mbrowse__map .ll-minimap__toolbar .ll-icon-btn { width: 48px; height: 48px; min-width: 48px; }
+.ll-mbrowse__map .ll-minimap__size { display: none; }
+.ll-mbrowse__map .ll-minimap__legend { display: none; } /* keep the legend from covering tap targets */
+.ll-mbrowse__hint { text-align: center; font-size: 13px; }
+.ll-mfilters { gap: 16px; }
+html[data-platform="mobile"] .ll-drawer { width: 100vw; border-left: 0; }
+html[data-platform="mobile"] .ll-drawer__body { padding: 16px; }
+html[data-platform="mobile"] .ll-modal__foot { gap: 8px; }
+html[data-platform="mobile"] .ll-modal__foot .ll-btn { flex: 1; min-width: 140px; }
+html[data-platform="mobile"] .ll-detail { grid-template-columns: 1fr; gap: 16px; }
+html[data-platform="mobile"] .ll-detail__stage { min-height: 0; padding: 8px; }
+html[data-platform="mobile"] .ll-detail__zoom .ll-icon-btn { width: 48px; height: 48px; min-width: 48px; }
+html[data-platform="mobile"] .ll-detail__rail button { width: 112px; min-height: 84px; font-size: 13px; }
+html[data-platform="mobile"] .ll-detail__viewer > p.ll-muted { display: none; }
+html[data-platform="mobile"] .ll-detail__map { min-height: 240px; }
+html[data-platform="mobile"] .ll-tab { min-height: 48px; padding: 0 12px; font-size: 14px; }
+html[data-platform="mobile"] .ll-settings-body { margin-top: 16px; }
+html[data-platform="mobile"] .ll-pairing strong { font-size: 40px; letter-spacing: .18em; }
+html[data-platform="mobile"] .ll-input, html[data-platform="mobile"] .ll-select { font-size: 16px; }
+html[data-platform="mobile"] .ll-toast button { min-width: 40px; min-height: 40px; }

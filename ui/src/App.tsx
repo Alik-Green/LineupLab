@@ -23,6 +23,7 @@ function AppInner({ adapter, platform }: { adapter: LibraryAdapter; platform: 'd
   const [assetProgress, setAssetProgress] = useState<AssetProgress | null>(null);
   const native = adapter.kind === 'tauri' && typeof window !== 'undefined' && !('__LL_MOCK_STATE__' in window);
   const refresh = useCallback(async () => { try { const [ls, cat, ms] = await Promise.all([adapter.listLineups(), adapter.catalog(), adapter.modes()]); setLineups(ls); setCatalog(cat); setModes(ms); setError(''); } catch (e) { setError(String(e)); } }, [adapter]);
+  useEffect(() => { document.documentElement.dataset.platform = platform; return () => { delete document.documentElement.dataset.platform; }; }, [platform]);
   useEffect(() => { void refresh(); try { applyMotionPref({ reduceMotion: false, ...JSON.parse(localStorage.getItem('lineuplab.prefs') ?? '{}') }); } catch { /* defaults */ } }, [refresh]);
   useEffect(() => {
     let live = true; let un: (() => void) | undefined;
@@ -36,7 +37,7 @@ function AppInner({ adapter, platform }: { adapter: LibraryAdapter; platform: 'd
   const navigate = (p: Page) => { if (p === 'editor') openEditor(null); else setPage(p); };
   return <AppShell platform={platform} page={page} onNavigate={navigate} catalog={catalog} assetProgress={assetProgress} native={native}>
     {error && <Card className="mb-4 border-ll-accent" role="alert"><p className="text-ll-accent">{error}</p><Button className="mt-2" onClick={refresh}>Retry</Button></Card>}
-    {page === 'browse' && <Browse adapter={adapter} lineups={lineups} catalog={catalog} readOnly={browseOnly} onEdit={id => browseOnly ? undefined : openEditor(id)} onRefresh={refresh} />}
+    {page === 'browse' && <Browse adapter={adapter} lineups={lineups} catalog={catalog} readOnly={browseOnly} onEdit={id => browseOnly ? undefined : openEditor(id)} onRefresh={refresh} mobile={browseOnly} />}
     {page === 'editor' && !browseOnly && <Editor adapter={adapter} lineupId={editId} catalog={catalog} modes={modes} lineups={lineups} onSaved={() => { void refresh(); setPage('browse'); }} onCancel={() => setPage('browse')} />}
     {page === 'import' && !browseOnly && <ImportExport adapter={adapter} lineups={lineups} onRefresh={refresh} />}
     {page === 'sync' && <SyncSettings adapter={adapter} host={false} />}

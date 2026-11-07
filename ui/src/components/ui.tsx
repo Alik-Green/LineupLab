@@ -18,9 +18,9 @@ export function IconButton({ label, tooltip, className, children, ...rest }: But
 export function Chip({ selected, tone = 'neutral', className, children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { selected?: boolean; tone?: 'neutral' | 'attack' | 'defense' | 'success' | 'warning' }) {
   return <button type="button" aria-pressed={selected} className={clsx('ll-chip', selected && 'is-selected', `ll-chip--${tone}`, className)} {...rest}>{children}</button>;
 }
-export interface SegmentOption<T extends string> { value: T; label: string; icon?: ReactNode; description?: string }
+export interface SegmentOption<T extends string> { value: T; label: string; icon?: ReactNode; description?: string; ariaLabel?: string }
 export function Segmented<T extends string>({ options, value, onChange, ariaLabel, className }: { options: SegmentOption<T>[]; value: T; onChange(v: T): void; ariaLabel: string; className?: string }) {
-  return <div role="group" aria-label={ariaLabel} className={clsx('ll-segmented', className)}>{options.map(o => <button key={o.value} type="button" aria-pressed={value === o.value} className={clsx('ll-segmented__item', value === o.value && 'is-selected')} onClick={() => onChange(o.value)}>{o.icon}<span>{o.label}</span>{o.description && <small>{o.description}</small>}</button>)}</div>;
+  return <div role="group" aria-label={ariaLabel} className={clsx('ll-segmented', className)}>{options.map(o => <button key={o.value} type="button" aria-label={o.ariaLabel ?? (o.label || undefined)} aria-pressed={value === o.value} className={clsx('ll-segmented__item', value === o.value && 'is-selected')} onClick={() => onChange(o.value)}>{o.icon}<span>{o.label}</span>{o.description && <small>{o.description}</small>}</button>)}</div>;
 }
 /* Icon picker grid (maps/agents/abilities) */
 export interface PickerOption { id: string; name: string; icon?: string | null; sublabel?: string; badge?: ReactNode; disabled?: boolean }

@@ -92,3 +92,7 @@ Entries are updated only after commands actually run. Platform-specific checks a
 - Rewrote OverlayView: create checklist with thumbnails/required progress/current slot, view image + annotations + step caption, flip to minimap/steps/notes, prev/next, capture fade, local reading-comfort prefs, live Settings preview.
 - Editor publishes live draft snapshots to the overlay (UI-only event); overlay handles existing overlay hotkeys; fixed annotation SVG stacking above images app-wide.
 - Verified: typecheck, 24 UI tests, desktop/mobile builds, 13 desktop Playwright tests (overlay create/view/fade/prefs sync/live draft + settings). Screenshots `docs/screenshots/60–65`, refreshed 42.
+
+## 2026-11-07 · UI redesign M7 complete (Android companion)
+- Mobile Browse: single-column cards, map dropdown, search, filter drawer (agent/ability/side/site/difficulty/tag/favorites), list/map toggle with enlarged touch markers, full-screen detail drawer. Sync pairing-only; Settings tabs General/Sync/Data/Diagnostics/About.
+- Verified: typecheck, 24 UI tests, desktop/mobile builds, 2 Android Playwright tests (full companion flow + no horizontal overflow at 390/360). Screenshots `docs/screenshots/70–78`.
