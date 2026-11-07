@@ -24,9 +24,9 @@ Artifacts are downloadable from those run pages (GitHub login required). They ar
 
 ## Local verification (this sandbox)
 
-- `cargo test --workspace --offline --lib --bins --tests`: **30 passed** (6 foundation + 13 pack + 7 desktop features + 4 sync server). CI also runs doctests.
-- `npm run typecheck`, `npm test` (**25 passed / 7 files**), `npm run build`, `npm run build:mobile`: passed.
-- Playwright: **20 passed** (17 desktop + 3 Android viewport/accessibility), including 40px/48px target audits, import progress/error, Browse pickers and 1440p overlay placement.
+- `cargo test -p lineuplab-core --tests --offline`: **32 passed** (6 foundation + 14 pack + 7 desktop features + 5 sync server). CI also runs doctests.
+- `npm run typecheck`, `npm test` (**32 passed / 8 files**), `npm run build`, `npm run build:mobile`: passed.
+- Playwright: **25 passed** (21 desktop + 4 Android viewport/accessibility), including 40px/48px target audits, import/decompression progress, Browse/Create pickers, minimap transform, numeric blur clamping, minimal overlay, phone download and empty-map recovery.
 - Live browser demo: port 5173 (synthetic placeholder art; Tauri commands activate inside the shells).
 
 ## Windows cross-build attempt (Linux → Windows)
@@ -56,8 +56,8 @@ The **native Windows CI job succeeded** and produced the NSIS installer, so the 
 
 ## GitHub releases
 
-**Current: [v0.1.0-preview.3](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.3)** — import progress/error visibility, compact Browse current-value pickers, and monitor-aware 1440p/mixed-DPI overlay placement on top of the M1–M8 redesign. Both apps built from `3dae13c6f39ff78b89a331a2c91ec6065132bc0e`. Assets: `LineupLab-0.1.0-preview.3-x64-setup.exe` (8,364,980 B), `LineupLab-Companion-0.1.0-preview.3.apk` (83,007,766 B), `SHA256SUMS.txt`. Packaging/verification run [42415179026](https://github.com/Alik-Green/LineupLab/actions/runs/42415179026) passed: source-run equality, artifact ZIP digests, NSIS/APK structure, ephemeral APK signing, checksum re-download and signature verification. Full notes: `docs/releases/v0.1.0-preview.3.md`.
+**Current: [v0.1.0-preview.4](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.4)** — no-code trusted-LAN phone downloads (blank-hash `/images/` fix), ZIP decompression progress, square Browse/Create pickers, minimap art+marker zoom/pin fixes, Sova Recon Dart controls, per-aim throw types, overlay Learn/Minimal modes and blur-clamped numeric fields. Both apps built from `99fc9664aefece0f6dc1745c4d019d43475e1ba4`. Assets: `LineupLab-0.1.0-preview.4-x64-setup.exe` (8,430,520 B), `LineupLab-Companion-0.1.0-preview.4.apk` (83,794,198 B), `SHA256SUMS.txt`. Packaging/verification run [42423140977](https://github.com/Alik-Green/LineupLab/actions/runs/42423140977) passed: source-run equality, artifact digests, NSIS/APK structure, ephemeral APK signing, checksums and publish. Full notes: `docs/releases/v0.1.0-preview.4.md`.
 
-The Windows installer is unsigned; the APK uses a discarded ephemeral preview certificate. Android upgrades from Preview 1/2 require uninstall/re-pair because the signing identity differs. Back up the Windows library first. Real Windows gameplay and physical Android testing remain pending; after install, choose the correct monitor in Settings → Overlay and use “Reapply placement”.
+The Windows installer is unsigned; the APK uses a discarded ephemeral preview certificate. Android upgrades from Preview 1/2/3 require uninstall/reinstall and re-connecting because the signing identity differs. Back up the Windows library first. Real Windows gameplay and physical Android testing remain pending; after install, choose the correct monitor in Settings → Overlay and use “Reapply placement”.
 
-Historical: [v0.1.0-preview.2](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.2) (packaging run 42407951313) and [v0.1.0-preview.1](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.1) (packaging run 42392314298). Superseded by Preview 3; do not use older binaries for these fixes.
+Historical: [v0.1.0-preview.3](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.3) (packaging run 42415179026), [v0.1.0-preview.2](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.2) (42407951313) and [v0.1.0-preview.1](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.1) (42392314298). Superseded by Preview 4; do not use older binaries for these fixes.

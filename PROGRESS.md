@@ -116,8 +116,13 @@ Entries are updated only after commands actually run. Platform-specific checks a
 - Published [v0.1.0-preview.3](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.3) via packaging run [42415179026](https://github.com/Alik-Green/LineupLab/actions/runs/42415179026): x64 NSIS installer, signed universal companion APK, SHA256SUMS; source equality, artifact digests, package structure, checksums and APK signature verified.
 - Final local checks: typecheck, 25 unit tests, 30 Rust tests, desktop/mobile builds, 20 Playwright tests. Unsigned Windows / ephemeral Android signing and pending real-device/gameplay checks are disclosed in `docs/releases/v0.1.0-preview.3.md`.
 
-## 2026-11-07 · Preview 4 feedback batch implemented (release pending)
+## 2026-11-07 · Preview 4 feedback batch implemented
 - Wrote `docs/TODO_CHECKLIST.md` before implementation; all feature groups addressed, with callout/path naming honestly limited to optional callouts + site fallback.
 - Mobile Download: no-code `/connect` on opt-in LAN sharing, additive `download_library`, blank/invalid media hash fix (no `/images/` collection request), progress/warnings/retry, safe areas, empty-map recovery. Security trade-off documented in `docs/SYNC.md`.
 - ZIP decompression progress; square Browse/Create pickers; TDM filter; minimap art+marker transform and pin accuracy; stand/land toggles; Sova Recon Dart charge/bounce UI; per-aim throw type; simplified sites/pins; Save & create another; overlay blur-clamped numbers, Learn/Minimal modes, large Create capture.
 - Verified locally: typecheck; 32 UI unit tests; 32 Rust integration tests; desktop/mobile production builds; 25 Playwright tests (21 desktop + 4 Android). Native Windows/Android CI and physical-device checks remain pending.
+
+## 2026-11-07 · Preview 4 release published (desktop/mobile feedback)
+- Source `99fc9664aefece0f6dc1745c4d019d43475e1ba4`; green CI/Windows [42421768575](https://github.com/Alik-Green/LineupLab/actions/runs/42421768575) and Android [42421768651](https://github.com/Alik-Green/LineupLab/actions/runs/42421768651).
+- Published [v0.1.0-preview.4](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.4) via packaging run [42423140977](https://github.com/Alik-Green/LineupLab/actions/runs/42423140977): x64 NSIS installer (8,430,520 B), signed companion APK (83,794,198 B), SHA256SUMS; source equality, digests, package structure, signing and publish verified.
+- Final local checks: typecheck, 32 UI unit tests, 32 Rust integration tests, desktop/mobile builds, 25 Playwright tests. Unsigned Windows / ephemeral Android signing and pending physical-device/gameplay checks disclosed in `docs/releases/v0.1.0-preview.4.md`.

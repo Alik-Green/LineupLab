@@ -46,8 +46,8 @@ Created 2026-11-07 from the latest Windows/Android feedback. This is the working
 
 - [x] **V1. Add automated regressions** for each implemented group: ZIP progress, map filtering, layout, minimap transforms/pins, creation semantics, numeric inputs, overlay modes, and real local HTTP download behavior.
 - [x] **V2. Run the full checks** (TypeScript, unit tests, Rust tests/formatting, production builds, desktop/Android Playwright), review changed screenshots, and record actual results here and in the changelog.
-- [ ] **V3. Verify native builds in CI** on one source revision; disclose any physical Windows/Android/gameplay checks that remain untested.
-- [ ] **V4. Publish the next Windows + Android prerelease** after the implemented batch passes, with checksums, migration/download instructions and signing limitations. Do not label partially completed checklist items as shipped.
+- [x] **V3. Verify native builds in CI** on one source revision; disclose any physical Windows/Android/gameplay checks that remain untested.
+- [x] **V4. Publish the next Windows + Android prerelease** after the implemented batch passes, with checksums, migration/download instructions and signing limitations. Do not label partially completed checklist items as shipped.
 
 ## Implementation order
 
@@ -67,3 +67,5 @@ Progress notes and any necessary scope corrections are appended below as work la
 - Create/Browse: three square current-value pickers; TDM/range maps filtered from choices; sites A/B/Mid (+C on Haven/Lotus); all Sova abilities exposed; Recon Dart charge bars (1st/2nd/3rd/Full) + bounce diamonds; per-aim throw type; Save & create another retains setup. Location titles use optional normalized callouts when present and fall back to site; no walkable-path graph is bundled, so closest-path routing is not claimed.
 - Overlay: numeric fields clamp on blur/Enter; Learn mode (renamed from View) with image hotkeys and stand/land map; Minimal image-only mode with optional outline (Alt+I); Create shows the current/last captured image large with a compact checklist.
 - Local verification: TypeScript + desktop/mobile production builds; 32 UI unit tests; 32 Rust integration tests; 25 Playwright tests (21 desktop + 4 Android) including new feedback regressions. Native Windows/Android runtime and gameplay checks remain pending CI/manual validation.
+
+- Released as [v0.1.0-preview.4](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.4). CI [42421768575](https://github.com/Alik-Green/LineupLab/actions/runs/42421768575) and Android [42421768651](https://github.com/Alik-Green/LineupLab/actions/runs/42421768651) succeeded on `99fc9664aefece0f6dc1745c4d019d43475e1ba4`; packaging run [42423140977](https://github.com/Alik-Green/LineupLab/actions/runs/42423140977) published installer/APK/checksums. Notes: `docs/releases/v0.1.0-preview.4.md`.
