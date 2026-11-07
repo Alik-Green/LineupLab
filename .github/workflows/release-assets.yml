@@ -75,6 +75,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          exec > >(tee validation.log) 2>&1
+          trap 'code=$?; rm -f preview-keystore.p12; if [ "$code" -ne 0 ]; then tail -n 35 validation.log | while IFS= read -r line; do echo "::error::DIAG $line"; done; fi' EXIT
+          stage() { echo "::notice title=Packaging stage::$1"; }
           mapfile -t EXES < <(find extracted/windows -type f -iname '*.exe' | sort)
           mapfile -t APKS < <(find extracted/android -type f -iname '*.apk' | sort)
           printf 'Windows candidates: %s\n' "${EXES[@]}"
@@ -106,6 +109,7 @@ jobs:
               assert z.testzip() is None, 'APK CRC failure'
           print(f'Validated x64 NSIS installer ({len(data):,} bytes) and APK ({apk.stat().st_size:,} bytes)')
           PY
+          stage tools-discovery
           APKSIGNER=$({ find /usr/local/lib/android/sdk/build-tools -type f -name apksigner 2>/dev/null || true; } | sort -V | tail -1)
           AAPT=$({ find /usr/local/lib/android/sdk/build-tools -type f -name aapt 2>/dev/null || true; } | sort -V | tail -1)
           if [ -z "$APKSIGNER" ] || [ -z "$AAPT" ]; then
@@ -115,6 +119,7 @@ jobs:
             APKSIGNER=/usr/local/lib/android/sdk/build-tools/34.0.0/apksigner
             AAPT=/usr/local/lib/android/sdk/build-tools/34.0.0/aapt
           fi
+          stage inspect-package
           "$AAPT" dump badging "$APK" > apk-badging.txt
           grep -E "^package:|^sdkVersion:|^targetSdkVersion:|^native-code:" apk-badging.txt
           grep -q "package: name='app.lineuplab.companion'" apk-badging.txt
@@ -124,16 +129,19 @@ jobs:
             # This preview has no production keystore. Create an ephemeral signing
             # identity solely so the CI-built release APK can be sideloaded. Never
             # upload the key; disclose the temporary identity in the release notes.
-            trap 'rm -f preview-keystore.p12' EXIT
+            stage generate-preview-key
             STOREPASS=$(openssl rand -hex 32)
             keytool -genkeypair -keystore preview-keystore.p12 -storetype PKCS12               -storepass "$STOREPASS" -keypass "$STOREPASS" -alias lineuplab-preview               -keyalg RSA -keysize 2048 -validity 365               -dname 'CN=LineupLab Preview (ephemeral CI key), O=LineupLab, C=GB'
+            stage zipalign
             ZIPALIGN=$(dirname "$AAPT")/zipalign
             "$ZIPALIGN" -f -p 4 "$APK" aligned-preview.apk
+            stage sign-preview
             "$APKSIGNER" sign --ks preview-keystore.p12 --ks-type PKCS12               --ks-pass "pass:$STOREPASS" --key-pass "pass:$STOREPASS"               --ks-key-alias lineuplab-preview --out signed-preview.apk aligned-preview.apk
             rm -f preview-keystore.p12
             APK=signed-preview.apk
             echo ephemeral-preview > apk-signing-mode.txt
           fi
+          stage verify-signature
           if ! "$APKSIGNER" verify --verbose --print-certs "$APK" > apk-signature.txt 2>&1; then cat apk-signature.txt; while IFS= read -r line; do echo "::error::APK signature: $line"; done < apk-signature.txt; exit 1; fi
           cat apk-signature.txt
           "$AAPT" dump badging "$APK" > apk-badging.txt
