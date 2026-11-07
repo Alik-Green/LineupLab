@@ -46,13 +46,20 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run build
+      - name: Check desktop shell (Windows)
+        run: |
+          set +e
+          cargo check --manifest-path desktop/src-tauri/Cargo.toml --message-format=short > windows-check.log 2>&1
+          code=$?
+          tail -n 20 windows-check.log
+          if [ $code -ne 0 ]; then grep -i 'error' windows-check.log | head -40 | while IFS= read -r line; do echo "::error::DIAG $line"; done; exit $code; fi
       - name: Build Tauri Windows installer
         run: |
           set +e
           npm run tauri --workspace desktop -- build > windows-build.log 2>&1
           code=$?
           tail -n 60 windows-build.log
-          if [ $code -ne 0 ]; then sed 's/\x1b\[[0-9;]*m//g' windows-build.log | tail -n 45 | while IFS= read -r line; do echo "::error::DIAG $line"; done; exit $code; fi
+          if [ $code -ne 0 ]; then grep -i 'error\|failed' windows-build.log | head -40 | while IFS= read -r line; do echo "::error::DIAG $line"; done; exit $code; fi
       - uses: actions/upload-artifact@v4
         with: { name: windows-installer, path: 'desktop/src-tauri/target/release/bundle/nsis/*.exe' }
   desktop-ubuntu:
@@ -71,7 +78,7 @@ jobs:
       - name: Check desktop shell compiles on Linux
         run: |
           set +e
-          cargo check --manifest-path desktop/src-tauri/Cargo.toml > desktop-check.log 2>&1
+          cargo check --manifest-path desktop/src-tauri/Cargo.toml --message-format=short > desktop-check.log 2>&1
           code=$?
           tail -n 60 desktop-check.log
-          if [ $code -ne 0 ]; then sed 's/\x1b\[[0-9;]*m//g' desktop-check.log | tail -n 45 | while IFS= read -r line; do echo "::error::DIAG $line"; done; exit $code; fi
+          if [ $code -ne 0 ]; then grep -i 'error' desktop-check.log | head -40 | while IFS= read -r line; do echo "::error::DIAG $line"; done; exit $code; fi
