@@ -78,6 +78,7 @@ jobs:
           exec > >(tee validation.log) 2>&1
           trap 'code=$?; rm -f preview-keystore.p12; if [ "$code" -ne 0 ]; then tail -n 35 validation.log | while IFS= read -r line; do echo "::error::DIAG $line"; done; fi' EXIT
           stage() { echo "::notice title=Packaging stage::$1"; }
+          trap 'echo "::error::Command failed at script line $LINENO"' ERR
           mapfile -t EXES < <(find extracted/windows -type f -iname '*.exe' | sort)
           mapfile -t APKS < <(find extracted/android -type f -iname '*.apk' | sort)
           printf 'Windows candidates: %s\n' "${EXES[@]}"
@@ -144,10 +145,14 @@ jobs:
           stage verify-signature
           if ! "$APKSIGNER" verify --verbose --print-certs "$APK" > apk-signature.txt 2>&1; then cat apk-signature.txt; while IFS= read -r line; do echo "::error::APK signature: $line"; done < apk-signature.txt; exit 1; fi
           cat apk-signature.txt
+          stage signature-ok
           "$AAPT" dump badging "$APK" > apk-badging.txt
-          VERSION=$(jq -r '.tag_name | ltrimstr("v")' <(gh release view "$TAG" --json tagName))
+          stage signed-package-inspected
+          VERSION=$(jq -er '.tagName | ltrimstr("v")' <(gh release view "$TAG" --json tagName))
+          stage copy-assets
           cp "${EXES[0]}" "release-assets/LineupLab-${VERSION}-x64-setup.exe"
           cp "$APK" "release-assets/LineupLab-Companion-${VERSION}.apk"
+          stage validation-complete
       - name: Generate checksums and attach to draft
         shell: bash
         run: |
