@@ -538,12 +538,30 @@ fn import_progress_reports_media_entries_and_completion() {
     let bytes = fixture("legacy-sample.zip");
     let archive = read_archive(&bytes).unwrap();
     let preview = preview(&archive, &db).unwrap();
-    let selected: BTreeSet<String> = preview.entries.iter().filter(|e| e.selected).map(|e| e.id.clone()).collect();
+    let selected: BTreeSet<String> = preview
+        .entries
+        .iter()
+        .filter(|e| e.selected)
+        .map(|e| e.id.clone())
+        .collect();
     let mut events = vec![];
-    let report = commit_with_progress(&mut db, &store, &archive, &preview, &selected, ConflictPolicy::OverwriteIfNewer, |p| events.push(p)).unwrap();
+    let report = commit_with_progress(
+        &mut db,
+        &store,
+        &archive,
+        &preview,
+        &selected,
+        ConflictPolicy::OverwriteIfNewer,
+        |p| events.push(p),
+    )
+    .unwrap();
     assert_eq!(report.imported, 3);
     assert!(events.iter().any(|p| p.phase == "media" && p.current == 0));
-    assert!(events.iter().any(|p| p.phase == "media" && p.total > 0 && p.current == p.total));
-    assert!(events.iter().any(|p| p.phase == "lineups" && p.current == p.total));
+    assert!(events
+        .iter()
+        .any(|p| p.phase == "media" && p.total > 0 && p.current == p.total));
+    assert!(events
+        .iter()
+        .any(|p| p.phase == "lineups" && p.current == p.total));
     assert_eq!(events.last().unwrap().phase, "done");
 }

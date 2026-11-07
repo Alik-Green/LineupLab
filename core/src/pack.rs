@@ -1085,10 +1085,20 @@ pub fn commit_with_progress(
     };
     let mut staged = BTreeMap::new();
     let media_total = archive.media.len();
-    progress(ImportProgress { phase: "media".into(), message: format!("Copying pack media (0/{media_total})"), current: 0, total: media_total });
+    progress(ImportProgress {
+        phase: "media".into(),
+        message: format!("Copying pack media (0/{media_total})"),
+        current: 0,
+        total: media_total,
+    });
     for (i, bytes) in archive.media.values().enumerate() {
         let hash = store.put(bytes)?;
-        progress(ImportProgress { phase: "media".into(), message: format!("Copying pack media ({}/{media_total})", i + 1), current: i + 1, total: media_total });
+        progress(ImportProgress {
+            phase: "media".into(),
+            message: format!("Copying pack media ({}/{media_total})", i + 1),
+            current: i + 1,
+            total: media_total,
+        });
         staged.entry(hash).or_insert_with(|| {
             (
                 crate::storage::mime_for(bytes).to_string(),
@@ -1100,9 +1110,19 @@ pub fn commit_with_progress(
     let tx = db.transaction()?;
     let mut chosen = BTreeSet::new();
     let entry_total = preview.entries.len();
-    progress(ImportProgress { phase: "lineups".into(), message: format!("Writing lineups (0/{entry_total})"), current: 0, total: entry_total });
+    progress(ImportProgress {
+        phase: "lineups".into(),
+        message: format!("Writing lineups (0/{entry_total})"),
+        current: 0,
+        total: entry_total,
+    });
     for (i, entry) in preview.entries.iter().enumerate() {
-        progress(ImportProgress { phase: "lineups".into(), message: format!("Writing lineups ({}/{entry_total})", i + 1), current: i + 1, total: entry_total });
+        progress(ImportProgress {
+            phase: "lineups".into(),
+            message: format!("Writing lineups ({}/{entry_total})", i + 1),
+            current: i + 1,
+            total: entry_total,
+        });
         if !selected.contains(&entry.id) {
             report.skipped += 1;
             continue;
@@ -1191,7 +1211,12 @@ pub fn commit_with_progress(
         ],
     )?;
     tx.commit()?;
-    progress(ImportProgress { phase: "done".into(), message: "Import finished".into(), current: entry_total, total: entry_total });
+    progress(ImportProgress {
+        phase: "done".into(),
+        message: "Import finished".into(),
+        current: entry_total,
+        total: entry_total,
+    });
     Ok(report)
 }
 pub fn import_bytes(

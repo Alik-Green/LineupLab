@@ -83,19 +83,37 @@ impl OverlaySettings {
         monitor_size: (u32, u32),
         scale_factor: f64,
     ) -> ((i32, i32), (u32, u32)) {
-        let scale = if scale_factor.is_finite() && scale_factor > 0.0 { scale_factor } else { 1.0 };
+        let scale = if scale_factor.is_finite() && scale_factor > 0.0 {
+            scale_factor
+        } else {
+            1.0
+        };
         let logical_w = ((monitor_size.0 as f64) / scale).floor().max(1.0) as u32;
         let logical_h = ((monitor_size.1 as f64) / scale).floor().max(1.0) as u32;
         let mut effective = self.clone();
         effective.width = self.width.min(logical_w);
         effective.height = self.height.min(logical_h);
         let (x, y) = effective.position(logical_w, logical_h);
-        let w = (((effective.width as f64) * scale).round().max(1.0) as u32).min(monitor_size.0.max(1));
-        let h = (((effective.height as f64) * scale).round().max(1.0) as u32).min(monitor_size.1.max(1));
-        let max_x = origin.0.saturating_add(monitor_size.0 as i32).saturating_sub(w as i32);
-        let max_y = origin.1.saturating_add(monitor_size.1 as i32).saturating_sub(h as i32);
-        let px = origin.0.saturating_add(((x as f64) * scale).round() as i32).clamp(origin.0, max_x.max(origin.0));
-        let py = origin.1.saturating_add(((y as f64) * scale).round() as i32).clamp(origin.1, max_y.max(origin.1));
+        let w =
+            (((effective.width as f64) * scale).round().max(1.0) as u32).min(monitor_size.0.max(1));
+        let h = (((effective.height as f64) * scale).round().max(1.0) as u32)
+            .min(monitor_size.1.max(1));
+        let max_x = origin
+            .0
+            .saturating_add(monitor_size.0 as i32)
+            .saturating_sub(w as i32);
+        let max_y = origin
+            .1
+            .saturating_add(monitor_size.1 as i32)
+            .saturating_sub(h as i32);
+        let px = origin
+            .0
+            .saturating_add(((x as f64) * scale).round() as i32)
+            .clamp(origin.0, max_x.max(origin.0));
+        let py = origin
+            .1
+            .saturating_add(((y as f64) * scale).round() as i32)
+            .clamp(origin.1, max_y.max(origin.1));
         ((px, py), (w, h))
     }
 }

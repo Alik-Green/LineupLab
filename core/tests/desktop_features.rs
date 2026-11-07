@@ -62,9 +62,15 @@ fn overlay_physical_rect_uses_real_monitor_size_origin_and_dpi() {
     let mut s = OverlayState::default();
     s.settings.corner = Corner::BottomRight;
     // 2560x1440 at 100%: bottom-right is relative to 1440p, not hardcoded 1080p.
-    assert_eq!(s.settings.physical_rect((0, 0), (2560, 1440), 1.0), ((2560 - 420 - 24, 1440 - 320 - 24), (420, 320)));
+    assert_eq!(
+        s.settings.physical_rect((0, 0), (2560, 1440), 1.0),
+        ((2560 - 420 - 24, 1440 - 320 - 24), (420, 320))
+    );
     // Same logical 1920x1080 workspace at 125% scaling, on a secondary monitor.
-    assert_eq!(s.settings.physical_rect((2560, 0), (2400, 1350), 1.25), ((2560 + 1845, 920), (525, 400)));
+    assert_eq!(
+        s.settings.physical_rect((2560, 0), (2400, 1350), 1.25),
+        ((2560 + 1845, 920), (525, 400))
+    );
     // Oversized logical window is clamped inside a small monitor.
     s.settings.width = 1600;
     s.settings.height = 1400;
