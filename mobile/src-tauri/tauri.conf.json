@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LineupLab Companion",
+  "version": "0.1.0",
+  "identifier": "app.lineuplab.companion",
+  "build": {
+    "beforeDevCommand": "npm run dev:mobile",
+    "devUrl": "http://localhost:5174",
+    "beforeBuildCommand": "npm run build:mobile",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "LineupLab Companion",
+        "width": 420,
+        "height": 820
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob: https://media.valorant-api.com; style-src 'self' 'unsafe-inline'; media-src 'self' asset: http://asset.localhost blob:; connect-src 'self' ipc: http://ipc.localhost https://valorant-api.com https://media.valorant-api.com http://192.168.0.0/16 http://10.0.0.0/8",
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPDATA/**",
+          "$APPCONFIG/**"
+        ]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/icon.png"
+    ],
+    "android": {
+      "minSdkVersion": 26
+    }
+  }
+}

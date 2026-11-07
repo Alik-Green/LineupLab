@@ -49,6 +49,19 @@ The desktop shell source/config is complete, but this environment cannot compile
 
 No Riot art is bundled. Icons are synthetic LineupLab marks. Agent/map art is fetched and cached at runtime.
 
-## Android companion
+## Android companion (browse-only, min SDK 26)
 
-See the mobile milestone: JDK 17+, Android SDK/NDK, `npm run tauri:mobile android build`. Browse-only, min SDK 26.
+Prerequisites: JDK 17+, Android Studio / SDK (platform 34+, build-tools, platform-tools, command-line tools), NDK, `JAVA_HOME`, `ANDROID_HOME`, `NDK_HOME`, Rust Android targets (`aarch64-linux-android`, `armv7-linux-androideabi`, `i686-linux-android`, `x86_64-linux-android`).
+
+```bash
+npm install
+npm run tauri --workspace mobile -- android init
+npm run tauri --workspace mobile -- android build --apk
+# APK: mobile/src-tauri/gen/android/app/build/outputs/apk/
+```
+
+The companion shares `core/` and the browse UI; it **pulls** from a paired desktop server and browses offline. It has no creation, overlay, hotkeys or capture commands.
+
+### Sandbox status (2026-11-07)
+
+`tauri android init/build` was attempted and fails because Java/JDK and the Android SDK/NDK are not installed in this environment (and Tauri crates are not vendored). The GitHub Actions Android workflow is the authoritative APK build path; no APK is claimed from this sandbox.

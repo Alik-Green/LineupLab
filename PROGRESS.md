@@ -45,3 +45,7 @@ Entries are updated only after commands actually run. Platform-specific checks a
 - Opt-in axum server: six-digit pairing, rate limiting, bearer-token auth, mDNS advertise + discovery, incremental manifest, complete lineup documents, SHA-256-verified image transfer, push merge and CLI (`lineuplab-server`).
 - Sync client (`SyncClient`, `pull`, `push_local`, `sync_both`) with deterministic LWW/tombstones; desktop commands and shared Settings UI for hosting/pairing/discovery/sync.
 - Verified: Rust suite 28 tests (4 new sync server tests), UI typecheck/tests/builds. Security model documented in `docs/SYNC.md` (LAN-only HTTP alternative to pinned HTTPS).
+
+## 2026-11-07 · Milestone 7 complete (Android companion shell, CI build path)
+- Tauri 2 mobile shell: browse-only commands (library/catalog/modes/media), mDNS discovery, six-digit pairing and pull-only sync into local SQLite/media for offline browsing; min SDK 26; shared UI hides all mutation/create/overlay/hotkey controls.
+- Verified locally: mobile frontend typecheck/build and core/UI suites. APK build attempted: `tauri android init/build --apk` fails on missing Java/JDK + Android SDK/NDK (and offline Tauri vendor gap); CI Android workflow will produce the installable APK. No APK claimed yet.

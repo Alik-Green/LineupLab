@@ -22,3 +22,4 @@
 20. **Shell compile authority:** the sandbox vendor cache lacks Tauri/wry and crates.io egress is blocked, so the Tauri shell is source-complete but compiled/tested by Windows/Ubuntu CI rather than claimed as locally verified.
 21. **Sync transport:** documented alternative to pinned HTTPS — LAN-only plain HTTP with six-digit pairing, constant-time compare, rate limiting and bearer tokens. Threat model and revocation in `docs/SYNC.md`; TLS deps are present for a future upgrade.
 22. **Sync merge:** timestamp → revision → deviceId LWW, tombstones included; clients push newer local records + images then pull newer remote records. Conflicts are counted/reported rather than destructively merged.
+23. **Android companion:** browse-only Tauri 2 shell sharing core + UI; sync is pull-only (no local edits pushed), min SDK 26. APK generation requires JDK/Android SDK/NDK and is delegated to CI; sandbox attempt failed on missing Java.
