@@ -95,8 +95,8 @@ jobs:
           pe = struct.unpack_from('<I', data, 0x3c)[0]
           assert data[pe:pe+4] == b'PE\0\0', 'Missing PE header'
           machine = struct.unpack_from('<H', data, pe+4)[0]
-assert machine in (0x14c, 0x8664), 'Unknown installer machine'  # NSIS uses an x86 stub even for x64 payloads.
-print(f'PE machine={machine:#x}; NSIS marker={b"Nullsoft" in data or b"NSIS" in data}')
+          assert machine in (0x14c, 0x8664), 'Unknown installer machine'  # NSIS uses an x86 stub even for x64 payloads.
+          print(f'PE machine={machine:#x}; NSIS marker={b"Nullsoft" in data or b"NSIS" in data}')
           assert b'Nullsoft' in data or b'NSIS' in data, 'NSIS signature not found'
           assert zipfile.is_zipfile(apk), 'Invalid APK ZIP'
           with zipfile.ZipFile(apk) as z:
