@@ -166,8 +166,9 @@ pub(crate) fn monitor_infos(app: &tauri::AppHandle) -> Vec<Value> {
     monitors.iter().enumerate().map(|(index, m)| {
         let size = m.size(); let pos = m.position(); let scale = m.scale_factor();
         let name = m.name().unwrap_or_else(|| format!("Monitor {}", index + 1));
+        let is_primary = primary_name.as_deref() == Some(name.as_str());
         json!({
-            "index": index, "name": name, "isPrimary": primary_name.as_deref() == Some(name.as_str()),
+            "index": index, "name": name, "isPrimary": is_primary,
             "x": pos.x, "y": pos.y, "physicalWidth": size.width, "physicalHeight": size.height,
             "logicalWidth": ((size.width as f64) / scale).round() as u32,
             "logicalHeight": ((size.height as f64) / scale).round() as u32,
