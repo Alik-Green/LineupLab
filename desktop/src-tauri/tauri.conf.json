@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "LineupLab",
+  "version": "0.1.0",
+  "identifier": "app.lineuplab.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      { "label": "main", "title": "LineupLab", "width": 1280, "height": 820, "minWidth": 900, "minHeight": 600 },
+      { "label": "overlay", "url": "index.html#overlay", "title": "LineupLab Overlay", "width": 420, "height": 320, "transparent": true, "decorations": false, "alwaysOnTop": true, "skipTaskbar": true, "focus": false, "visible": false, "resizable": false, "shadow": false }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob: https://media.valorant-api.com; style-src 'self' 'unsafe-inline'; media-src 'self' asset: http://asset.localhost blob:; connect-src 'self' ipc: http://ipc.localhost https://valorant-api.com https://media.valorant-api.com",
+      "assetProtocol": { "enable": true, "scope": ["$APPDATA/**", "$APPCONFIG/**", "$RESOURCE/**"] }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/icon.ico", "icons/icon.png"],
+    "windows": { "webviewInstallMode": { "type": "embedBootstrapper" } }
+  }
+}

@@ -35,3 +35,8 @@ Entries are updated only after commands actually run. Platform-specific checks a
 - Portable Alt-hotkey registry with normalization, conflict detection, rebind feedback and mock provider; shared UI Settings records new combos and rejects conflicts.
 - Fast capture pipeline (1600 px / quality 85 / WebP+thumbnail / <150 ms target reporting) and overlay state machine (click-through default, corners/monitor/margins/size/opacity, Create checklist, View flipping) with Linux tests.
 - Verified: Rust suite 24 tests, UI suite 13 tests, typecheck and desktop/mobile builds. Windows global registration/window affinity remain shell adapters (`desktop/src-tauri`), isolated from core and uncompiled on Linux.
+
+## 2026-11-07 · Milestone 5 complete (Tauri desktop shell, CI-verified path)
+- Tauri 2 desktop shell: config/capabilities/NSIS bundle, synthetic icons, AppState (SQLite/media/device id), commands for library/catalog/modes/media/capture/import/export/hotkeys/overlay, global-shortcut plugin wiring, overlay window (transparent/frameless/non-focusable/always-on-top, click-through, WDA_EXCLUDEFROMCAPTURE gate), shared-UI DTO conversion preserving extensions.
+- Shared UI overlay route (`#overlay`) with Create checklist and View image/steps/notes flipping; Editor listens for desktop hotkey events.
+- Verified locally: UI typecheck/tests/builds and core suite. Desktop shell compile attempted: offline vendor lacks `tauri`; online check blocked by crates.io TLS egress. Windows/Ubuntu CI is authoritative; no Windows binary claimed yet.

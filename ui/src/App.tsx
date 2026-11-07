@@ -4,6 +4,7 @@ import { createAdapter } from './lib/adapter';
 import { Browse } from './components/Browse';
 import { Editor } from './components/Editor';
 import { DesktopSettings } from './components/DesktopSettings';
+import { OverlayView } from './components/OverlayView';
 
 type Page = 'browse' | 'editor' | 'import' | 'settings';
 export function App({ platform }: { platform: 'desktop' | 'mobile' }) {
@@ -13,6 +14,7 @@ export function App({ platform }: { platform: 'desktop' | 'mobile' }) {
   const refresh = useCallback(async () => { try { const [ls, cat, ms] = await Promise.all([adapter.listLineups(), adapter.catalog(), adapter.modes()]); setLineups(ls); setCatalog(cat); setModes(ms); setError(''); } catch (e) { setError(String(e)); } }, [adapter]);
   useEffect(() => { void refresh(); }, [refresh]);
   const browseOnly = platform === 'mobile';
+  if (typeof window !== 'undefined' && (window.location.hash === '#overlay' || new URLSearchParams(window.location.search).has('overlay'))) return <OverlayView adapter={adapter} />;
   const openEditor = (id?: string | null) => { setEditId(id ?? null); setPage('editor'); };
   return <main className="min-h-screen bg-slate-950 text-slate-100">
     <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 px-4 py-3 backdrop-blur">

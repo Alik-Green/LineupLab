@@ -1,5 +1,5 @@
 //! Small, isolated Win32 adapter. No process memory, hooks, DLL injection or game handles.
-use crate::{CaptureProvider, Error, Result};
+use lineuplab_core::{capture::CaptureProvider, Error, Result};
 use windows_sys::Win32::Foundation::{LPARAM, RECT, BOOL, POINT};
 use windows_sys::Win32::Graphics::Gdi::{MonitorFromWindow, MONITOR_DEFAULTTONEAREST};
 use windows_sys::Win32::UI::WindowsAndMessaging::{EnumWindows, GetWindowTextW, GetWindowRect};

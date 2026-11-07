@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core';
+import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import type { AbilityMode, CaptureResult, CaptureSettings, Catalog, HotkeyBinding, HotkeyFeedback, ImportPreview, ImportReport, LibraryAdapter, Lineup, OverlaySettings, SlotData, SlotId } from '../types';
 import { DEFAULT_HOTKEYS, rebindLocal } from './hotkeys';
 import { clampOverlay, DEFAULT_OVERLAY } from './overlay';
@@ -7,7 +7,7 @@ import { SLOT_ORDER } from '../types';
 export const emptySlot = (): SlotData => ({ image: null, circles: [], lines: [] });
 export function newLineup(deviceId = 'browser'): Lineup {
   const now = new Date().toISOString();
-  return { id: crypto.randomUUID(), mapUuid: '', agentUuid: '', abilitySlot: 'Grenade', mode: 'standard', side: 'both', site: '', difficulty: 'medium', throwType: 'normal', title: '', notes: '', tags: [], author: '', source: 'local', isFavorite: false, createdAt: now, updatedAt: now, deleted: false, deviceId, revision: 1, importBatchId: null, stand1Pos: null, aim1Pos: null, stand2Pos: null, aim2Pos: null, landPos: null, bounces: [], slots: Object.fromEntries(SLOT_ORDER.map(s => [s, emptySlot()])) as Record<SlotId, SlotData>, throws: [], attributes: {}, steps: [], videoClip: null, videoThumbnail: null, legacy: {}, draft: false };
+  return { id: crypto.randomUUID(), mapUuid: '', agentUuid: '', abilitySlot: 'Grenade', mode: 'standard', side: 'both', site: '', difficulty: 'medium', throwType: 'normal', title: '', notes: '', tags: [], author: '', source: 'local', isFavorite: false, createdAt: now, updatedAt: now, deleted: false, deviceId, revision: 1, importBatchId: null, stand1Pos: null, aim1Pos: null, stand2Pos: null, aim2Pos: null, landPos: null, bounces: [], slots: Object.fromEntries(SLOT_ORDER.map(s => [s, emptySlot()])) as Record<SlotId, SlotData>, throws: [], attributes: {}, steps: [], videoClip: null, videoThumbnail: null, legacy: {}, extensions: {}, draft: false };
 }
 const svg = (label: string, a: string, b: string) => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900"><defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="1600" height="900" fill="url(#g)"/><path d="M0 650 L400 420 L820 560 L1240 300 L1600 480 V900 H0Z" fill="#0f172a" opacity=".45"/><circle cx="1180" cy="270" r="46" fill="#f8fafc" opacity=".8"/><text x="60" y="110" font-family="sans-serif" font-size="64" fill="#f8fafc">${label}</text><text x="60" y="170" font-family="sans-serif" font-size="28" fill="#cbd5e1">Synthetic placeholder — not Riot art</text></svg>`)}`;
 const DEMO_IMAGES: Record<string, string> = { 'demo-stand': svg('Stand position', '#164e63', '#0f172a'), 'demo-aim': svg('Aim reference', '#3b0764', '#0f172a'), 'demo-land': svg('Landing preview', '#14532d', '#0f172a'), 'demo-map': svg('Synthetic minimap', '#1e293b', '#0f172a') };
@@ -60,7 +60,7 @@ export class TauriAdapter implements LibraryAdapter {
   setFavorite(id: string, value: boolean) { return invoke<void>('set_favorite', { id, value }); }
   catalog() { return invoke<Catalog>('get_catalog'); }
   modes() { return invoke<AbilityMode[]>('get_modes'); }
-  mediaUrl(hash: string) { return invoke<string>('media_url', { hash }); }
+  async mediaUrl(hash: string) { const path = await invoke<string>('media_path', { hash }); return convertFileSrc(path); }
   async putImage(bytes: Uint8Array, mime: string) { return invoke<string>('put_image', { bytes: Array.from(bytes), mime }); }
   captureMonitor(monitor?: number) { return invoke<CaptureResult>('capture_monitor', { monitor }); }
   importPreview(bytes: Uint8Array) { return invoke<ImportPreview>('import_preview', { bytes: Array.from(bytes) }); }

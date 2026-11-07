@@ -24,7 +24,7 @@ export interface Lineup {
   createdAt: string; updatedAt: string; deleted: boolean; deviceId: string; revision: number; importBatchId?: string | null;
   stand1Pos?: Point | null; aim1Pos?: Point | null; stand2Pos?: Point | null; aim2Pos?: Point | null; landPos?: Point | null;
   bounces: Point[]; slots: Record<SlotId, SlotData>; throws: ThrowSpec[]; attributes: Record<string, unknown>; steps: Step[];
-  videoClip?: string | null; videoThumbnail?: string | null; legacy: Record<string, unknown>; draft?: boolean;
+  videoClip?: string | null; videoThumbnail?: string | null; legacy: Record<string, unknown>; extensions?: Record<string, unknown>; draft?: boolean;
 }
 export interface AbilityMode { id: string; label: string; requiredSlots: SlotId[]; optionalSlots?: SlotId[]; attributes: Record<string, { type: string; default?: unknown; min?: number; max?: number; options?: unknown[] }>; }
 export interface Agent { uuid: string; displayName: string; displayIcon: string; role?: string; isArchived?: boolean }
