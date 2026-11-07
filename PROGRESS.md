@@ -72,3 +72,7 @@ Entries are updated only after commands actually run. Platform-specific checks a
 ## 2026-11-07 · UI redesign M2 complete (tokens, components, shell)
 - Added design tokens, self-hosted fonts, component library (Button/IconButton/Chip/Segmented/IconPicker/Card/Modal/Drawer/Toast/Tooltip/Tabs/Stepper/Kbd/Skeleton/EmptyState/Slider/Toggle/fields), global shell with data/sync status and native window controls, Android bottom nav scaffold.
 - Verified: typecheck, 15 UI tests, desktop/mobile builds. Screen-by-screen visual review continues in M3–M8.
+
+## 2026-11-07 · UI redesign M3 complete (Browse)
+- Rewrote Browse: resizable map/agent/ability selectors (role chips, search, pinned agents), lineup-able ability filtering, large pan/zoom minimap with ability-icon markers/bounce pins/site labels/hover preview/legend/toolbar/empty state, filter popover with active count + reset, virtualized card grid with sort/density/+New, quick actions, and detail drawer (slot rail, arrow-key nav, zoom, download, mini minimap, steps/notes/tags, edit/duplicate/delete/favorite, video).
+- Verified: typecheck, 15 UI tests, desktop/mobile builds, Playwright browse populated/filtered/drawer/empty + 1100/1920 overflow checks + image self-test (5 e2e passed). Screenshots `docs/screenshots/10–13`.

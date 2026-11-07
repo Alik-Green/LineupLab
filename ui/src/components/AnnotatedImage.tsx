@@ -7,12 +7,12 @@ export type AnnotationTool = 'select' | 'circle' | 'lens' | 'line';
 export interface AnnotatedImageProps {
   src: string; slot?: SlotData; editable?: boolean; tool?: AnnotationTool; color?: string; snapping?: boolean;
   selectedId?: string | null; onSelect?(id: string | null): void;
-  onChange?(slot: SlotData): void; className?: string; alt?: string;
+  onChange?(slot: SlotData): void; className?: string; alt?: string; hideLens?: boolean;
 }
 interface DragState { kind: 'circle' | 'lens' | 'line-point'; id: string; index?: number; start: Point; origin: Point }
 
 /** Non-destructive annotation renderer shared by browse, editor and overlay. */
-export function AnnotatedImage({ src, slot, editable = false, tool = 'select', color = 'cyan', snapping = false, selectedId, onSelect, onChange, className = '', alt = '' }: AnnotatedImageProps) {
+export function AnnotatedImage({ src, slot, editable = false, tool = 'select', color = 'cyan', snapping = false, selectedId, onSelect, onChange, className = '', alt = '', hideLens = false }: AnnotatedImageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 1600, h: 900 });
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -53,7 +53,7 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
       <ValImage src={src} alt={alt} kind="media" className="block w-full" imgClassName="block h-auto w-full" onLoad={img => setSize({ w: img.naturalWidth || 1600, h: img.naturalHeight || 900 })} />
       <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
         <defs>
-          {circles.filter(c => c.showZoom).map(c => { const lc = clampLens(c, w, h); return <clipPath key={c.id} id={`${clipId}-${c.id}`}><rect x={lc.zoomX * w} y={lc.zoomY * h} width={lc.zoomSize * w} height={lc.zoomSize * w} /></clipPath>; })}
+          {circles.filter(c => c.showZoom && !hideLens).map(c => { const lc = clampLens(c, w, h); return <clipPath key={c.id} id={`${clipId}-${c.id}`}><rect x={lc.zoomX * w} y={lc.zoomY * h} width={lc.zoomSize * w} height={lc.zoomSize * w} /></clipPath>; })}
         </defs>
         {lines.map(l => <g key={l.id}>
           <polyline points={l.points.map(p => `${p.x * w},${p.y * h}`).join(' ')} fill="none" stroke={l.color} strokeWidth={l.width * w} strokeDasharray={dashArray(l, w)} strokeLinecap="round" strokeLinejoin="round" />
@@ -66,7 +66,7 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
           <circle cx={c.x * w} cy={c.y * h} r={c.radius * w} fill="none" stroke={c.color} strokeWidth={Math.max(2, w * 0.0025)} />
           {selectedId === c.id && editable && <circle cx={c.x * w} cy={c.y * h} r={c.radius * w + 6} fill="none" stroke="white" strokeDasharray="6 4" strokeWidth={1.5} />}
         </g>)}
-        {circles.filter(c => c.showZoom).map(c => { const lc = clampLens(c, w, h); const srcCrop = lensSource(lc, w, h); const lx = lc.zoomX * w, ly = lc.zoomY * h, ls = lc.zoomSize * w; const scale = lc.zoomScale;
+        {circles.filter(c => c.showZoom && !hideLens).map(c => { const lc = clampLens(c, w, h); const srcCrop = lensSource(lc, w, h); const lx = lc.zoomX * w, ly = lc.zoomY * h, ls = lc.zoomSize * w; const scale = lc.zoomScale;
           return <g key={`lens-${c.id}`} clipPath={`url(#${clipId}-${c.id})`}>
             <rect x={lx} y={ly} width={ls} height={ls} fill="#0f172a" />
             <image href={imageSrc} x={lx - srcCrop.x * w * scale} y={ly - srcCrop.y * h * scale} width={w * scale} height={h * scale} preserveAspectRatio="none" />
@@ -76,7 +76,7 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
       </svg>
       {editable && <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" onPointerDown={e => { if (tool === 'select') onSelect?.(null); }} style={{ pointerEvents: 'none' }}>
         {circles.map(c => <circle key={c.id} cx={c.x * w} cy={c.y * h} r={Math.max(c.radius * w, 14)} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'circle', c.id, { x: c.x, y: c.y })} />)}
-        {circles.filter(c => c.showZoom).map(c => { const lc = clampLens(c, w, h); return <rect key={`hit-${c.id}`} x={lc.zoomX * w} y={lc.zoomY * h} width={lc.zoomSize * w} height={lc.zoomSize * w} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'lens', c.id, { x: lc.zoomX, y: lc.zoomY })} />; })}
+        {circles.filter(c => c.showZoom && !hideLens).map(c => { const lc = clampLens(c, w, h); return <rect key={`hit-${c.id}`} x={lc.zoomX * w} y={lc.zoomY * h} width={lc.zoomSize * w} height={lc.zoomSize * w} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'lens', c.id, { x: lc.zoomX, y: lc.zoomY })} />; })}
         {lines.flatMap(l => l.points.map((p, i) => <circle key={`${l.id}-${i}`} cx={p.x * w} cy={p.y * h} r={10} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'line-point', l.id, p, i)} />))}
       </svg>}
       {editable && tool === 'line' && pendingLine.length > 0 && <button className="absolute bottom-2 right-2 rounded bg-cyan-500 px-2 py-1 text-xs font-semibold text-slate-950" onClick={finishLine}>Finish line ({pendingLine.length})</button>}

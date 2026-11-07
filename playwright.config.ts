@@ -11,5 +11,5 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     launchOptions: { executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--no-sandbox', '--disable-dev-shm-usage'] },
   },
-  projects: [{ name: 'desktop', use: { viewport: { width: 1440, height: 900 } } }, { name: 'android', use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, baseURL: process.env.MOBILE_BASE_URL ?? 'http://127.0.0.1:5174' } }],
+  projects: [{ name: 'desktop', testIgnore: /android-.*\.spec\.ts/, use: { viewport: { width: 1440, height: 900 } } }, { name: 'android', testMatch: /android-.*\.spec\.ts/, use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, baseURL: process.env.MOBILE_BASE_URL ?? 'http://127.0.0.1:5174' } }],
 });
