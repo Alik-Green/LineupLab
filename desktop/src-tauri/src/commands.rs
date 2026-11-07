@@ -42,11 +42,15 @@ pub fn from_ui(v: Value) -> Result<Lineup, String> {
 #[tauri::command] pub fn duplicate_lineup(state: State<AppState>, id: String) -> CmdResult<Value> { let mut db = state.db.lock().unwrap(); let mut l = db.get(&id).map_err(err)?.ok_or_else(|| "Not found".to_string())?; l.id = uuid::Uuid::new_v4().to_string(); l.title = format!("{} (copy)", l.title); l.created_at = lineuplab_core::now(); l.updated_at = l.created_at.clone(); l.revision = 0; l.import_batch_id = None; db.save_edited(&mut l, &state.device_id).map_err(err)?; Ok(to_ui(&l)) }
 #[tauri::command] pub fn set_favorite(state: State<AppState>, id: String, value: bool) -> CmdResult<()> { state.db.lock().unwrap().favorite(&id, value, &state.device_id).map_err(err)?; Ok(()) }
 
-fn icon_url(app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantApi, url: Option<&str>) -> Value {
-    match url { Some(u) => { if let Ok(p) = api.image_path(u) { if p.exists() { if let Ok(asset) = app.path().convert_file_src(&p) { return json!(asset.to_string()); } } } json!(u) }, None => Value::Null }
+fn icon_url(_app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantApi, url: Option<&str>) -> Value {
+    // Return the cached absolute path; the UI converts it with Tauri convertFileSrc via media_path.
+    match url { Some(u) => { if let Ok(p) = api.image_path(u) { if p.exists() { return json!(p.to_string_lossy()); } } json!(u) }, None => Value::Null }
 }
 #[tauri::command] pub async fn get_catalog(app: tauri::AppHandle) -> CmdResult<Value> {
-    let (lineups, api) = { let state = app.state::<AppState>(); (state.db.lock().unwrap().all(false).map_err(err)?, state.api.clone()) };
+    let state = app.state::<AppState>();
+    let lineups = state.db.lock().unwrap().all(false).map_err(err)?;
+    let api = state.api.clone();
+    drop(state);
     let mut c = api.refresh(false).await.map_err(err)?;
     c.archive_missing(&lineups);
     let agents: Vec<Value> = c.agents.iter().map(|a| json!({"uuid":a.uuid,"displayName":a.display_name,"displayIcon":icon_url(&app,&api,a.display_icon.as_deref()),"role":Value::Null,"isArchived":a.archived})).collect();
@@ -63,7 +67,11 @@ fn icon_url(app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantApi, 
     }
     Ok(out)
 }
-#[tauri::command] pub fn media_path(state: State<AppState>, hash: String) -> CmdResult<String> { Ok(state.store.path(&hash).map_err(err)?.to_string_lossy().into_owned()) }
+#[tauri::command] pub fn media_path(state: State<AppState>, hash: String) -> CmdResult<String> {
+    let p = std::path::Path::new(&hash);
+    if p.is_absolute() && p.starts_with(&state.data_dir) && p.exists() { return Ok(p.to_string_lossy().into_owned()); }
+    Ok(state.store.path(&hash).map_err(err)?.to_string_lossy().into_owned())
+}
 #[tauri::command] pub fn put_image(state: State<AppState>, bytes: Vec<u8>, mime: String) -> CmdResult<String> { if !mime.starts_with("image/") { return Err("Only image uploads are accepted here".into()); } state.store.put(&bytes).map_err(err) }
 #[tauri::command] pub fn capture_monitor(state: State<AppState>, _monitor: Option<u32>) -> CmdResult<capture::CaptureOutcome> {
     if state.capture_blocked.load(std::sync::atomic::Ordering::SeqCst) { return Err("Capture blocked: overlay could not be excluded from capture (Windows 10 2004+ required).".into()); }
@@ -96,7 +104,7 @@ pub fn register_hotkeys(app: &tauri::AppHandle, cfg: &HotkeyConfig) {
     let _ = gs.unregister_all();
     for b in &cfg.bindings { if let Ok(s) = b.keys.parse::<tauri_plugin_global_shortcut::Shortcut>() { if let Err(e) = gs.register(s) { tracing::warn!(error=%e, keys=%b.keys, "Hotkey registration failed"); } } }
 }
-#[tauri::command] pub fn get_hotkeys(state: State<AppState>) -> CmdResult<Vec<Value>> { Ok(serde_json::to_value(&state.hotkeys.lock().unwrap().bindings).map_err(err)?) }
+#[tauri::command] pub fn get_hotkeys(state: State<AppState>) -> CmdResult<Vec<Value>> { Ok(state.hotkeys.lock().unwrap().bindings.iter().map(|b| json!(b)).collect()) }
 #[tauri::command] pub fn rebind_hotkey(app: tauri::AppHandle, state: State<AppState>, action: String, keys: String) -> CmdResult<HotkeyFeedback> {
     let mut cfg = state.hotkeys.lock().unwrap(); let feedback = cfg.rebind(&action, &keys);
     if feedback.is_ok() { let _ = std::fs::write(state.data_dir.join("hotkeys.json"), serde_json::to_vec_pretty(&*cfg).unwrap()); register_hotkeys(&app, &cfg); let _ = app.emit("lineuplab://hotkeys-changed", &cfg.bindings); }
@@ -136,9 +144,12 @@ fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
 
 // ---- LAN sync (opt-in) ----
 #[tauri::command] pub async fn start_sync_server(app: tauri::AppHandle, name: Option<String>) -> CmdResult<Value> {
-    let config = { let state = app.state::<AppState>();
+    let config = {
+        let state = app.state::<AppState>();
         if let Some(h) = state.sync_server.lock().unwrap().as_ref() { return Ok(json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code})); }
-        lineuplab_core::server::ServerConfig { data_dir: state.data_dir.clone(), name: name.unwrap_or_else(|| "LineupLab Desktop".into()), ..Default::default() }
+        let data_dir = state.data_dir.clone();
+        drop(state);
+        lineuplab_core::server::ServerConfig { data_dir, name: name.unwrap_or_else(|| "LineupLab Desktop".into()), ..Default::default() }
     };
     let h = lineuplab_core::server::spawn(config).await.map_err(err)?;
     let out = json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code});
@@ -148,7 +159,9 @@ fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
 #[tauri::command] pub fn get_sync_server_status(state: State<AppState>) -> CmdResult<Value> { let g = state.sync_server.lock().unwrap(); Ok(match g.as_ref() { Some(h) => json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code}), None => json!({"running":false}) }) }
 #[tauri::command] pub async fn pair_sync(base_url: String, code: String, device_name: String) -> CmdResult<Value> { let p = lineuplab_core::sync::SyncClient::pair(&base_url, &code, &device_name).await.map_err(err)?; Ok(serde_json::to_value(p).map_err(err)?) }
 #[tauri::command] pub async fn sync_now(app: tauri::AppHandle, base_url: String, token: String) -> CmdResult<Value> {
-    let (data_dir, store, device_id) = { let state = app.state::<AppState>(); (state.data_dir.clone(), state.store.clone(), state.device_id.clone()) };
+    let state = app.state::<AppState>();
+    let data_dir = state.data_dir.clone(); let store = state.store.clone(); let device_id = state.device_id.clone();
+    drop(state);
     let client = lineuplab_core::sync::SyncClient::new(base_url, token);
     let mut db = lineuplab_core::db::Database::open(data_dir.join("lineuplab.sqlite3")).map_err(err)?;
     let report = lineuplab_core::sync::sync_both(&client, &mut db, &store, &device_id, None).await.map_err(err)?;

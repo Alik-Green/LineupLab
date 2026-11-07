@@ -1,13 +1,14 @@
 //! Small, isolated Win32 adapter. No process memory, hooks, DLL injection or game handles.
 use lineuplab_core::{capture::CaptureProvider, Error, Result};
-use windows_sys::Win32::Foundation::{LPARAM, RECT, BOOL, POINT};
+use windows_sys::core::BOOL;
+use windows_sys::Win32::Foundation::{LPARAM, RECT};
 use windows_sys::Win32::Graphics::Gdi::{MonitorFromWindow, MONITOR_DEFAULTTONEAREST};
 use windows_sys::Win32::UI::WindowsAndMessaging::{EnumWindows, GetWindowTextW, GetWindowRect};
 pub struct XcapCapture { monitor_index: usize }
 pub fn system_provider() -> Result<Box<dyn CaptureProvider>> {
     let center = find_valorant_monitor_center();
     let monitors = xcap::Monitor::all().map_err(|e| Error::Invalid(e.to_string()))?;
-    let index = center.and_then(|p| monitors.iter().position(|m| { let (x,y,w,h)=(m.x(),m.y(),m.width(),m.height()); p.0>=x && p.0<x+w as i32 && p.1>=y && p.1<y+h as i32 })).unwrap_or(0);
+    let index = center.and_then(|p| monitors.iter().position(|m| match (m.x(), m.y(), m.width(), m.height()) { (Ok(x), Ok(y), Ok(w), Ok(h)) => p.0 >= x && p.0 < x + w as i32 && p.1 >= y && p.1 < y + h as i32, _ => false })).unwrap_or(0);
     Ok(Box::new(XcapCapture { monitor_index:index }))
 }
 impl CaptureProvider for XcapCapture {
