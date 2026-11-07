@@ -83,8 +83,8 @@ jobs:
           printf 'APK candidates: %s\n' "${APKS[@]}" | while IFS= read -r line; do echo "::notice title=Release inventory::$line"; done
           if [ "${#EXES[@]}" -ne 1 ]; then echo "::error::Expected one Windows installer, found ${#EXES[@]}"; exit 1; fi
           if [ "${#APKS[@]}" -eq 1 ]; then APK="${APKS[0]}"; else
-            mapfile -t UNIVERSAL < <(printf '%s\n' "${APKS[@]}" | grep -E 'universal.*release.*\.apk$' | grep -v unsigned || true)
-            if [ "${#UNIVERSAL[@]}" -ne 1 ]; then echo "::error::Expected one signed universal release APK, found ${#UNIVERSAL[@]} of ${#APKS[@]} APKs"; exit 1; fi
+            mapfile -t UNIVERSAL < <(printf '%s\n' "${APKS[@]}" | grep -E 'universal.*release.*\.apk$' || true)
+            if [ "${#UNIVERSAL[@]}" -ne 1 ]; then echo "::error::Expected one universal release APK, found ${#UNIVERSAL[@]} of ${#APKS[@]} APKs"; exit 1; fi
             APK="${UNIVERSAL[0]}"
           fi
           python3 - "${EXES[0]}" "$APK" <<'PY'
@@ -115,10 +115,28 @@ jobs:
             APKSIGNER=/usr/local/lib/android/sdk/build-tools/34.0.0/apksigner
             AAPT=/usr/local/lib/android/sdk/build-tools/34.0.0/aapt
           fi
+          "$AAPT" dump badging "$APK" > apk-badging.txt
+          grep -E "^package:|^sdkVersion:|^targetSdkVersion:|^native-code:" apk-badging.txt
+          grep -q "package: name='app.lineuplab.companion'" apk-badging.txt
+          grep -q "sdkVersion:'26'" apk-badging.txt
+          echo ci-provided > apk-signing-mode.txt
+          if [[ "$APK" == *unsigned* ]]; then
+            # This preview has no production keystore. Create an ephemeral signing
+            # identity solely so the CI-built release APK can be sideloaded. Never
+            # upload the key; disclose the temporary identity in the release notes.
+            trap 'rm -f preview-keystore.p12' EXIT
+            STOREPASS=$(openssl rand -hex 32)
+            keytool -genkeypair -keystore preview-keystore.p12 -storetype PKCS12               -storepass "$STOREPASS" -keypass "$STOREPASS" -alias lineuplab-preview               -keyalg RSA -keysize 2048 -validity 365               -dname 'CN=LineupLab Preview (ephemeral CI key), O=LineupLab, C=GB'
+            ZIPALIGN=$(dirname "$AAPT")/zipalign
+            "$ZIPALIGN" -f -p 4 "$APK" aligned-preview.apk
+            "$APKSIGNER" sign --ks preview-keystore.p12 --ks-type PKCS12               --ks-pass "pass:$STOREPASS" --key-pass "pass:$STOREPASS"               --ks-key-alias lineuplab-preview --out signed-preview.apk aligned-preview.apk
+            rm -f preview-keystore.p12
+            APK=signed-preview.apk
+            echo ephemeral-preview > apk-signing-mode.txt
+          fi
           if ! "$APKSIGNER" verify --verbose --print-certs "$APK" > apk-signature.txt 2>&1; then cat apk-signature.txt; while IFS= read -r line; do echo "::error::APK signature: $line"; done < apk-signature.txt; exit 1; fi
           cat apk-signature.txt
           "$AAPT" dump badging "$APK" > apk-badging.txt
-          grep -E "^package:|^sdkVersion:|^targetSdkVersion:|^native-code:" apk-badging.txt
           VERSION=$(jq -r '.tag_name | ltrimstr("v")' <(gh release view "$TAG" --json tagName))
           cp "${EXES[0]}" "release-assets/LineupLab-${VERSION}-x64-setup.exe"
           cp "$APK" "release-assets/LineupLab-Companion-${VERSION}.apk"
@@ -147,7 +165,8 @@ jobs:
                           'versionName': package.group(2) if package else None,
                           'minSdk': sdk.group(1) if sdk else None,
                           'nativeCode': abis.group(1) if abis else None,
-                          'signature': signature.strip()},
+                          'signature': signature.strip(),
+                          'signingMode': pathlib.Path('apk-signing-mode.txt').read_text().strip()},
               'sourceRuns': {'windows': json.load(open('windows-source.json')),
                              'android': json.load(open('android-source.json'))},
           }
@@ -168,7 +187,9 @@ jobs:
               body += f"| `{f['name']}` | {f['bytes']:,} bytes | `{f['sha256']}` |\n"
           a = m['android']
           body += f"\nAndroid package: `{a['package']}`, version `{a['versionName']}`, minimum API {a['minSdk']}.\n"
-          body += f"APK signature verification passed. SHA-256 certificate fingerprint: see below.\n\n"
+          body += "APK signature verification passed. SHA-256 certificate fingerprint: see below.\n\n"
+          if a.get('signingMode') == 'ephemeral-preview':
+              body += "**Preview signing:** The CI APK was unsigned. The release job aligned and signed it with an ephemeral, self-signed preview certificate (not a production identity). The private key was discarded. A future preview signed with a different key may require uninstalling this preview first; re-pair and sync afterward.\n\n"
           fingerprints = [line.split(':', 1)[1].strip() for line in a['signature'].splitlines() if 'certificate SHA-256 digest' in line]
           for fp in fingerprints:
               body += f'- `{fp}`\n'
