@@ -163,7 +163,14 @@ impl HttpTransport for MockHttp {
         if url.ends_with("/maps") {
             return Ok(br#"{"data":[{"uuid":"abyss","displayName":"Abyss","displayIcon":"https://art.example/abyss.png","splash":null},{"uuid":"range","displayName":"The Range","displayIcon":"https://art.example/range.png","splash":null}]}"#.to_vec());
         }
-        Ok(b"cached image bytes".to_vec())
+        let mut bytes = Vec::new();
+        image::DynamicImage::new_rgba8(1, 1)
+            .write_to(
+                &mut std::io::Cursor::new(&mut bytes),
+                image::ImageFormat::Png,
+            )
+            .unwrap();
+        Ok(bytes)
     }
 }
 #[tokio::test]
@@ -191,11 +198,19 @@ async fn catalog_retries_caches_and_works_offline() {
     let c = api.refresh(false).await.unwrap();
     assert_eq!(c.maps.len(), 1);
     assert_eq!(http.calls.lock().unwrap().len(), calls + 1);
-    assert_eq!(
-        api.image_for_url(Some("https://art.example/abyss.png"))
-            .unwrap(),
-        b"cached image bytes"
-    );
+    assert!(api
+        .image_for_url(Some("https://art.example/abyss.png"))
+        .is_some());
+    let audit = api.audit_assets(&c).unwrap();
+    assert_eq!(audit.types["agent"].cached, 1, "{:?}", audit);
+    assert_eq!(audit.types["ability"].cached, 1);
+    assert_eq!(audit.types["minimap"].cached, 1);
+    assert_eq!(audit.errors.len(), 0);
+    let progress = Mutex::new(Vec::new());
+    api.refresh_with_progress(false, |p| progress.lock().unwrap().push(p))
+        .await
+        .unwrap();
+    assert_eq!(progress.lock().unwrap().last().unwrap().phase, "ready");
     struct Offline;
     #[async_trait::async_trait]
     impl HttpTransport for Offline {

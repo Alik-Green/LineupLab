@@ -19,12 +19,15 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob: https://media.valorant-api.com; style-src 'self' 'unsafe-inline'; media-src 'self' asset: http://asset.localhost blob:; connect-src 'self' ipc: http://ipc.localhost https://valorant-api.com https://media.valorant-api.com http://192.168.0.0/16 http://10.0.0.0/8",
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob: https://media.valorant-api.com https://valorant-api.com; style-src 'self' 'unsafe-inline'; media-src 'self' asset: http://asset.localhost blob:; connect-src 'self' ipc: http://ipc.localhost https://valorant-api.com https://media.valorant-api.com http://192.168.0.0/16 http://10.0.0.0/8",
       "assetProtocol": {
         "enable": true,
         "scope": [
           "$APPDATA/**",
-          "$APPCONFIG/**"
+          "$APPLOCALDATA/**",
+          "$APPCACHE/**",
+          "$APPCONFIG/**",
+          "$RESOURCE/**"
         ]
       }
     }

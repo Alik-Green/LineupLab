@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { AnnotationLine, FocusCircle, Point, SlotData } from '../types';
 import { clampLens, clampPoint, dashArray, lensSource, snapPoint } from '../lib/geometry';
+import { useCachedImage, ValImage } from '../lib/images';
 
 export type AnnotationTool = 'select' | 'circle' | 'lens' | 'line';
 export interface AnnotatedImageProps {
@@ -17,8 +18,10 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
   const [drag, setDrag] = useState<DragState | null>(null);
   const [pendingLine, setPendingLine] = useState<Point[]>([]);
   const clipId = useId().replace(/:/g, '');
+  const cached = useCachedImage(src, 'media');
+  const imageSrc = cached.src ?? src;
   const circles = slot?.circles ?? []; const lines = slot?.lines ?? [];
-  useEffect(() => { const img = new Image(); img.onload = () => setSize({ w: img.naturalWidth || 1600, h: img.naturalHeight || 900 }); img.src = src; }, [src]);
+  useEffect(() => { if (!imageSrc) return; const img = new Image(); img.onload = () => setSize({ w: img.naturalWidth || 1600, h: img.naturalHeight || 900 }); img.src = imageSrc; }, [imageSrc]);
   const pointFromEvent = (e: React.PointerEvent | React.MouseEvent): Point => {
     const r = ref.current!.getBoundingClientRect();
     return snapPoint({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }, snapping);
@@ -47,7 +50,7 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
   const { w, h } = size;
   return (
     <div ref={ref} className={`relative select-none overflow-hidden rounded-lg bg-slate-900 ${editable ? 'cursor-crosshair' : ''} ${className}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={() => setDrag(null)} onDoubleClick={finishLine} data-testid="annotated-image">
-      <img src={src} alt={alt} className="block h-auto w-full" draggable={false} />
+      <ValImage src={src} alt={alt} kind="media" className="block w-full" imgClassName="block h-auto w-full" onLoad={img => setSize({ w: img.naturalWidth || 1600, h: img.naturalHeight || 900 })} />
       <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
         <defs>
           {circles.filter(c => c.showZoom).map(c => { const lc = clampLens(c, w, h); return <clipPath key={c.id} id={`${clipId}-${c.id}`}><rect x={lc.zoomX * w} y={lc.zoomY * h} width={lc.zoomSize * w} height={lc.zoomSize * w} /></clipPath>; })}
@@ -66,7 +69,7 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
         {circles.filter(c => c.showZoom).map(c => { const lc = clampLens(c, w, h); const srcCrop = lensSource(lc, w, h); const lx = lc.zoomX * w, ly = lc.zoomY * h, ls = lc.zoomSize * w; const scale = lc.zoomScale;
           return <g key={`lens-${c.id}`} clipPath={`url(#${clipId}-${c.id})`}>
             <rect x={lx} y={ly} width={ls} height={ls} fill="#0f172a" />
-            <image href={src} x={lx - srcCrop.x * w * scale} y={ly - srcCrop.y * h * scale} width={w * scale} height={h * scale} preserveAspectRatio="none" />
+            <image href={imageSrc} x={lx - srcCrop.x * w * scale} y={ly - srcCrop.y * h * scale} width={w * scale} height={h * scale} preserveAspectRatio="none" />
             <circle cx={lx + (c.x - srcCrop.x) * w * scale} cy={ly + (c.y - srcCrop.y) * h * scale} r={c.radius * w * scale} fill="none" stroke={c.color} strokeWidth={Math.max(2, w * 0.0025 * scale)} />
             <rect x={lx} y={ly} width={ls} height={ls} fill="none" stroke={c.color} strokeWidth={Math.max(2, w * 0.002)} />
           </g>; })}

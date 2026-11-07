@@ -63,3 +63,8 @@ Entries are updated only after commands actually run. Platform-specific checks a
 - Assets: `LineupLab-0.1.0-preview.1-x64-setup.exe` (7,692,647 bytes), `LineupLab-Companion-0.1.0-preview.1.apk` (79,427,862 bytes), `SHA256SUMS.txt`.
 - Source builds: Windows CI run 42386769967 (`ebb75c7`); Android CI run 42388911819 (`81879e9`). Release packaging/verification run 42392314298 passed, including re-download and checksum/signature verification of the uploaded assets.
 - APK: `app.lineuplab.companion` 0.1.0, min API 26, universal ABIs; unsigned CI output aligned and signed with a disclosed ephemeral preview key. Windows installer unsigned. No real-device/runtime validation claimed.
+
+## 2026-11-07 · UI redesign M1 complete (image loading first)
+- Diagnosed raw catalog paths, incomplete ability/role/map DTOs, narrow asset scope and silent sequential downloads (`docs/IMAGE_LOADING.md`).
+- Added cache-first `ValImage`/`useCachedImage`, bounded concurrent asset downloader with progress events, first-run screen, Settings → Data cache size/re-download/self-test, native asset diagnostics and error logging on desktop + Android.
+- Verified: 28 Rust tests, 15 UI tests, typecheck/builds; Playwright mocked-Tauri self-test rendered 87/87 fixture catalog images with no broken images/CSP errors. Screenshots in `docs/screenshots/`. Real Windows/Android device verification still pending.

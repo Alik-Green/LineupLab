@@ -1,2 +1,10 @@
 @import "tailwindcss";
 @source "../";
+
+/* Step 0 image layer: reserved space, skeleton and explicit fallback (design tokens arrive in M2). */
+.val-image { position: relative; overflow: hidden; background: #151821; }
+.val-image > img { position: relative; z-index: 1; width: 100%; height: 100%; object-fit: cover; }
+.val-image-skeleton { position: absolute; inset: 0; background: linear-gradient(100deg, #151821 30%, #232838 50%, #151821 70%); background-size: 200% 100%; animation: ll-shimmer 1.4s ease infinite; }
+.val-image-fallback { display: flex; min-height: 40px; align-items: center; justify-content: center; gap: .4rem; background: #151821; color: #8b91a3; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+@keyframes ll-shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .val-image-skeleton { animation: none; } }

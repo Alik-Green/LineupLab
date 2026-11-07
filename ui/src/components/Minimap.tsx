@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import type { Lineup, Point } from '../types';
 import { clampPoint, snapPoint } from '../lib/geometry';
+import { ValImage } from '../lib/images';
 export function Minimap({ src, lineups, selectedId, onSelect, onHover, editablePins, onPinChange, className = '' }: { src?: string; lineups: Lineup[]; selectedId?: string | null; onSelect?(id: string): void; onHover?(id: string | null): void; editablePins?: Partial<Record<'stand1Pos' | 'aim1Pos' | 'stand2Pos' | 'aim2Pos' | 'landPos', Point | null>>; onPinChange?(key: string, p: Point): void; className?: string }) {
   const ref = useRef<HTMLDivElement>(null); const drag = useRef<string | null>(null);
   const pos = (e: React.PointerEvent) => { const r = ref.current!.getBoundingClientRect(); return snapPoint({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }, false); };

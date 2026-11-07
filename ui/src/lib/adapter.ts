@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
-import type { AbilityMode, CaptureResult, CaptureSettings, Catalog, DiscoveredServer, HotkeyBinding, HotkeyFeedback, ImportPreview, ImportReport, LibraryAdapter, Lineup, OverlaySettings, SlotData, SlotId, SyncPairResponse, SyncReport, SyncServerStatus } from '../types';
+import type { AbilityMode, AssetDiagnostics, CaptureResult, CaptureSettings, Catalog, DiscoveredServer, HotkeyBinding, HotkeyFeedback, ImportPreview, ImportReport, LibraryAdapter, Lineup, OverlaySettings, SlotData, SlotId, SyncPairResponse, SyncReport, SyncServerStatus } from '../types';
 import { DEFAULT_HOTKEYS, rebindLocal } from './hotkeys';
 import { clampOverlay, DEFAULT_OVERLAY } from './overlay';
 import { SLOT_ORDER } from '../types';
@@ -34,7 +34,11 @@ export class BrowserAdapter implements LibraryAdapter {
   async deleteLineup(id: string) { const all = this.load().map(l => l.id === id ? { ...l, deleted: true, updatedAt: new Date().toISOString(), revision: l.revision + 1 } : l); this.persist(all); }
   async duplicateLineup(id: string) { const l = await this.getLineup(id); if (!l) throw new Error('Not found'); const copy = { ...structuredClone(l), id: crypto.randomUUID(), title: `${l.title} (copy)`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), revision: 1, importBatchId: null }; const all = this.load(); all.push(copy); this.persist(all); return copy; }
   async setFavorite(id: string, value: boolean) { const l = await this.getLineup(id); if (l) await this.saveLineup({ ...l, isFavorite: value }); }
-  async catalog(): Promise<Catalog> { return { version: 'demo', updatedAt: new Date().toISOString(), agents: [{ uuid: 'demo-sova', displayName: 'Sova (demo)', displayIcon: '' }, { uuid: 'demo-jett', displayName: 'Jett (demo)', displayIcon: '' }], maps: [{ uuid: 'demo-map', displayName: 'Synthetic map', displayIcon: DEMO_IMAGES['demo-map'] }] }; }
+  async catalog(): Promise<Catalog> { return { version: 'demo', updatedAt: new Date().toISOString(), agents: [{ uuid: 'demo-sova', displayName: 'Sova (demo)', displayIcon: '', role: 'Initiator', abilities: [{ slot: 'Grenade', displayName: 'Recon Bolt', displayIcon: '' }, { slot: 'Ability1', displayName: 'Shock Bolt', displayIcon: '' }] }, { uuid: 'demo-jett', displayName: 'Jett (demo)', displayIcon: '', role: 'Duelist', abilities: [{ slot: 'Grenade', displayName: 'Cloudburst', displayIcon: '' }] }], maps: [{ uuid: 'demo-map', displayName: 'Synthetic map', displayIcon: DEMO_IMAGES['demo-map'], listViewIcon: DEMO_IMAGES['demo-map'] }] }; }
+  async prepareAssets(_force: boolean) { return this.catalog(); }
+  async resolveImageUrl(url: string) { return url; }
+  async assetDiagnostics(): Promise<AssetDiagnostics> { return { audit: { version: 'demo', cacheBytes: 0, types: {}, errors: [] }, dataDir: 'browser localStorage', cacheDir: 'browser', assetProtocol: { enabled: false, scope: [] }, platform: 'browser' }; }
+  async reportImageError(url: string, message: string) { console.warn('[LineupLab image]', url, message); }
   async modes() { return DEMO_MODES; }
   async mediaUrl(hash: string) { return this.images.get(hash) ?? hash; }
   async putImage(bytes: Uint8Array, mime: string) { const hash = `img-${await sha256(bytes)}`; let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b)); this.images.set(hash, `data:${mime};base64,${btoa(bin)}`); return hash; }
@@ -65,6 +69,10 @@ export class TauriAdapter implements LibraryAdapter {
   duplicateLineup(id: string) { return invoke<Lineup>('duplicate_lineup', { id }); }
   setFavorite(id: string, value: boolean) { return invoke<void>('set_favorite', { id, value }); }
   catalog() { return invoke<Catalog>('get_catalog'); }
+  prepareAssets(force: boolean) { return invoke<Catalog>('prepare_assets', { force }); }
+  async resolveImageUrl(url: string) { const path = await invoke<string>('catalog_image_url', { url }); return /^(https?:|data:|blob:|asset:)/.test(path) ? path : convertFileSrc(path); }
+  assetDiagnostics() { return invoke<AssetDiagnostics>('asset_diagnostics'); }
+  reportImageError(url: string, message: string) { return invoke<void>('log_image_error', { url, message }); }
   modes() { return invoke<AbilityMode[]>('get_modes'); }
   async mediaUrl(hash: string) { const path = await invoke<string>('media_path', { hash }); return convertFileSrc(path); }
   async putImage(bytes: Uint8Array, mime: string) { return invoke<string>('put_image', { bytes: Array.from(bytes), mime }); }

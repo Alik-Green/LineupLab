@@ -42,21 +42,57 @@ pub fn from_ui(v: Value) -> Result<Lineup, String> {
 #[tauri::command] pub fn duplicate_lineup(state: State<AppState>, id: String) -> CmdResult<Value> { let mut db = state.db.lock().unwrap(); let mut l = db.get(&id).map_err(err)?.ok_or_else(|| "Not found".to_string())?; l.id = uuid::Uuid::new_v4().to_string(); l.title = format!("{} (copy)", l.title); l.created_at = lineuplab_core::now(); l.updated_at = l.created_at.clone(); l.revision = 0; l.import_batch_id = None; db.save_edited(&mut l, &state.device_id).map_err(err)?; Ok(to_ui(&l)) }
 #[tauri::command] pub fn set_favorite(state: State<AppState>, id: String, value: bool) -> CmdResult<()> { state.db.lock().unwrap().favorite(&id, value, &state.device_id).map_err(err)?; Ok(()) }
 
-fn icon_url(_app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantApi, url: Option<&str>) -> Value {
-    // Return the cached absolute path; the UI converts it with Tauri convertFileSrc via media_path.
-    match url { Some(u) => { if let Ok(p) = api.image_path(u) { if p.exists() { return json!(p.to_string_lossy()); } } json!(u) }, None => Value::Null }
+fn remote_or_cached(_api: &lineuplab_core::catalog::ValorantApi, url: Option<&str>) -> Value {
+    // Catalog DTOs keep stable remote URLs. The shared image layer asks
+    // catalog_image_url for a cache hit and converts absolute paths itself.
+    match url { Some(u) => json!(u), None => Value::Null }
+}
+fn catalog_json(app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::catalog::Catalog, lineups: &[Lineup]) -> Value {
+    let mut c = c.clone(); c.archive_missing(lineups);
+    let agents: Vec<Value> = c.agents.iter().map(|a| json!({
+        "uuid": a.uuid, "displayName": a.display_name,
+        "displayIcon": remote_or_cached(api, a.display_icon.as_deref()),
+        "role": a.role.as_ref().map(|r| r.display_name.clone()),
+        "roleIcon": a.role.as_ref().and_then(|r| remote_or_cached(api, r.display_icon.as_deref())),
+        "isArchived": a.archived,
+        "abilities": a.abilities.iter().map(|b| json!({"slot": b.slot, "displayName": b.display_name, "displayIcon": remote_or_cached(api, b.display_icon.as_deref()), "description": b.description})).collect::<Vec<_>>()
+    })).collect();
+    let maps: Vec<Value> = c.maps.iter().map(|m| json!({
+        "uuid": m.uuid, "displayName": m.display_name,
+        "displayIcon": remote_or_cached(api, m.display_icon.as_deref()),
+        "listViewIcon": remote_or_cached(api, m.list_view_icon.as_deref()),
+        "splash": remote_or_cached(api, m.splash.as_deref()),
+        "isArchived": m.archived
+    })).collect();
+    json!({"agents": agents, "maps": maps, "version": c.version, "updatedAt": c.last_updated.clone().unwrap_or_else(lineuplab_core::now), "stale": c.offline, "warning": c.warning, "dataDir": app.state::<AppState>().data_dir.to_string_lossy()})
 }
 #[tauri::command] pub async fn get_catalog(app: tauri::AppHandle) -> CmdResult<Value> {
     let state = app.state::<AppState>();
     let lineups = state.db.lock().unwrap().all(false).map_err(err)?;
-    let api = state.api.clone();
-    drop(state);
-    let mut c = api.refresh(false).await.map_err(err)?;
-    c.archive_missing(&lineups);
-    let agents: Vec<Value> = c.agents.iter().map(|a| json!({"uuid":a.uuid,"displayName":a.display_name,"displayIcon":icon_url(&app,&api,a.display_icon.as_deref()),"role":Value::Null,"isArchived":a.archived})).collect();
-    let maps: Vec<Value> = c.maps.iter().map(|m| json!({"uuid":m.uuid,"displayName":m.display_name,"displayIcon":icon_url(&app,&api,m.display_icon.as_deref()),"isArchived":m.archived})).collect();
-    Ok(json!({"agents":agents,"maps":maps,"version":c.version,"updatedAt":c.last_updated.unwrap_or_else(lineuplab_core::now),"stale":c.offline,"warning":c.warning}))
+    let api = state.api.clone(); drop(state);
+    let c = match api.cached_catalog().map_err(err)? { Some(c) => c, None => api.refresh(false).await.map_err(err)? };
+    Ok(catalog_json(&app, &api, &c, &lineups))
 }
+#[tauri::command] pub async fn prepare_assets(app: tauri::AppHandle, force: bool) -> CmdResult<Value> {
+    let state = app.state::<AppState>();
+    let lineups = state.db.lock().unwrap().all(false).map_err(err)?;
+    let api = state.api.clone(); drop(state);
+    let emitter = app.clone();
+    let c = api.refresh_with_progress(force, move |p| { let _ = emitter.emit("lineuplab://assets", p); }).await.map_err(err)?;
+    Ok(catalog_json(&app, &api, &c, &lineups))
+}
+#[tauri::command] pub fn catalog_image_url(state: State<AppState>, url: String) -> CmdResult<String> {
+    let p = state.api.image_path(&url).map_err(err)?;
+    if p.exists() { return Ok(p.to_string_lossy().into_owned()); }
+    Ok(url)
+}
+#[tauri::command] pub async fn asset_diagnostics(app: tauri::AppHandle) -> CmdResult<Value> {
+    let state = app.state::<AppState>(); let api = state.api.clone(); let data_dir = state.data_dir.clone(); drop(state);
+    let c = api.cached_catalog().map_err(err)?.unwrap_or_default();
+    let audit = api.audit_assets(&c).map_err(err)?;
+    Ok(json!({"audit": audit, "dataDir": data_dir.to_string_lossy(), "cacheDir": data_dir.join("art-cache").to_string_lossy(), "assetProtocol": {"enabled": true, "scope": ["$APPDATA/**", "$APPLOCALDATA/**", "$APPCACHE/**", "$APPCONFIG/**", "$RESOURCE/**"]}, "platform": std::env::consts::OS}))
+}
+#[tauri::command] pub fn log_image_error(url: String, message: String) { tracing::warn!(url=%url, error=%message, "UI image load failed"); }
 #[tauri::command] pub fn get_modes() -> CmdResult<Vec<Value>> {
     let cfg = ModeConfig::load().map_err(err)?; cfg.validate().map_err(err)?;
     let mut seen = BTreeSet::new(); let mut out = vec![];

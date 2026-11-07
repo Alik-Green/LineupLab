@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { AbilityMode, Catalog, ImportPreview, ImportReport, LibraryAdapter, Lineup } from './types';
+import type { AbilityMode, AssetProgress, Catalog, ImportPreview, ImportReport, LibraryAdapter, Lineup } from './types';
+import { listen } from '@tauri-apps/api/event';
+import { ImageProvider } from './lib/images';
+import { DataSettings } from './components/DataSettings';
 import { createAdapter } from './lib/adapter';
 import { Browse } from './components/Browse';
 import { Editor } from './components/Editor';
@@ -12,12 +15,19 @@ export function App({ platform }: { platform: 'desktop' | 'mobile' }) {
   const adapter = useMemo<LibraryAdapter>(() => createAdapter(), []);
   const [page, setPage] = useState<Page>('browse'); const [editId, setEditId] = useState<string | null>(null);
   const [lineups, setLineups] = useState<Lineup[]>([]); const [catalog, setCatalog] = useState<Catalog | null>(null); const [modes, setModes] = useState<AbilityMode[]>([]); const [error, setError] = useState('');
+  const [assetProgress, setAssetProgress] = useState<AssetProgress | null>(null);
   const refresh = useCallback(async () => { try { const [ls, cat, ms] = await Promise.all([adapter.listLineups(), adapter.catalog(), adapter.modes()]); setLineups(ls); setCatalog(cat); setModes(ms); setError(''); } catch (e) { setError(String(e)); } }, [adapter]);
   useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    let live = true; let un: (() => void) | undefined;
+    if (adapter.kind === 'tauri') void listen<AssetProgress>('lineuplab://assets', e => { if (live) setAssetProgress(e.payload); }).then(f => { un = f; });
+    void adapter.prepareAssets(false).then(cat => { if (live) { setCatalog(cat); setAssetProgress(null); } }).catch(e => { if (live) setError(String(e)); });
+    return () => { live = false; un?.(); };
+  }, [adapter]);
   const browseOnly = platform === 'mobile';
-  if (typeof window !== 'undefined' && (window.location.hash === '#overlay' || new URLSearchParams(window.location.search).has('overlay'))) return <OverlayView adapter={adapter} />;
+  if (typeof window !== 'undefined' && (window.location.hash === '#overlay' || new URLSearchParams(window.location.search).has('overlay'))) return <ImageProvider adapter={adapter}><OverlayView adapter={adapter} /></ImageProvider>;
   const openEditor = (id?: string | null) => { setEditId(id ?? null); setPage('editor'); };
-  return <main className="min-h-screen bg-slate-950 text-slate-100">
+  return <ImageProvider adapter={adapter}><main className="min-h-screen bg-slate-950 text-slate-100">
     <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 px-4 py-3 backdrop-blur">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3">
         <button onClick={() => setPage('browse')} className="text-lg font-black tracking-tight">Lineup<span className="text-cyan-400">Lab</span></button>
@@ -37,7 +47,12 @@ export function App({ platform }: { platform: 'desktop' | 'mobile' }) {
       {page === 'import' && !browseOnly && <ImportExport adapter={adapter} lineups={lineups} onRefresh={refresh} />}
       {page === 'settings' && <Settings adapter={adapter} catalog={catalog} onRefresh={refresh} browseOnly={browseOnly} />}
     </div>
-  </main>;
+    {assetProgress && assetProgress.phase === 'downloading' && assetProgress.done < assetProgress.total && <FirstRunProgress progress={assetProgress} />}
+  </main></ImageProvider>;
+}
+function FirstRunProgress({ progress }: { progress: AssetProgress }) {
+  const pct = progress.total ? Math.round(progress.done / progress.total * 100) : 0;
+  return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 p-6" role="status" data-testid="first-run-progress"><div className="w-full max-w-md rounded-xl border border-slate-700 bg-slate-900 p-6 text-center"><div className="mb-2 text-2xl font-black">Lineup<span className="text-cyan-400">Lab</span></div><h2 className="text-lg font-semibold">Downloading game data {progress.done}/{progress.total}</h2><p className="mt-1 text-sm text-slate-400">Agent, ability and map art for offline use. No Riot assets are bundled.</p><div className="mt-4 h-2 overflow-hidden rounded bg-slate-800"><div className="h-full bg-cyan-500 transition-all" style={{ width: `${pct}%` }} /></div><p className="mt-2 truncate text-xs text-slate-500">{progress.current || 'Preparing catalog…'}</p>{progress.failed > 0 && <p className="mt-2 text-xs text-amber-300">{progress.failed} downloads failed; cached art remains usable. Retry in Settings → Data.</p>}</div></div>;
 }
 function NavButton({ active, onClick, children }: { active: boolean; onClick(): void; children: React.ReactNode }) { return <button onClick={onClick} className={`rounded-lg px-3 py-1.5 ${active ? 'bg-slate-800 text-cyan-300' : 'text-slate-300 hover:bg-slate-900'}`}>{children}</button>; }
 function ImportExport({ adapter, lineups, onRefresh }: { adapter: LibraryAdapter; lineups: Lineup[]; onRefresh(): void }) {
@@ -59,5 +74,6 @@ function Settings({ adapter, catalog, onRefresh, browseOnly = false }: { adapter
     {!browseOnly && <DesktopSettings adapter={adapter} />}
     {browseOnly && <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"><h2 className="mb-2 text-lg font-semibold">Browse-only companion</h2><p className="text-sm text-slate-400">Creation, overlay and hotkeys are desktop-only. Pair with a desktop library to browse offline.</p></section>}
     <SyncSettings adapter={adapter} host={!browseOnly} />
+    <DataSettings adapter={adapter} onRefresh={onRefresh} />
   </div>;
 }

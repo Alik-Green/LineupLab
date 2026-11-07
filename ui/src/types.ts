@@ -27,9 +27,16 @@ export interface Lineup {
   videoClip?: string | null; videoThumbnail?: string | null; legacy: Record<string, unknown>; extensions?: Record<string, unknown>; draft?: boolean;
 }
 export interface AbilityMode { id: string; label: string; requiredSlots: SlotId[]; optionalSlots?: SlotId[]; attributes: Record<string, { type: string; default?: unknown; min?: number; max?: number; options?: unknown[] }>; }
-export interface Agent { uuid: string; displayName: string; displayIcon: string; role?: string; isArchived?: boolean }
-export interface GameMap { uuid: string; displayName: string; displayIcon: string; isArchived?: boolean }
-export interface Catalog { agents: Agent[]; maps: GameMap[]; version: string; updatedAt: string; stale?: boolean }
+export interface CatalogAbility { slot: string; displayName: string; displayIcon?: string | null; description?: string }
+export interface Agent { uuid: string; displayName: string; displayIcon: string; role?: string | null; roleIcon?: string | null; abilities?: CatalogAbility[]; isArchived?: boolean }
+export interface GameMap { uuid: string; displayName: string; displayIcon: string; listViewIcon?: string | null; splash?: string | null; isArchived?: boolean }
+export interface Catalog { agents: Agent[]; maps: GameMap[]; version: string; updatedAt: string; stale?: boolean; warning?: string | null; dataDir?: string }
+export interface AssetProgress { phase: 'downloading' | 'ready' | 'offline' | string; done: number; total: number; failed: number; current: string; version: string }
+export interface AssetTypeReport { total: number; cached: number; missing: number; invalid: number; bytes: number }
+export interface AssetAudit { version: string; cacheBytes: number; types: Record<string, AssetTypeReport>; errors: string[] }
+export interface AssetDiagnostics { audit: AssetAudit; dataDir: string; cacheDir: string; assetProtocol: { enabled: boolean; scope: string[] }; platform: string }
+export interface ImageLoadRecord { url: string; resolved?: string; kind: string; ok: boolean; message?: string; at: number }
+export interface ImageSelfTestResult { total: number; ok: number; failed: number; types: Record<string, { total: number; ok: number; failed: number }>; errors: ImageLoadRecord[]; finishedAt: number }
 export interface CaptureResult { hash: string; width: number; height: number; elapsedMs: number }
 export interface ImportPreviewEntry { id: string; title: string; status: string; selected: boolean; warnings: string[] }
 export interface ImportPreview { entries: ImportPreviewEntry[]; warnings: string[]; seed: boolean }
@@ -43,6 +50,10 @@ export interface LibraryAdapter {
   duplicateLineup(id: string): Promise<Lineup>;
   setFavorite(id: string, value: boolean): Promise<void>;
   catalog(): Promise<Catalog>;
+  prepareAssets(force: boolean): Promise<Catalog>;
+  resolveImageUrl(url: string): Promise<string>;
+  assetDiagnostics(): Promise<AssetDiagnostics>;
+  reportImageError(url: string, message: string): Promise<void>;
   modes(): Promise<AbilityMode[]>;
   mediaUrl(hash: string): Promise<string>;
   putImage(bytes: Uint8Array, mime: string): Promise<string>;

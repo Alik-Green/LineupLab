@@ -17,10 +17,21 @@ pub struct Ability {
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct Role {
+    #[serde(default)]
+    pub uuid: String,
+    pub display_name: String,
+    #[serde(default)]
+    pub display_icon: Option<String>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Agent {
     pub uuid: String,
     pub display_name: String,
     pub display_icon: Option<String>,
+    #[serde(default)]
+    pub role: Option<Role>,
     #[serde(default)]
     pub abilities: Vec<Ability>,
     #[serde(default)]
@@ -35,6 +46,8 @@ pub struct GameMap {
     pub display_name: String,
     pub display_icon: Option<String>,
     pub splash: Option<String>,
+    #[serde(default)]
+    pub list_view_icon: Option<String>,
     #[serde(default)]
     pub archived: bool,
 }
@@ -59,6 +72,7 @@ impl Catalog {
                     display_name: format!("Archived map · {}", &l.map_id[..l.map_id.len().min(8)]),
                     display_icon: None,
                     splash: None,
+                    list_view_icon: None,
                     archived: true,
                 });
             }
@@ -70,6 +84,7 @@ impl Catalog {
                         &l.agent_id[..l.agent_id.len().min(8)]
                     ),
                     display_icon: None,
+                    role: None,
                     abilities: vec![],
                     is_playable_character: true,
                     archived: true,
@@ -125,6 +140,63 @@ impl HttpTransport for ReqwestTransport {
             .await?
             .to_vec())
     }
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetProgress {
+    pub phase: String,
+    pub done: usize,
+    pub total: usize,
+    pub failed: usize,
+    pub current: String,
+    pub version: String,
+}
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetTypeReport {
+    pub total: usize,
+    pub cached: usize,
+    pub missing: usize,
+    pub invalid: usize,
+    pub bytes: u64,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AssetAudit {
+    pub version: String,
+    pub cache_bytes: u64,
+    pub types: std::collections::BTreeMap<String, AssetTypeReport>,
+    pub errors: Vec<String>,
+}
+pub fn asset_urls(c: &Catalog) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    for a in &c.agents {
+        if let Some(u) = &a.display_icon {
+            out.push(("agent".into(), u.clone()));
+        }
+        if let Some(u) = a.role.as_ref().and_then(|r| r.display_icon.as_ref()) {
+            out.push(("role".into(), u.clone()));
+        }
+        for b in &a.abilities {
+            if let Some(u) = &b.display_icon {
+                out.push(("ability".into(), u.clone()));
+            }
+        }
+    }
+    for m in &c.maps {
+        if let Some(u) = &m.display_icon {
+            out.push(("minimap".into(), u.clone()));
+        }
+        if let Some(u) = &m.list_view_icon {
+            out.push(("map".into(), u.clone()));
+        }
+        if let Some(u) = &m.splash {
+            out.push(("mapSplash".into(), u.clone()));
+        }
+    }
+    out.sort();
+    out.dedup();
+    out
 }
 #[derive(Clone)]
 pub struct ValorantApi {
@@ -196,37 +268,145 @@ impl ValorantApi {
         std::fs::rename(tmp, self.cache_dir.join(name))?;
         Ok(())
     }
+    pub fn cached_catalog(&self) -> Result<Option<Catalog>> {
+        self.read_cache("catalog.json")
+    }
     pub async fn refresh(&self, force: bool) -> Result<Catalog> {
-        let previous: self::Catalog = self.read_cache("catalog.json")?.unwrap_or_default();
-        let result=async {
-            let version:Envelope<Value>=serde_json::from_slice(&self.fetch("version").await?)?;
-            let version=version.data.get("version").and_then(Value::as_str).unwrap_or("unknown").to_string();
-            let mut next=if force || version!=previous.version || previous.agents.is_empty() {
-                let agents:Envelope<Vec<Agent>>=serde_json::from_slice(&self.fetch("agents?isPlayableCharacter=true").await?)?;
-                let maps:Envelope<Vec<GameMap>>=serde_json::from_slice(&self.fetch("maps").await?)?;
-                Catalog { version:version.clone(),last_updated:Some(crate::now()),agents:agents.data.into_iter().filter(|a| a.is_playable_character).collect(),maps:maps.data.into_iter().filter(|m| m.display_icon.is_some() && !matches!(m.display_name.to_lowercase().as_str(),"the range"|"basic training"|"the practice range")).collect(),offline:false,warning:None }
+        self.refresh_with_progress(force, |_| {}).await
+    }
+    pub async fn refresh_with_progress<F>(&self, force: bool, progress: F) -> Result<Catalog>
+    where
+        F: Fn(AssetProgress),
+    {
+        let previous: Catalog = self.read_cache("catalog.json")?.unwrap_or_default();
+        let result = async {
+            let version: Envelope<Value> = serde_json::from_slice(&self.fetch("version").await?)?;
+            let version = version.data.get("version").and_then(Value::as_str).unwrap_or("unknown").to_string();
+            let mut next = if force || version != previous.version || previous.agents.is_empty() {
+                let agents: Envelope<Vec<Agent>> = serde_json::from_slice(&self.fetch("agents?isPlayableCharacter=true").await?)?;
+                let maps: Envelope<Vec<GameMap>> = serde_json::from_slice(&self.fetch("maps").await?)?;
+                Catalog { version: version.clone(), last_updated: Some(crate::now()), agents: agents.data.into_iter().filter(|a| a.is_playable_character).collect(), maps: maps.data.into_iter().filter(|m| m.display_icon.is_some() && !matches!(m.display_name.to_lowercase().as_str(), "the range" | "basic training" | "the practice range")).collect(), offline: false, warning: None }
             } else { previous.clone() };
-            // URL-addressed image cache: changed URLs naturally produce a different key; old files remain usable offline.
-            for url in next.agents.iter().flat_map(|a| std::iter::once(a.display_icon.as_ref()).chain(a.abilities.iter().map(|b| b.display_icon.as_ref()))).chain(next.maps.iter().flat_map(|m| [m.display_icon.as_ref(),m.splash.as_ref()])).flatten().collect::<Vec<_>>() {
-                if self.image_path(url)?.exists(){continue;}
-                match self.fetch(url).await { Ok(bytes)=>self.write_cache(&format!("art/{}.img",hash_bytes(url.as_bytes())),&bytes)?,Err(e)=>{tracing::warn!(error=%e,"Art download failed; cached art remains available"); next.warning=Some("Some artwork is unavailable. Refresh when online.".into());} }
+            let assets = asset_urls(&next);
+            let total = assets.len();
+            let mut done = 0; let mut failed = 0;
+            let mut pending = Vec::new();
+            for (kind, url) in assets {
+                if self.image_path(&url)?.exists() { done += 1; } else { pending.push((kind, url)); }
             }
-            self.write_cache("catalog.json",&serde_json::to_vec(&next)?)?; Ok::<_,Error>(next)
+            progress(AssetProgress { phase: "downloading".into(), done, total, failed, current: String::new(), version: version.clone() });
+            let mut pending = pending.into_iter();
+            let mut tasks = tokio::task::JoinSet::new();
+            loop {
+                while tasks.len() < 6 {
+                    let Some((kind, url)) = pending.next() else { break };
+                    let api = self.clone();
+                    tasks.spawn(async move { let result = api.download_image(&url).await; (kind, url, result) });
+                }
+                let Some(joined) = tasks.join_next().await else { break };
+                done += 1;
+                let current = match joined {
+                    Ok((kind, url, Ok(_))) => format!("{kind}: {url}"),
+                    Ok((kind, url, Err(e))) => { failed += 1; tracing::warn!(error=%e, kind=%kind, url=%url, "Art download failed; cached art remains available"); format!("{kind}: {url}") }
+                    Err(e) => { failed += 1; tracing::warn!(error=%e, "Art download task failed"); String::new() }
+                };
+                progress(AssetProgress { phase: "downloading".into(), done, total, failed, current, version: version.clone() });
+            }
+            if failed > 0 { next.warning = Some(format!("{failed} artwork downloads failed. Cached images remain available; retry from Settings → Data.")); }
+            self.write_cache("catalog.json", &serde_json::to_vec(&next)?)?;
+            progress(AssetProgress { phase: "ready".into(), done: total, total, failed, current: String::new(), version });
+            Ok::<_, Error>(next)
         }.await;
         match result {
             Ok(c) => Ok(c),
             Err(e) => {
-                tracing::warn!(error=%e,"Catalog refresh failed");
+                tracing::warn!(error=%e, "Catalog refresh failed");
                 if !previous.agents.is_empty() {
                     let mut c = previous;
                     c.offline = true;
                     c.warning = Some(format!("Using cached data: {e}"));
+                    progress(AssetProgress {
+                        phase: "offline".into(),
+                        done: 0,
+                        total: 0,
+                        failed: 0,
+                        current: String::new(),
+                        version: c.version.clone(),
+                    });
                     Ok(c)
                 } else {
-                    Ok(Catalog { offline:true,warning:Some(format!("No cached art yet. Connect to the internet or sync with a desktop: {e}")),..Default::default() })
+                    progress(AssetProgress {
+                        phase: "offline".into(),
+                        done: 0,
+                        total: 0,
+                        failed: 1,
+                        current: String::new(),
+                        version: String::new(),
+                    });
+                    Ok(Catalog { offline: true, warning: Some(format!("No cached art yet. Connect to the internet or sync with a desktop: {e}")), ..Default::default() })
                 }
             }
         }
+    }
+    pub async fn download_image(&self, url: &str) -> Result<PathBuf> {
+        let path = self.image_path(url)?;
+        if path.exists() {
+            return Ok(path);
+        }
+        let bytes = self.fetch(url).await?;
+        // Reject HTML/error payloads before they enter the image cache.
+        let format = image::guess_format(&bytes)
+            .map_err(|e| Error::Invalid(format!("Downloaded art is not a supported image: {e}")))?;
+        if !matches!(
+            format,
+            image::ImageFormat::Png
+                | image::ImageFormat::Jpeg
+                | image::ImageFormat::WebP
+                | image::ImageFormat::Gif
+                | image::ImageFormat::Avif
+        ) {
+            return Err(Error::Invalid(format!(
+                "Unsupported art format: {format:?}"
+            )));
+        }
+        self.write_cache(&format!("art/{}.img", hash_bytes(url.as_bytes())), &bytes)?;
+        Ok(path)
+    }
+    pub fn audit_assets(&self, c: &Catalog) -> Result<AssetAudit> {
+        let mut types = std::collections::BTreeMap::new();
+        let mut errors = Vec::new();
+        let mut cache_bytes = 0;
+        for (kind, url) in asset_urls(c) {
+            let entry = types
+                .entry(kind.clone())
+                .or_insert_with(AssetTypeReport::default);
+            entry.total += 1;
+            let path = self.image_path(&url)?;
+            if !path.exists() {
+                entry.missing += 1;
+                errors.push(format!("Missing {kind}: {url}"));
+                continue;
+            }
+            let len = std::fs::metadata(&path)?.len();
+            entry.bytes += len;
+            cache_bytes += len;
+            let valid = std::fs::read(&path)
+                .map_err(Error::from)
+                .and_then(|bytes| image::guess_format(&bytes).map_err(Error::from));
+            match valid {
+                Ok(_) => entry.cached += 1,
+                Err(e) => {
+                    entry.invalid += 1;
+                    errors.push(format!("Invalid {kind} cache file: {e}"));
+                }
+            }
+        }
+        Ok(AssetAudit {
+            version: c.version.clone(),
+            cache_bytes,
+            types,
+            errors,
+        })
     }
     pub fn image_path(&self, url: &str) -> Result<PathBuf> {
         Ok(self

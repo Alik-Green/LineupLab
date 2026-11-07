@@ -76,7 +76,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::list_lineups, commands::get_lineup, commands::save_lineup, commands::delete_lineup,
-            commands::duplicate_lineup, commands::set_favorite, commands::get_catalog, commands::get_modes,
+            commands::duplicate_lineup, commands::set_favorite, commands::get_catalog, commands::prepare_assets, commands::catalog_image_url, commands::asset_diagnostics, commands::log_image_error, commands::get_modes,
             commands::media_path, commands::put_image, commands::capture_monitor,
             commands::import_preview, commands::import_commit, commands::export_pack, commands::undo_import,
             commands::get_hotkeys, commands::rebind_hotkey, commands::get_overlay_settings, commands::set_overlay_settings,

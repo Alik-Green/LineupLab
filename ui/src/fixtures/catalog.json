@@ -1,0 +1,415 @@
+{
+  "version": "fixture-11.09",
+  "updatedAt": "2026-11-07T12:00:00Z",
+  "agents": [
+    {
+      "uuid": "agent-sova",
+      "displayName": "Sova",
+      "displayIcon": "https://media.valorant-api.com/agents/sova/displayicon.png",
+      "role": "Initiator",
+      "roleIcon": "https://media.valorant-api.com/roles/initiator/displayicon.png",
+      "abilities": [
+        {
+          "slot": "Ability1",
+          "displayName": "Owl Drone",
+          "displayIcon": "https://media.valorant-api.com/abilities/sova-ability1/displayicon.png",
+          "description": "Sova Q ability"
+        },
+        {
+          "slot": "Ability2",
+          "displayName": "Shock Bolt",
+          "displayIcon": "https://media.valorant-api.com/abilities/sova-ability2/displayicon.png",
+          "description": "Sova E ability"
+        },
+        {
+          "slot": "Grenade",
+          "displayName": "Recon Bolt",
+          "displayIcon": "https://media.valorant-api.com/abilities/sova-grenade/displayicon.png",
+          "description": "Sova C ability"
+        },
+        {
+          "slot": "Ultimate",
+          "displayName": "Hunter's Fury",
+          "displayIcon": "https://media.valorant-api.com/abilities/sova-ultimate/displayicon.png",
+          "description": "Sova X ability"
+        }
+      ]
+    },
+    {
+      "uuid": "agent-jett",
+      "displayName": "Jett",
+      "displayIcon": "https://media.valorant-api.com/agents/jett/displayicon.png",
+      "role": "Duelist",
+      "roleIcon": "https://media.valorant-api.com/roles/duelist/displayicon.png",
+      "abilities": [
+        {
+          "slot": "Ability1",
+          "displayName": "Cloudburst",
+          "displayIcon": "https://media.valorant-api.com/abilities/jett-ability1/displayicon.png",
+          "description": "Jett Q ability"
+        },
+        {
+          "slot": "Ability2",
+          "displayName": "Updraft",
+          "displayIcon": "https://media.valorant-api.com/abilities/jett-ability2/displayicon.png",
+          "description": "Jett E ability"
+        },
+        {
+          "slot": "Grenade",
+          "displayName": "Tailwind",
+          "displayIcon": "https://media.valorant-api.com/abilities/jett-grenade/displayicon.png",
+          "description": "Jett C ability"
+        },
+        {
+          "slot": "Ultimate",
+          "displayName": "Blade Storm",
+          "displayIcon": "https://media.valorant-api.com/abilities/jett-ultimate/displayicon.png",
+          "description": "Jett X ability"
+        }
+      ]
+    },
+    {
+      "uuid": "agent-viper",
+      "displayName": "Viper",
+      "displayIcon": "https://media.valorant-api.com/agents/viper/displayicon.png",
+      "role": "Controller",
+      "roleIcon": "https://media.valorant-api.com/roles/controller/displayicon.png",
+      "abilities": [
+        {
+          "slot": "Ability1",
+          "displayName": "Snake Bite",
+          "displayIcon": "https://media.valorant-api.com/abilities/viper-ability1/displayicon.png",
+          "description": "Viper Q ability"
+        },
+        {
+          "slot": "Ability2",
+          "displayName": "Poison Cloud",
+          "displayIcon": "https://media.valorant-api.com/abilities/viper-ability2/displayicon.png",
+          "description": "Viper E ability"
+        },
+        {
+          "slot": "Grenade",
+          "displayName": "Toxic Screen",
+          "displayIcon": "https://media.valorant-api.com/abilities/viper-grenade/displayicon.png",
+          "description": "Viper C ability"
+        },
+        {
+          "slot": "Ultimate",
+          "displayName": "Viper's Pit",
+          "displayIcon": "https://media.valorant-api.com/abilities/viper-ultimate/displayicon.png",
+          "description": "Viper X ability"
+        }
+      ]
+    },
+    {
+      "uuid": "agent-killjoy",
+      "displayName": "Killjoy",
+      "displayIcon": "https://media.valorant-api.com/agents/killjoy/displayicon.png",
+      "role": "Sentinel",
+      "roleIcon": "https://media.valorant-api.com/roles/sentinel/displayicon.png",
+      "abilities": [
+        {
+          "slot": "Ability1",
+          "displayName": "Nanoswarm",
+          "displayIcon": "https://media.valorant-api.com/abilities/killjoy-ability1/displayicon.png",
+          "description": "Killjoy Q ability"
+        },
+        {
+          "slot": "Ability2",
+          "displayName": "Alarmbot",
+          "displayIcon": "https://media.valorant-api.com/abilities/killjoy-ability2/displayicon.png",
+          "description": "Killjoy E ability"
+        },
+        {
+          "slot": "Grenade",
+          "displayName": "Turret",
+          "displayIcon": "https://media.valorant-api.com/abilities/killjoy-grenade/displayicon.png",
+          "description": "Killjoy C ability"
+        },
+        {
+          "slot": "Ultimate",
+          "displayName": "Lockdown",
+          "displayIcon": "https://media.valorant-api.com/abilities/killjoy-ultimate/displayicon.png",
+          "description": "Killjoy X ability"
+        }
+      ]
+    },
+    {
+      "uuid": "agent-omen",
+      "displayName": "Omen",
+      "displayIcon": "https://media.valorant-api.com/agents/omen/displayicon.png",
+      "role": "Controller",
+      "roleIcon": "https://media.valorant-api.com/roles/controller/displayicon.png",
+      "abilities": [
+        {
+          "slot": "Ability1",
+          "displayName": "Shrouded Step",
+          "displayIcon": "https://media.valorant-api.com/abilities/omen-ability1/displayicon.png",
+          "description": "Omen Q ability"
+        },
+        {
+          "slot": "Ability2",
+          "displayName": "Paranoia",
+          "displayIcon": "https://media.valorant-api.com/abilities/omen-ability2/displayicon.png",
+          "description": "Omen E ability"
+        },
+        {
+          "slot": "Grenade",
+          "displayName": "Dark Cover",
+          "displayIcon": "https://media.valorant-api.com/abilities/omen-grenade/displayicon.png",
+          "description": "Omen C ability"
+        },
+        {
+          "slot": "Ultimate",
+          "displayName": "From the Shadows",
+          "displayIcon": "https://media.valorant-api.com/abilities/omen-ultimate/displayicon.png",
+          "description": "Omen X ability"
+        }
+      ]
+    },
+    {
+      "uuid": "agent-breach",
+      "displayName": "Breach",
+      "displayIcon": "https://media.valorant-api.com/agents/breach/displayicon.png",
+      "role": "Initiator",
+      "roleIcon": "https://media.valorant-api.com/roles/initiator/displayicon.png",
+      "abilities": [
+        {
+          "slot": "Ability1",
+          "displayName": "Aftershock",
+          "displayIcon": "https://media.valorant-api.com/abilities/breach-ability1/displayicon.png",
+          "description": "Breach Q ability"
+        },
+        {
+          "slot": "Ability2",
+          "displayName": "Flashpoint",
+          "displayIcon": "https://media.valorant-api.com/abilities/breach-ability2/displayicon.png",
+          "description": "Breach E ability"
+        },
+        {
+          "slot": "Grenade",
+          "displayName": "Fault Line",
+          "displayIcon": "https://media.valorant-api.com/abilities/breach-grenade/displayicon.png",
+          "description": "Breach C ability"
+        },
+        {
+          "slot": "Ultimate",
+          "displayName": "Rolling Thunder",
+          "displayIcon": "https://media.valorant-api.com/abilities/breach-ultimate/displayicon.png",
+          "description": "Breach X ability"
+        }
+      ]
+    },
+    {
+      "uuid": "agent-sage",
+      "displayName": "Sage",
+      "displayIcon": "https://media.valorant-api.com/agents/sage/displayicon.png",
+      "role": "Sentinel",
+      "roleIcon": "https://media.valorant-api.com/roles/sentinel/displayicon.png",
+      "abilities": [
+        {
+          "slot": "Ability1",
+          "displayName": "Barrier Orb",
+          "displayIcon": "https://media.valorant-api.com/abilities/sage-ability1/displayicon.png",
+          "description": "Sage Q ability"
+        },
+        {
+          "slot": "Ability2",
+          "displayName": "Slow Orb",
+          "displayIcon": "https://media.valorant-api.com/abilities/sage-ability2/displayicon.png",
+          "description": "Sage E ability"
+        },
+        {
+          "slot": "Grenade",
+          "displayName": "Healing Orb",
+          "displayIcon": "https://media.valorant-api.com/abilities/sage-grenade/displayicon.png",
+          "description": "Sage C ability"
+        },
+        {
+          "slot": "Ultimate",
+          "displayName": "Resurrection",
+          "displayIcon": "https://media.valorant-api.com/abilities/sage-ultimate/displayicon.png",
+          "description": "Sage X ability"
+        }
+      ]
+    },
+    {
+      "uuid": "agent-raze",
+      "displayName": "Raze",
+      "displayIcon": "https://media.valorant-api.com/agents/raze/displayicon.png",
+      "role": "Duelist",
+      "roleIcon": "https://media.valorant-api.com/roles/duelist/displayicon.png",
+      "abilities": [
+        {
+          "slot": "Ability1",
+          "displayName": "Boom Bot",
+          "displayIcon": "https://media.valorant-api.com/abilities/raze-ability1/displayicon.png",
+          "description": "Raze Q ability"
+        },
+        {
+          "slot": "Ability2",
+          "displayName": "Blast Pack",
+          "displayIcon": "https://media.valorant-api.com/abilities/raze-ability2/displayicon.png",
+          "description": "Raze E ability"
+        },
+        {
+          "slot": "Grenade",
+          "displayName": "Paint Shells",
+          "displayIcon": "https://media.valorant-api.com/abilities/raze-grenade/displayicon.png",
+          "description": "Raze C ability"
+        },
+        {
+          "slot": "Ultimate",
+          "displayName": "Showstopper",
+          "displayIcon": "https://media.valorant-api.com/abilities/raze-ultimate/displayicon.png",
+          "description": "Raze X ability"
+        }
+      ]
+    },
+    {
+      "uuid": "agent-cypher",
+      "displayName": "Cypher",
+      "displayIcon": "https://media.valorant-api.com/agents/cypher/displayicon.png",
+      "role": "Sentinel",
+      "roleIcon": "https://media.valorant-api.com/roles/sentinel/displayicon.png",
+      "abilities": [
+        {
+          "slot": "Ability1",
+          "displayName": "Trapwire",
+          "displayIcon": "https://media.valorant-api.com/abilities/cypher-ability1/displayicon.png",
+          "description": "Cypher Q ability"
+        },
+        {
+          "slot": "Ability2",
+          "displayName": "Cyber Cage",
+          "displayIcon": "https://media.valorant-api.com/abilities/cypher-ability2/displayicon.png",
+          "description": "Cypher E ability"
+        },
+        {
+          "slot": "Grenade",
+          "displayName": "Spycam",
+          "displayIcon": "https://media.valorant-api.com/abilities/cypher-grenade/displayicon.png",
+          "description": "Cypher C ability"
+        },
+        {
+          "slot": "Ultimate",
+          "displayName": "Neural Theft",
+          "displayIcon": "https://media.valorant-api.com/abilities/cypher-ultimate/displayicon.png",
+          "description": "Cypher X ability"
+        }
+      ]
+    },
+    {
+      "uuid": "agent-fade",
+      "displayName": "Fade",
+      "displayIcon": "https://media.valorant-api.com/agents/fade/displayicon.png",
+      "role": "Initiator",
+      "roleIcon": "https://media.valorant-api.com/roles/initiator/displayicon.png",
+      "abilities": [
+        {
+          "slot": "Ability1",
+          "displayName": "Prowler",
+          "displayIcon": "https://media.valorant-api.com/abilities/fade-ability1/displayicon.png",
+          "description": "Fade Q ability"
+        },
+        {
+          "slot": "Ability2",
+          "displayName": "Seize",
+          "displayIcon": "https://media.valorant-api.com/abilities/fade-ability2/displayicon.png",
+          "description": "Fade E ability"
+        },
+        {
+          "slot": "Grenade",
+          "displayName": "Haunt",
+          "displayIcon": "https://media.valorant-api.com/abilities/fade-grenade/displayicon.png",
+          "description": "Fade C ability"
+        },
+        {
+          "slot": "Ultimate",
+          "displayName": "Nightfall",
+          "displayIcon": "https://media.valorant-api.com/abilities/fade-ultimate/displayicon.png",
+          "description": "Fade X ability"
+        }
+      ]
+    }
+  ],
+  "maps": [
+    {
+      "uuid": "map-abyss",
+      "displayName": "Abyss",
+      "displayIcon": "https://media.valorant-api.com/maps/abyss/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/abyss/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/abyss/splash.png"
+    },
+    {
+      "uuid": "map-ascent",
+      "displayName": "Ascent",
+      "displayIcon": "https://media.valorant-api.com/maps/ascent/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/ascent/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/ascent/splash.png"
+    },
+    {
+      "uuid": "map-bind",
+      "displayName": "Bind",
+      "displayIcon": "https://media.valorant-api.com/maps/bind/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/bind/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/bind/splash.png"
+    },
+    {
+      "uuid": "map-breeze",
+      "displayName": "Breeze",
+      "displayIcon": "https://media.valorant-api.com/maps/breeze/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/breeze/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/breeze/splash.png"
+    },
+    {
+      "uuid": "map-corrode",
+      "displayName": "Corrode",
+      "displayIcon": "https://media.valorant-api.com/maps/corrode/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/corrode/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/corrode/splash.png"
+    },
+    {
+      "uuid": "map-fracture",
+      "displayName": "Fracture",
+      "displayIcon": "https://media.valorant-api.com/maps/fracture/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/fracture/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/fracture/splash.png"
+    },
+    {
+      "uuid": "map-haven",
+      "displayName": "Haven",
+      "displayIcon": "https://media.valorant-api.com/maps/haven/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/haven/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/haven/splash.png"
+    },
+    {
+      "uuid": "map-icebox",
+      "displayName": "Icebox",
+      "displayIcon": "https://media.valorant-api.com/maps/icebox/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/icebox/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/icebox/splash.png"
+    },
+    {
+      "uuid": "map-lotus",
+      "displayName": "Lotus",
+      "displayIcon": "https://media.valorant-api.com/maps/lotus/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/lotus/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/lotus/splash.png"
+    },
+    {
+      "uuid": "map-split",
+      "displayName": "Split",
+      "displayIcon": "https://media.valorant-api.com/maps/split/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/split/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/split/splash.png"
+    },
+    {
+      "uuid": "map-sunset",
+      "displayName": "Sunset",
+      "displayIcon": "https://media.valorant-api.com/maps/sunset/displayicon.png",
+      "listViewIcon": "https://media.valorant-api.com/maps/sunset/listviewicon.png",
+      "splash": "https://media.valorant-api.com/maps/sunset/splash.png"
+    }
+  ]
+}

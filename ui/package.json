@@ -3,17 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { "./App": "./src/App.tsx", "./styles": "./src/styles/app.css", "./vite": "./vite.shared.ts" },
+  "exports": {
+    "./App": "./src/App.tsx",
+    "./styles": "./src/styles/app.css",
+    "./vite": "./vite.shared.ts",
+    "./lib/*": "./src/lib/*",
+    "./lib/mock-tauri": "./src/lib/mock-tauri.ts"
+  },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@tanstack/react-virtual": "^3.13.0",
+    "@tauri-apps/api": "^2.10.0",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.0",
+    "@tauri-apps/plugin-dialog": "^2.6.0",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.468.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@tauri-apps/api": "^2.10.0",
-    "@tauri-apps/plugin-dialog": "^2.6.0",
-    "@tauri-apps/plugin-clipboard-manager": "^2.3.0",
-    "@tanstack/react-virtual": "^3.13.0",
-    "lucide-react": "^0.468.0",
-    "clsx": "^2.1.0",
     "zod": "^3.24.0"
   },
-  "devDependencies": { "tailwindcss": "^4.0.0", "@tailwindcss/vite": "^4.0.0" }
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "tailwindcss": "^4.0.0"
+  }
 }

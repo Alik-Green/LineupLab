@@ -2,7 +2,7 @@ use crate::MobileState;
 use lineuplab_core::{config::ModeConfig, Lineup, SLOT_ORDER};
 use serde_json::{json, Map, Value};
 use std::collections::BTreeSet;
-use tauri::{Manager, State};
+use tauri::{Emitter, Manager, State};
 type CmdResult<T> = Result<T, String>;
 fn err(e: impl std::fmt::Display) -> String { e.to_string() }
 fn to_ui(l: &Lineup) -> Value {
@@ -19,15 +19,31 @@ fn to_ui(l: &Lineup) -> Value {
 }
 #[tauri::command] pub fn list_lineups(state: State<MobileState>) -> CmdResult<Vec<Value>> { Ok(state.db.lock().unwrap().all(false).map_err(err)?.iter().map(to_ui).collect()) }
 #[tauri::command] pub fn get_lineup(state: State<MobileState>, id: String) -> CmdResult<Option<Value>> { Ok(state.db.lock().unwrap().get(&id).map_err(err)?.as_ref().map(to_ui)) }
-fn icon_url(_app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantApi, url: Option<&str>) -> Value { match url { Some(u) => { if let Ok(p) = api.image_path(u) { if p.exists() { return json!(p.to_string_lossy()); } } json!(u) }, None => Value::Null } }
-#[tauri::command] pub async fn get_catalog(app: tauri::AppHandle) -> CmdResult<Value> {
-    let state = app.state::<MobileState>();
-    let lineups = state.db.lock().unwrap().all(false).map_err(err)?; let api = state.api.clone(); drop(state);
-    let mut c = api.refresh(false).await.map_err(err)?; c.archive_missing(&lineups);
-    let agents: Vec<Value> = c.agents.iter().map(|a| json!({"uuid":a.uuid,"displayName":a.display_name,"displayIcon":icon_url(&app,&api,a.display_icon.as_deref()),"isArchived":a.archived})).collect();
-    let maps: Vec<Value> = c.maps.iter().map(|m| json!({"uuid":m.uuid,"displayName":m.display_name,"displayIcon":icon_url(&app,&api,m.display_icon.as_deref()),"isArchived":m.archived})).collect();
-    Ok(json!({"agents":agents,"maps":maps,"version":c.version,"updatedAt":c.last_updated.unwrap_or_else(lineuplab_core::now),"stale":c.offline,"warning":c.warning}))
+fn remote_url(url: Option<&str>) -> Value { match url { Some(u) => json!(u), None => Value::Null } }
+fn catalog_json(api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::catalog::Catalog, lineups: &[Lineup]) -> Value {
+    let mut c = c.clone(); c.archive_missing(lineups);
+    let agents: Vec<Value> = c.agents.iter().map(|a| json!({"uuid":a.uuid,"displayName":a.display_name,"displayIcon":remote_url(a.display_icon.as_deref()),"role":a.role.as_ref().map(|r| r.display_name.clone()),"roleIcon":a.role.as_ref().and_then(|r| r.display_icon.as_deref()).map(|u| json!(u)).unwrap_or(Value::Null),"isArchived":a.archived,"abilities":a.abilities.iter().map(|b| json!({"slot":b.slot,"displayName":b.display_name,"displayIcon":remote_url(b.display_icon.as_deref()),"description":b.description})).collect::<Vec<_>>()})).collect();
+    let maps: Vec<Value> = c.maps.iter().map(|m| json!({"uuid":m.uuid,"displayName":m.display_name,"displayIcon":remote_url(m.display_icon.as_deref()),"listViewIcon":remote_url(m.list_view_icon.as_deref()),"splash":remote_url(m.splash.as_deref()),"isArchived":m.archived})).collect();
+    json!({"agents":agents,"maps":maps,"version":c.version,"updatedAt":c.last_updated.clone().unwrap_or_else(lineuplab_core::now),"stale":c.offline,"warning":c.warning})
 }
+#[tauri::command] pub async fn get_catalog(app: tauri::AppHandle) -> CmdResult<Value> {
+    let state = app.state::<MobileState>(); let lineups = state.db.lock().unwrap().all(false).map_err(err)?; let api = state.api.clone(); drop(state);
+    let c = match api.cached_catalog().map_err(err)? { Some(c) => c, None => api.refresh(false).await.map_err(err)? };
+    Ok(catalog_json(&api, &c, &lineups))
+}
+#[tauri::command] pub async fn prepare_assets(app: tauri::AppHandle, force: bool) -> CmdResult<Value> {
+    let state = app.state::<MobileState>(); let lineups = state.db.lock().unwrap().all(false).map_err(err)?; let api = state.api.clone(); drop(state);
+    let emitter = app.clone();
+    let c = api.refresh_with_progress(force, move |p| { let _ = emitter.emit("lineuplab://assets", p); }).await.map_err(err)?;
+    Ok(catalog_json(&api, &c, &lineups))
+}
+#[tauri::command] pub fn catalog_image_url(state: State<MobileState>, url: String) -> CmdResult<String> { let p = state.api.image_path(&url).map_err(err)?; if p.exists() { return Ok(p.to_string_lossy().into_owned()); } Ok(url) }
+#[tauri::command] pub async fn asset_diagnostics(app: tauri::AppHandle) -> CmdResult<Value> {
+    let state = app.state::<MobileState>(); let api = state.api.clone(); let data_dir = state.data_dir.clone(); drop(state);
+    let c = api.cached_catalog().map_err(err)?.unwrap_or_default(); let audit = api.audit_assets(&c).map_err(err)?;
+    Ok(json!({"audit":audit,"dataDir":data_dir.to_string_lossy(),"cacheDir":data_dir.join("art-cache").to_string_lossy(),"assetProtocol":{"enabled":true,"scope":["$APPDATA/**","$APPLOCALDATA/**","$APPCACHE/**","$APPCONFIG/**","$RESOURCE/**"]},"platform":"android"}))
+}
+#[tauri::command] pub fn log_image_error(url: String, message: String) { tracing::warn!(url=%url,error=%message,"UI image load failed"); }
 #[tauri::command] pub fn get_modes() -> CmdResult<Vec<Value>> { let cfg = ModeConfig::load().map_err(err)?; let mut seen = BTreeSet::new(); let mut out = vec![]; for m in cfg.defaults.iter().chain(cfg.rules.iter().flat_map(|r| &r.modes)) { if !seen.insert(m.id.clone()) { continue; } let attrs: Map<String, Value> = m.attributes.iter().map(|(k, v)| { let ty = if v.is_boolean() { "boolean" } else if v.is_number() { "number" } else { "string" }; (k.clone(), json!({"type":ty,"default":v})) }).collect(); out.push(json!({"id":m.id,"label":m.label,"requiredSlots":m.required_slots,"optionalSlots":m.optional_slots,"attributes":attrs})); } Ok(out) }
 #[tauri::command] pub fn media_path(state: State<MobileState>, hash: String) -> CmdResult<String> { let p = std::path::Path::new(&hash); if p.is_absolute() && p.starts_with(&state.data_dir) && p.exists() { return Ok(p.to_string_lossy().into_owned()); } Ok(state.store.path(&hash).map_err(err)?.to_string_lossy().into_owned()) }
 #[tauri::command] pub async fn pair_sync(base_url: String, code: String, device_name: String) -> CmdResult<Value> { let p = lineuplab_core::sync::SyncClient::pair(&base_url, &code, &device_name).await.map_err(err)?; Ok(serde_json::to_value(p).map_err(err)?) }
