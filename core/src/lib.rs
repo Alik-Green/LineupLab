@@ -8,6 +8,7 @@ pub mod geometry;
 pub mod logging;
 pub mod models;
 pub mod pack;
+pub mod render;
 pub mod server;
 pub mod state_machine;
 pub mod storage;

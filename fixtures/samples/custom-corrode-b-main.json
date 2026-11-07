@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "id": "custom-corrode-b-main",
+  "title": "Corrode B Main Recon",
+  "mapUuid": "00000000-0000-4000-8000-0000000000c0",
+  "agentUuid": "00000000-0000-4000-8000-00000000050a",
+  "abilitySlot": "Grenade",
+  "side": "attack",
+  "site": "B",
+  "start": {
+    "x": 0.6919,
+    "y": 0.7016
+  },
+  "end": {
+    "x": 0.3441,
+    "y": 0.8831
+  },
+  "bounces": [],
+  "throwType": "normal",
+  "difficulty": "medium",
+  "tags": [
+    "synthetic",
+    "practice"
+  ],
+  "notes": "Synthetic fixture, not a real gameplay lineup.",
+  "author": "Fixture Generator",
+  "source": "synthetic",
+  "isFavorite": true,
+  "createdAt": "2025-01-02T03:04:05Z",
+  "updatedAt": "2025-01-03T03:04:05Z",
+  "attributes": {
+    "chargeStage": "1",
+    "chargeBars": "2",
+    "bounces": "2",
+    "doubleShock": false,
+    "hasSecondStand": false,
+    "stand2Image": null,
+    "stand2Point": null,
+    "slotCircles": {
+      "stand1": [],
+      "aim1": [
+        {
+          "id": "circle-corrode-1",
+          "color": "cyan",
+          "x": 0.5,
+          "y": 0.5,
+          "radius": 0.025,
+          "showZoom": true,
+          "zoomScale": 3.5,
+          "zoomSize": 0.24,
+          "zoomX": 0.72,
+          "zoomY": 0.04,
+          "legacyNote": "preserve me"
+        }
+      ],
+      "stand2": [],
+      "aim2": [],
+      "landing": []
+    },
+    "projectiles": [
+      {
+        "index": 0,
+        "label": "Primary",
+        "aimImage": "media/asset_bbbbbbb.jpg",
+        "standImage": "media/asset_aaaaaaa.jpg",
+        "chargeStage": "1",
+        "chargeBars": "2",
+        "bounces": "0",
+        "throwType": "normal",
+        "focusCircles": [
+          {
+            "id": "circle-corrode-1",
+            "color": "cyan",
+            "x": 0.5,
+            "y": 0.5,
+            "radius": 0.025,
+            "showZoom": true,
+            "zoomScale": 3.5,
+            "zoomSize": 0.24,
+            "zoomX": 0.72,
+            "zoomY": 0.04,
+            "legacyNote": "preserve me"
+          }
+        ]
+      }
+    ],
+    "futureAttribute": {
+      "nested": [
+        1,
+        "two"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "order": 1,
+      "text": "Stand on the marker",
+      "imageRef": "media/asset_fffffff.jpg"
+    },
+    {
+      "order": 2,
+      "text": "Align the crosshair",
+      "imageRef": "media/asset_bbbbbbb.jpg"
+    }
+  ],
+  "media": {
+    "standImage": "media/asset_aaaaaaa.jpg",
+    "aimImage": "media/asset_bbbbbbb.jpg",
+    "landingImage": "media/asset_ccccccc.jpg",
+    "videoClip": null,
+    "videoThumbnail": null
+  },
+  "futureRootField": {
+    "keep": true
+  }
+}
