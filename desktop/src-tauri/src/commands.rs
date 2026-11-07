@@ -162,10 +162,10 @@ pub fn register_hotkeys(app: &tauri::AppHandle, cfg: &HotkeyConfig) {
 }
 pub(crate) fn monitor_infos(app: &tauri::AppHandle) -> Vec<Value> {
     let monitors = app.available_monitors().unwrap_or_default();
-    let primary_name = app.primary_monitor().ok().flatten().and_then(|m| m.name().ok());
+    let primary_name = app.primary_monitor().ok().flatten().and_then(|m| m.name());
     monitors.iter().enumerate().map(|(index, m)| {
         let size = m.size(); let pos = m.position(); let scale = m.scale_factor();
-        let name = m.name().ok().unwrap_or_else(|| format!("Monitor {}", index + 1));
+        let name = m.name().unwrap_or_else(|| format!("Monitor {}", index + 1));
         json!({
             "index": index, "name": name, "isPrimary": primary_name.as_deref() == Some(name.as_str()),
             "x": pos.x, "y": pos.y, "physicalWidth": size.width, "physicalHeight": size.height,
@@ -182,9 +182,9 @@ pub(crate) fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
         let _ = w.set_ignore_cursor_events(s.settings.click_through);
         let _ = w.set_always_on_top(true);
         let monitors = app.available_monitors().unwrap_or_default();
-        let primary_name = app.primary_monitor().ok().flatten().and_then(|m| m.name().ok());
+        let primary_name = app.primary_monitor().ok().flatten().and_then(|m| m.name());
         let monitor = monitors.get(s.settings.monitor as usize)
-            .or_else(|| monitors.iter().find(|m| m.name().ok().as_deref() == primary_name.as_deref()))
+            .or_else(|| monitors.iter().find(|m| m.name().as_deref() == primary_name.as_deref()))
             .or_else(|| monitors.first());
         if let Some(m) = monitor {
             let size = m.size(); let pos = m.position();
