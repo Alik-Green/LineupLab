@@ -3,6 +3,17 @@ name: Publish verified release assets
 # Retrieve binaries inside GitHub Actions (the development sandbox cannot reach
 # GitHub's artifact storage CDN), verify them, and attach them to an existing draft.
 on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+      windows_run_id:
+        required: true
+        type: string
+      android_run_id:
+        required: true
+        type: string
   workflow_dispatch:
     inputs:
       tag:
