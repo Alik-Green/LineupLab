@@ -1,33 +1,47 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Download, RefreshCw, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { Database, Download, RefreshCw, ShieldCheck, TriangleAlert } from 'lucide-react';
 import type { AssetDiagnostics, LibraryAdapter } from '../types';
 import { useImageDiagnostics } from '../lib/images';
+import { Button, Card, StatusDot, useToast } from './ui';
 
 export function formatBytes(bytes: number) { if (!bytes) return '0 B'; const units = ['B', 'KB', 'MB', 'GB']; const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024))); return `${(bytes / 1024 ** i).toFixed(i ? 1 : 0)} ${units[i]}`; }
-export function DataSettings({ adapter, onRefresh }: { adapter: LibraryAdapter; onRefresh(): void }) {
-  const { runSelfTest, testing, lastTest, records } = useImageDiagnostics();
+function useDiag(adapter: LibraryAdapter) {
   const [diag, setDiag] = useState<AssetDiagnostics | null>(null);
-  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState('');
-  const load = useCallback(async () => { try { setDiag(await adapter.assetDiagnostics()); } catch (e) { setMsg(String(e)); } }, [adapter]);
+  const load = useCallback(async () => { try { setDiag(await adapter.assetDiagnostics()); } catch { /* native report unavailable in browser demo */ } }, [adapter]);
   useEffect(() => { void load(); }, [load]);
-  const redownload = async () => { setBusy(true); setMsg(''); try { await adapter.prepareAssets(true); onRefresh(); await load(); setMsg('Game data refreshed. Cached images remain available offline.'); } catch (e) { setMsg(String(e)); } finally { setBusy(false); } };
-  const test = async () => { setMsg(''); const r = await runSelfTest(); await load(); setMsg(r.failed ? `${r.failed} image(s) failed. See diagnostics below.` : `All ${r.ok} catalog images rendered successfully.`); };
+  return { diag, load };
+}
+export function DataPanel({ adapter, onRefresh }: { adapter: LibraryAdapter; onRefresh(): void }) {
+  const toast = useToast(); const { diag, load } = useDiag(adapter); const [busy, setBusy] = useState(false);
+  const redownload = async () => { setBusy(true); try { await adapter.prepareAssets(true); onRefresh(); await load(); toast.push('Game data refreshed. Cached images remain available offline.', 'success'); } catch (e) { toast.push(String(e), 'error'); } finally { setBusy(false); } };
+  const total = Object.values(diag?.audit.types ?? {}).reduce((s, t) => s + t.total, 0); const cached = Object.values(diag?.audit.types ?? {}).reduce((s, t) => s + t.cached, 0);
+  return <div className="ll-settings-grid" data-testid="data-settings">
+    <Card><h2 className="ll-h2 mb-2 flex items-center gap-2"><Database size={18} /> Game data & image cache</h2><p className="ll-muted">Agent, ability, map and minimap art is fetched at runtime and cached for offline use. No Riot assets are bundled.</p>
+      <dl className="ll-meta-grid mt-3"><dt>Catalog version</dt><dd>{diag?.audit.version || '—'}</dd><dt>Cache size</dt><dd>{formatBytes(diag?.audit.cacheBytes ?? 0)}</dd><dt>Assets cached</dt><dd>{cached}/{total}</dd><dt>Platform</dt><dd>{diag?.platform ?? adapter.kind}</dd><dt>Cache folder</dt><dd className="ll-break">{diag?.cacheDir ?? '—'}</dd><dt>Data folder</dt><dd className="ll-break">{diag?.dataDir ?? '—'}</dd></dl>
+      <div className="ll-btn-row mt-4"><Button variant="primary" icon={<Download size={16} />} loading={busy} onClick={redownload}>Re-download images</Button><Button icon={<RefreshCw size={16} />} onClick={() => { void load(); onRefresh(); }}>Refresh report</Button></div></Card>
+    <Card><h2 className="ll-h2 mb-2">Cache by asset type</h2><div className="ll-table-wrap"><table className="ll-table"><thead><tr><th>Asset type</th><th>Cached</th><th>Missing</th><th>Invalid</th><th>Size</th></tr></thead><tbody>
+      {Object.entries(diag?.audit.types ?? {}).map(([kind, t]) => <tr key={kind}><td className="capitalize">{kind}</td><td>{t.cached}/{t.total}</td><td>{t.missing ? <span className="ll-warn-text">{t.missing}</span> : '0'}</td><td>{t.invalid ? <span className="ll-warn-text">{t.invalid}</span> : '0'}</td><td>{formatBytes(t.bytes)}</td></tr>)}
+      {!Object.keys(diag?.audit.types ?? {}).length && <tr><td colSpan={5} className="ll-muted">No native cache report yet. Re-download images to populate the cache.</td></tr>}
+    </tbody></table></div></Card>
+  </div>;
+}
+export function DiagnosticsPanel({ adapter }: { adapter: LibraryAdapter }) {
+  const { runSelfTest, testing, lastTest, records } = useImageDiagnostics(); const { diag, load } = useDiag(adapter); const [msg, setMsg] = useState('');
+  const test = async () => { setMsg(''); const r = await runSelfTest(); await load(); setMsg(r.failed ? `${r.failed} image(s) failed. See the error list below.` : `All ${r.ok} catalog images rendered successfully.`); };
   const errors = records.filter(r => !r.ok).slice(-12).reverse();
-  return <div className="space-y-4" data-testid="data-settings">
-    <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Game data & image cache</h2><p className="mt-1 text-sm text-slate-400">Version {diag?.audit.version || '—'} · cache {formatBytes(diag?.audit.cacheBytes ?? 0)} · {diag?.platform ?? adapter.kind}</p></div><div className="flex gap-2"><button onClick={redownload} disabled={busy} className="inline-flex min-h-10 items-center gap-2 rounded bg-cyan-600 px-4 text-sm font-semibold text-white disabled:opacity-50"><Download size={16} /> Re-download images</button><button onClick={test} disabled={testing} className="inline-flex min-h-10 items-center gap-2 rounded bg-slate-800 px-4 text-sm disabled:opacity-50"><RefreshCw size={16} className={testing ? 'animate-spin' : ''} /> Run image self-test</button></div></div>
-      <p className="mt-2 text-xs text-slate-500">Agent, ability, map and minimap art is fetched at runtime and cached for offline use. No Riot assets are bundled. Cache: {diag?.cacheDir ?? '—'}</p>
-      {msg && <p role="status" className="mt-2 text-sm text-cyan-300">{msg}</p>}
-    </section>
-    <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4" data-testid="asset-diagnostics">
-      <h3 className="mb-2 flex items-center gap-2 text-base font-semibold"><ShieldCheck size={18} /> Startup self-test</h3>
-      {lastTest && <p className={`mb-2 text-sm ${lastTest.failed ? 'text-amber-300' : 'text-emerald-300'}`}>{lastTest.ok}/{lastTest.total} images rendered · {lastTest.failed} failed · {new Date(lastTest.finishedAt).toLocaleTimeString()}</p>}
-      <div className="overflow-auto rounded border border-slate-800"><table className="w-full text-left text-sm"><thead className="bg-slate-950/60 text-xs uppercase text-slate-400"><tr><th className="p-2">Asset type</th><th className="p-2">Cached</th><th className="p-2">Missing</th><th className="p-2">Invalid</th><th className="p-2">Rendered</th><th className="p-2">Size</th></tr></thead><tbody>
-        {Object.entries(diag?.audit.types ?? {}).map(([kind, t]) => <tr key={kind} className="border-t border-slate-800"><td className="p-2 capitalize">{kind}</td><td className="p-2">{t.cached}/{t.total}</td><td className="p-2">{t.missing}</td><td className="p-2">{t.invalid}</td><td className="p-2">{lastTest?.types[kind] ? `${lastTest.types[kind].ok}/${lastTest.types[kind].total}` : '—'}</td><td className="p-2">{formatBytes(t.bytes)}</td></tr>)}
-        {!Object.keys(diag?.audit.types ?? {}).length && <tr><td colSpan={6} className="p-3 text-slate-500">No native cache report yet. Run the self-test or re-download images.</td></tr>}
+  const hasErrors = (diag?.audit.errors.length ?? 0) > 0 || errors.length > 0;
+  return <div className="ll-settings-grid" data-testid="asset-diagnostics">
+    <Card><div className="ll-selector-head"><h2 className="ll-h2 flex items-center gap-2"><ShieldCheck size={18} /> Image self-test</h2><Button icon={<RefreshCw size={16} className={testing ? 'll-spin' : ''} />} loading={testing} onClick={test}>Run image self-test</Button></div>
+      <p className="ll-muted">Loads every catalog image through the same cache-first layer the UI uses and reports CSP, asset-protocol and decode failures per asset type.</p>
+      {msg && <p role="status" className={`ll-feedback ${lastTest?.failed ? 'll-feedback--conflict' : 'll-feedback--ok'}`}>{msg}</p>}
+      {lastTest && <p className="ll-muted">{lastTest.ok}/{lastTest.total} images rendered · {lastTest.failed} failed · {new Date(lastTest.finishedAt).toLocaleTimeString()}</p>}
+      <div className="ll-table-wrap mt-3"><table className="ll-table"><thead><tr><th>Asset type</th><th>Rendered</th><th>Failed</th><th>Cached</th></tr></thead><tbody>
+        {Object.entries(diag?.audit.types ?? {}).map(([kind, t]) => <tr key={kind}><td className="capitalize">{kind}</td><td>{lastTest?.types[kind] ? `${lastTest.types[kind].ok}/${lastTest.types[kind].total}` : '—'}</td><td>{lastTest?.types[kind]?.failed ?? 0}</td><td>{t.cached}/{t.total}</td></tr>)}
+        {!Object.keys(diag?.audit.types ?? {}).length && <tr><td colSpan={4} className="ll-muted">Run the self-test to populate results.</td></tr>}
       </tbody></table></div>
-      <div className="mt-3 grid gap-2 text-xs text-slate-400 sm:grid-cols-2"><p>Asset protocol: {diag?.assetProtocol.enabled ? 'enabled' : 'browser mock'} · scope {diag?.assetProtocol.scope.join(', ') || 'n/a'}</p><p>Data dir: {diag?.dataDir ?? '—'}</p></div>
-      {(diag?.audit.errors.length || errors.length) ? <div className="mt-3 rounded border border-amber-800 bg-amber-950/30 p-3 text-xs text-amber-200"><p className="mb-1 flex items-center gap-1 font-semibold"><TriangleAlert size={14} /> Image / CSP / asset-protocol errors</p><ul className="max-h-40 space-y-1 overflow-auto">{diag?.audit.errors.slice(0, 8).map((e, i) => <li key={i}>{e}</li>)}{errors.map((e, i) => <li key={`r${i}`}>{e.kind}: {e.message} ({e.url})</li>)}</ul></div> : <p className="mt-3 text-xs text-emerald-300">No image errors recorded.</p>}
-    </section>
+      <div className="ll-meta-grid mt-3"><dt>Asset protocol</dt><dd>{diag?.assetProtocol.enabled ? 'enabled' : 'browser mock'} · scope {diag?.assetProtocol.scope.join(', ') || 'n/a'}</dd></div></Card>
+    <Card><h2 className="ll-h2 mb-2 flex items-center gap-2"><TriangleAlert size={18} /> Image / CSP errors</h2>
+      {hasErrors ? <ul className="ll-error-list">{diag?.audit.errors.slice(0, 8).map((e, i) => <li key={i}>{e}</li>)}{errors.map((e, i) => <li key={`r${i}`}><StatusDot tone="error" /> {e.kind}: {e.message} <span className="ll-break">({e.url})</span></li>)}</ul> : <p className="ll-ok"><StatusDot tone="success" /> No image errors recorded.</p>}
+      <p className="ll-muted mt-3" style={{ fontSize: 12 }}>If images fail on Windows, check docs/IMAGE_LOADING.md: asset-protocol scope, CSP img-src and the cache folder permissions.</p></Card>
   </div>;
 }

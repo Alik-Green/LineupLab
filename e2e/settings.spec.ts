@@ -1,0 +1,43 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('desktop settings', () => {
+  test('tabs render and hotkey rebinding rejects conflicts', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/?mock');
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Settings' }).click();
+    await expect(page.getByTestId('settings')).toBeVisible();
+    await page.screenshot({ path: 'docs/screenshots/40-settings-general.png' });
+    await page.getByRole('tab', { name: 'Hotkeys' }).click();
+    await expect(page.getByTestId('hotkey-settings')).toBeVisible();
+    await page.screenshot({ path: 'docs/screenshots/41-settings-hotkeys.png' });
+    await page.getByRole('button', { name: 'Rebind Capture current slot' }).click();
+    await page.keyboard.press('Alt+X');
+    await expect(page.getByText(/already uses Alt\+X/)).toBeVisible();
+    await page.getByRole('button', { name: 'Rebind Capture current slot' }).click();
+    await page.keyboard.press('Alt+Shift+C');
+    await expect(page.getByTestId('hotkey-settings').getByText(/bound to Alt\+Shift\+C/)).toBeVisible();
+    await page.locator('.ll-toast button[aria-label="Dismiss"]').click();
+    await page.getByRole('tab', { name: 'Overlay' }).click();
+    await expect(page.getByTestId('overlay-preview')).toBeVisible();
+    await page.getByRole('radio', { name: 'bottom left' }).click();
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: 'docs/screenshots/42-settings-overlay.png' });
+    await page.getByRole('tab', { name: 'Capture' }).click();
+    await expect(page.getByTestId('capture-settings')).toBeVisible();
+    await page.screenshot({ path: 'docs/screenshots/43-settings-capture.png' });
+    await page.getByRole('tab', { name: 'Sync' }).click();
+    await page.getByRole('button', { name: 'Start sync server' }).click();
+    await expect(page.getByTestId('pairing-code')).toHaveText('482913');
+    await page.screenshot({ path: 'docs/screenshots/44-settings-sync.png' });
+    await page.getByRole('tab', { name: 'Data' }).click();
+    await expect(page.getByTestId('data-settings')).toBeVisible();
+    await page.screenshot({ path: 'docs/screenshots/45-settings-data.png' });
+    await page.getByRole('tab', { name: 'Diagnostics' }).click();
+    await page.getByRole('button', { name: 'Run image self-test' }).click();
+    await expect(page.getByText(/All \d+ catalog images rendered successfully/)).toBeVisible({ timeout: 30000 });
+    await page.screenshot({ path: 'docs/screenshots/46-settings-diagnostics.png' });
+    await page.getByRole('tab', { name: 'About' }).click();
+    await expect(page.getByText('Safety model')).toBeVisible();
+    await page.screenshot({ path: 'docs/screenshots/47-settings-about.png' });
+  });
+});
