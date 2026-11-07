@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Activity, Camera, Cloud, Database, Info, Keyboard, MonitorPlay, Settings2, ShieldCheck } from 'lucide-react';
 import type { Catalog, LibraryAdapter } from '../types';
 import { usePersistentState } from '../lib/hooks';
+import { APP_RELEASE_VERSION } from '../lib/version';
 import { Button, Card, PageHeader, Segmented, Tabs, Toggle, useToast } from './ui';
 import { HotkeysPanel, OverlayPanel, CapturePanel } from './DesktopSettings';
 import { DataPanel, DiagnosticsPanel } from './DataSettings';
@@ -39,6 +40,6 @@ function General({ catalog, onRefresh, browseOnly }: { catalog: Catalog | null; 
   </div>;
 }
 function About({ adapter }: { adapter: LibraryAdapter }) {
-  return <div className="ll-settings-grid"><Card><h2 className="ll-h2 mb-2 flex items-center gap-2"><Info size={18} /> LineupLab</h2><dl className="ll-meta-grid"><dt>Version</dt><dd>0.1.0-preview.1</dd><dt>Runtime</dt><dd>{adapter.kind === 'tauri' ? 'Tauri desktop core' : 'Browser demo'}</dd><dt>License</dt><dd>MIT (application code)</dd><dt>Game art</dt><dd>Fetched at runtime from valorant-api.com; not bundled. Riot Games does not endorse LineupLab.</dd></dl><div className="ll-btn-row mt-3"><Button onClick={() => window.open('https://github.com/Alik-Green/LineupLab', '_blank', 'noopener')}>GitHub repository</Button><Button onClick={() => window.open('https://github.com/Alik-Green/LineupLab/releases', '_blank', 'noopener')}>Releases</Button></div></Card>
+  return <div className="ll-settings-grid"><Card><h2 className="ll-h2 mb-2 flex items-center gap-2"><Info size={18} /> LineupLab</h2><dl className="ll-meta-grid"><dt>Version</dt><dd>{APP_RELEASE_VERSION}</dd><dt>Runtime</dt><dd>{adapter.kind === 'tauri' ? 'Tauri desktop core' : 'Browser demo'}</dd><dt>License</dt><dd>MIT (application code)</dd><dt>Game art</dt><dd>Fetched at runtime from valorant-api.com; not bundled. Riot Games does not endorse LineupLab.</dd></dl><div className="ll-btn-row mt-3"><Button onClick={() => window.open('https://github.com/Alik-Green/LineupLab', '_blank', 'noopener')}>GitHub repository</Button><Button onClick={() => window.open('https://github.com/Alik-Green/LineupLab/releases', '_blank', 'noopener')}>Releases</Button></div></Card>
     <Card><h2 className="ll-h2 mb-2 flex items-center gap-2"><ShieldCheck size={18} /> Safety model</h2><ul className="ll-about-list"><li>Never reads, hooks or attaches to Valorant or Vanguard memory.</li><li>Separate transparent overlay window, global Alt hotkeys and normal screen capture only.</li><li>Overlay works with Borderless/Windowed Valorant; exclusive fullscreen is not supported.</li><li>Original screenshots are never modified; annotations are stored alongside.</li><li>Legacy ZIP remains the sole import/export format; unknown fields are preserved.</li></ul></Card></div>;
 }
