@@ -24,9 +24,14 @@ jobs:
       - name: Initialize and build APK
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.0.12077973
+        shell: bash
         run: |
-          npm run tauri --workspace mobile -- android init
-          npm run tauri --workspace mobile -- android build --apk
+          set +e
+          npm run tauri --workspace mobile -- android init > android-init.log 2>&1
+          npm run tauri --workspace mobile -- android build --apk > android-build.log 2>&1
+          code=$?
+          tail -n 40 android-init.log; tail -n 60 android-build.log
+          if [ $code -ne 0 ]; then tail -n 40 android-build.log | while IFS= read -r line; do echo "::error::$line"; done; exit $code; fi
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk

@@ -136,12 +136,11 @@ fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
 
 // ---- LAN sync (opt-in) ----
 #[tauri::command] pub async fn start_sync_server(state: State<'_, AppState>, name: Option<String>) -> CmdResult<Value> {
-    let mut guard = state.sync_server.lock().unwrap();
-    if let Some(h) = guard.as_ref() { return Ok(json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code})); }
+    if let Some(h) = state.sync_server.lock().unwrap().as_ref() { return Ok(json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code})); }
     let config = lineuplab_core::server::ServerConfig { data_dir: state.data_dir.clone(), name: name.unwrap_or_else(|| "LineupLab Desktop".into()), ..Default::default() };
     let h = lineuplab_core::server::spawn(config).await.map_err(err)?;
     let out = json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code});
-    *guard = Some(h); Ok(out)
+    *state.sync_server.lock().unwrap() = Some(h); Ok(out)
 }
 #[tauri::command] pub async fn stop_sync_server(state: State<'_, AppState>) -> CmdResult<()> { let h = state.sync_server.lock().unwrap().take(); if let Some(h) = h { h.shutdown().await.map_err(err)?; } Ok(()) }
 #[tauri::command] pub fn get_sync_server_status(state: State<AppState>) -> CmdResult<Value> { let g = state.sync_server.lock().unwrap(); Ok(match g.as_ref() { Some(h) => json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code}), None => json!({"running":false}) }) }

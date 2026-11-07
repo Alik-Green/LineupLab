@@ -5,7 +5,7 @@ mod capture;
 
 use lineuplab_core::{capture::CaptureSettings, catalog::ValorantApi, db::Database, hotkeys::HotkeyConfig, overlay::OverlayState, storage::MediaStore};
 use std::sync::{atomic::AtomicBool, Mutex};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 pub struct AppState {
     pub db: Mutex<Database>,
