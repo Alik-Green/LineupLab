@@ -97,3 +97,253 @@ pub fn manifest(lineups: &[Lineup], device_id: &str, since: Option<&str>) -> Res
         entries,
     })
 }
+
+/// Authenticated LAN client. Plain HTTP is the documented alternative to pinned HTTPS (docs/SYNC.md).
+#[derive(Clone)]
+pub struct SyncClient {
+    pub base_url: String,
+    pub token: String,
+    http: reqwest::Client,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PairResponse {
+    pub token: String,
+    pub server_name: String,
+    pub device_id: String,
+    pub protocol_version: u32,
+}
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncReport {
+    pub pulled: usize,
+    pub pushed: usize,
+    pub images: usize,
+    pub conflicts: usize,
+}
+impl SyncClient {
+    pub fn new(base_url: impl Into<String>, token: impl Into<String>) -> Self {
+        Self {
+            base_url: base_url.into().trim_end_matches('/').to_string(),
+            token: token.into(),
+            http: reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(30))
+                .build()
+                .unwrap_or_default(),
+        }
+    }
+    pub async fn pair(base_url: &str, code: &str, device_name: &str) -> Result<PairResponse> {
+        crate::ensure_crypto_provider();
+        let http = reqwest::Client::new();
+        let resp = http
+            .post(format!("{}/pair", base_url.trim_end_matches('/')))
+            .json(&serde_json::json!({"code":code,"deviceName":device_name}))
+            .send()
+            .await?;
+        if !resp.status().is_success() {
+            return Err(crate::Error::Unauthorized);
+        }
+        Ok(resp.json().await?)
+    }
+    fn auth(&self, rb: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
+        rb.bearer_auth(&self.token)
+    }
+    pub async fn manifest(&self, since: Option<&str>) -> Result<SyncManifest> {
+        let mut url = format!("{}/manifest", self.base_url);
+        if let Some(s) = since {
+            url.push_str(&format!("?since={s}"));
+        }
+        let r = self.auth(self.http.get(url)).send().await?;
+        if r.status() == reqwest::StatusCode::UNAUTHORIZED {
+            return Err(crate::Error::Unauthorized);
+        }
+        Ok(r.error_for_status()?.json().await?)
+    }
+    pub async fn lineups(&self, ids: &[String]) -> Result<Vec<Lineup>> {
+        let url = format!("{}/lineups?ids={}", self.base_url, ids.join(","));
+        Ok(self
+            .auth(self.http.get(url))
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?)
+    }
+    pub async fn image(&self, hash: &str) -> Result<Vec<u8>> {
+        Ok(self
+            .auth(self.http.get(format!("{}/images/{hash}", self.base_url)))
+            .send()
+            .await?
+            .error_for_status()?
+            .bytes()
+            .await?
+            .to_vec())
+    }
+    pub async fn put_image(&self, hash: &str, bytes: &[u8]) -> Result<()> {
+        self.auth(
+            self.http
+                .put(format!("{}/images/{hash}", self.base_url))
+                .body(bytes.to_vec()),
+        )
+        .send()
+        .await?
+        .error_for_status()?;
+        Ok(())
+    }
+    pub async fn push(&self, device_id: &str, lineups: &[Lineup]) -> Result<PushResponse> {
+        Ok(self
+            .auth(
+                self.http
+                    .post(format!("{}/push", self.base_url))
+                    .json(&PushRequest {
+                        device_id: device_id.into(),
+                        lineups: lineups.to_vec(),
+                    }),
+            )
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await?)
+    }
+}
+/// Pull newer lineups + missing images from the server into the local library.
+pub async fn pull(
+    client: &SyncClient,
+    db: &mut crate::db::Database,
+    store: &crate::storage::MediaStore,
+    since: Option<&str>,
+) -> Result<SyncReport> {
+    let manifest = client.manifest(since).await?;
+    let ids: Vec<String> = manifest.entries.iter().map(|e| e.id.clone()).collect();
+    if ids.is_empty() {
+        return Ok(SyncReport::default());
+    }
+    let incoming = client.lineups(&ids).await?;
+    let mut report = SyncReport::default();
+    let missing = missing_hashes(&incoming, |h| store.has(h));
+    for h in &missing {
+        let bytes = client.image(h).await?;
+        if crate::storage::hash_bytes(&bytes) != *h {
+            return Err(crate::Error::Invalid("Sync image hash mismatch".into()));
+        }
+        store.put(&bytes)?;
+        report.images += 1;
+    }
+    for l in &incoming {
+        let local = db.get(&l.id)?;
+        if merge(local.as_ref(), l) {
+            db.put(l)?;
+            report.pulled += 1;
+        } else {
+            report.conflicts += 1;
+        }
+    }
+    Ok(report)
+}
+/// Push local lineups that are newer than the server (including tombstones) plus their images.
+pub async fn push_local(
+    client: &SyncClient,
+    db: &crate::db::Database,
+    store: &crate::storage::MediaStore,
+    device_id: &str,
+) -> Result<SyncReport> {
+    let remote = client.manifest(None).await?;
+    let remote_map: std::collections::BTreeMap<String, ManifestEntry> = remote
+        .entries
+        .into_iter()
+        .map(|e| (e.id.clone(), e))
+        .collect();
+    let all = db.all(true)?;
+    let mut selected = vec![];
+    for l in &all {
+        let newer = match remote_map.get(&l.id) {
+            Some(e) => {
+                let mut probe = l.clone();
+                probe.updated_at = e.updated_at.clone();
+                probe.revision = e.revision;
+                probe.device_id = e.device_id.clone();
+                is_newer(l, &probe)
+            }
+            None => true,
+        };
+        if newer {
+            selected.push(l.clone());
+        }
+    }
+    let mut report = SyncReport::default();
+    if selected.is_empty() {
+        return Ok(report);
+    }
+    for h in missing_hashes(&selected, |_| false) {
+        if store.has(&h) {
+            client.put_image(&h, &store.get(&h)?).await?;
+            report.images += 1;
+        }
+    }
+    let resp = client.push(device_id, &selected).await?;
+    report.pushed = resp.accepted.len();
+    report.conflicts = resp.conflicts.len();
+    Ok(report)
+}
+/// Bidirectional sync: push local changes, then pull remote changes.
+pub async fn sync_both(
+    client: &SyncClient,
+    db: &mut crate::db::Database,
+    store: &crate::storage::MediaStore,
+    device_id: &str,
+    since: Option<&str>,
+) -> Result<SyncReport> {
+    let up = push_local(client, db, store, device_id).await?;
+    let down = pull(client, db, store, since).await?;
+    Ok(SyncReport {
+        pulled: down.pulled,
+        pushed: up.pushed,
+        images: up.images + down.images,
+        conflicts: up.conflicts + down.conflicts,
+    })
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiscoveredServer {
+    pub name: String,
+    pub address: String,
+    pub port: u16,
+}
+/// Browse mDNS for `_lineuplab._tcp.local.` for a short window. Manual address entry remains available.
+pub fn discover(timeout: std::time::Duration) -> Result<Vec<DiscoveredServer>> {
+    let daemon = mdns_sd::ServiceDaemon::new().map_err(|e| crate::Error::Invalid(e.to_string()))?;
+    let rx = daemon
+        .browse("_lineuplab._tcp.local.")
+        .map_err(|e| crate::Error::Invalid(e.to_string()))?;
+    let deadline = std::time::Instant::now() + timeout;
+    let mut out: std::collections::BTreeMap<String, DiscoveredServer> =
+        std::collections::BTreeMap::new();
+    while let Some(remaining) = deadline.checked_duration_since(std::time::Instant::now()) {
+        match rx.recv_timeout(remaining.min(std::time::Duration::from_millis(200))) {
+            Ok(mdns_sd::ServiceEvent::ServiceResolved(info)) => {
+                if let Some(ip) = info.get_addresses_v4().iter().next() {
+                    let name = info
+                        .get_fullname()
+                        .split("._lineuplab")
+                        .next()
+                        .unwrap_or("LineupLab")
+                        .to_string();
+                    out.insert(
+                        info.get_fullname().to_string(),
+                        DiscoveredServer {
+                            name,
+                            address: ip.to_string(),
+                            port: info.get_port(),
+                        },
+                    );
+                }
+            }
+            Ok(_) => {}
+            Err(_) => {}
+        }
+    }
+    let _ = daemon.shutdown();
+    Ok(out.into_values().collect())
+}

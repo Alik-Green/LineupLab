@@ -31,7 +31,7 @@ rusqlite = { version = "0.32", features = ["bundled", "serde_json"] }
 zip = { version = "0.6.4", default-features = false, features = ["deflate"] }
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "json"] }
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "time", "net", "sync"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "time", "net", "sync", "signal"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json"] }
 clap = { version = "4", features = ["derive"] }

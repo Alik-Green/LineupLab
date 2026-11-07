@@ -5,6 +5,7 @@ import { Browse } from './components/Browse';
 import { Editor } from './components/Editor';
 import { DesktopSettings } from './components/DesktopSettings';
 import { OverlayView } from './components/OverlayView';
+import { SyncSettings } from './components/SyncSettings';
 
 type Page = 'browse' | 'editor' | 'import' | 'settings';
 export function App({ platform }: { platform: 'desktop' | 'mobile' }) {
@@ -57,6 +58,6 @@ function Settings({ adapter, catalog, onRefresh, browseOnly = false }: { adapter
     <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"><h2 className="mb-2 text-lg font-semibold">Catalog</h2><p className="text-sm text-slate-400">Version {catalog?.version ?? '—'} · last updated {catalog ? new Date(catalog.updatedAt).toLocaleString() : '—'}{catalog?.stale ? ' (offline cache)' : ''}</p><button onClick={onRefresh} className="mt-2 rounded bg-slate-800 px-3 py-1.5 text-sm">Refresh</button><p className="mt-2 text-xs text-slate-500">Agent/map art is fetched at runtime and cached; no Riot assets are bundled. Archived references are kept so lineups never disappear.</p></section>
     {!browseOnly && <DesktopSettings adapter={adapter} />}
     {browseOnly && <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"><h2 className="mb-2 text-lg font-semibold">Browse-only companion</h2><p className="text-sm text-slate-400">Creation, overlay and hotkeys are desktop-only. Pair with a desktop library to browse offline.</p></section>}
-    <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"><h2 className="mb-2 text-lg font-semibold">LAN sync</h2><p className="text-sm text-slate-400">Opt-in pairing server and Android companion sync are implemented in the core/server milestone.</p></section>
+    <SyncSettings adapter={adapter} host={!browseOnly} />
   </div>;
 }

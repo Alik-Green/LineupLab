@@ -57,9 +57,19 @@ export interface LibraryAdapter {
   setOverlaySettings(settings: OverlaySettings): Promise<void>;
   getCaptureSettings(): Promise<CaptureSettings>;
   setCaptureSettings(settings: CaptureSettings): Promise<void>;
+  startSyncServer(name?: string): Promise<SyncServerStatus>;
+  stopSyncServer(): Promise<void>;
+  getSyncServerStatus(): Promise<SyncServerStatus>;
+  pairSync(baseUrl: string, code: string, deviceName: string): Promise<SyncPairResponse>;
+  syncNow(baseUrl: string, token: string): Promise<SyncReport>;
+  discoverSync(): Promise<DiscoveredServer[]>;
 }
 export interface HotkeyBinding { action: string; label: string; keys: string }
 export type HotkeyFeedback = { kind: 'ok'; message: string } | { kind: 'conflict'; message: string; action: string } | { kind: 'invalid'; message: string };
 export type OverlayCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 export interface OverlaySettings { enabled: boolean; clickThrough: boolean; corner: OverlayCorner; monitor: number; marginX: number; marginY: number; width: number; height: number; opacity: number }
 export interface CaptureSettings { maxWidth: number; quality: number; webp: boolean; thumbnail: boolean; targetMs: number }
+export interface SyncServerStatus { running: boolean; address?: string; pairingCode?: string }
+export interface SyncPairResponse { token: string; serverName: string; deviceId: string; protocolVersion: number }
+export interface SyncReport { pulled: number; pushed: number; images: number; conflicts: number }
+export interface DiscoveredServer { name: string; address: string; port: number }

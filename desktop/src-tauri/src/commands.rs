@@ -133,3 +133,23 @@ fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
     match action.as_str() { "overlay_toggle" => s.toggle_visible(), "overlay_controls" => s.controls(), "overlay_mode" => s.toggle_mode(), "view_next" => s.view_next(), "view_prev" => s.view_prev(), "view_flip" => s.flip(), "checklist_toggle" => s.show_checklist = !s.show_checklist, _ => {} }
     apply_overlay(&app, &s); let _ = app.emit("lineuplab://overlay-changed", &*s); Ok(())
 }
+
+// ---- LAN sync (opt-in) ----
+#[tauri::command] pub async fn start_sync_server(state: State<'_, AppState>, name: Option<String>) -> CmdResult<Value> {
+    let mut guard = state.sync_server.lock().unwrap();
+    if let Some(h) = guard.as_ref() { return Ok(json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code})); }
+    let config = lineuplab_core::server::ServerConfig { data_dir: state.data_dir.clone(), name: name.unwrap_or_else(|| "LineupLab Desktop".into()), ..Default::default() };
+    let h = lineuplab_core::server::spawn(config).await.map_err(err)?;
+    let out = json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code});
+    *guard = Some(h); Ok(out)
+}
+#[tauri::command] pub async fn stop_sync_server(state: State<'_, AppState>) -> CmdResult<()> { let h = state.sync_server.lock().unwrap().take(); if let Some(h) = h { h.shutdown().await.map_err(err)?; } Ok(()) }
+#[tauri::command] pub fn get_sync_server_status(state: State<AppState>) -> CmdResult<Value> { let g = state.sync_server.lock().unwrap(); Ok(match g.as_ref() { Some(h) => json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code}), None => json!({"running":false}) }) }
+#[tauri::command] pub async fn pair_sync(base_url: String, code: String, device_name: String) -> CmdResult<Value> { let p = lineuplab_core::sync::SyncClient::pair(&base_url, &code, &device_name).await.map_err(err)?; Ok(serde_json::to_value(p).map_err(err)?) }
+#[tauri::command] pub async fn sync_now(state: State<'_, AppState>, base_url: String, token: String) -> CmdResult<Value> {
+    let client = lineuplab_core::sync::SyncClient::new(base_url, token);
+    let mut db = lineuplab_core::db::Database::open(state.data_dir.join("lineuplab.sqlite3")).map_err(err)?;
+    let report = lineuplab_core::sync::sync_both(&client, &mut db, &state.store, &state.device_id, None).await.map_err(err)?;
+    Ok(serde_json::to_value(report).map_err(err)?)
+}
+#[tauri::command] pub fn discover_sync() -> CmdResult<Vec<lineuplab_core::sync::DiscoveredServer>> { lineuplab_core::sync::discover(std::time::Duration::from_millis(1500)).map_err(err) }

@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
-import type { AbilityMode, CaptureResult, CaptureSettings, Catalog, HotkeyBinding, HotkeyFeedback, ImportPreview, ImportReport, LibraryAdapter, Lineup, OverlaySettings, SlotData, SlotId } from '../types';
+import type { AbilityMode, CaptureResult, CaptureSettings, Catalog, DiscoveredServer, HotkeyBinding, HotkeyFeedback, ImportPreview, ImportReport, LibraryAdapter, Lineup, OverlaySettings, SlotData, SlotId, SyncPairResponse, SyncReport, SyncServerStatus } from '../types';
 import { DEFAULT_HOTKEYS, rebindLocal } from './hotkeys';
 import { clampOverlay, DEFAULT_OVERLAY } from './overlay';
 import { SLOT_ORDER } from '../types';
@@ -49,6 +49,12 @@ export class BrowserAdapter implements LibraryAdapter {
   async setOverlaySettings(settings: OverlaySettings) { localStorage.setItem('lineuplab.overlay', JSON.stringify(clampOverlay(settings))); }
   async getCaptureSettings(): Promise<CaptureSettings> { try { return { maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150, ...JSON.parse(localStorage.getItem('lineuplab.capture') ?? '{}') }; } catch { return { maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150 }; } }
   async setCaptureSettings(settings: CaptureSettings) { localStorage.setItem('lineuplab.capture', JSON.stringify(settings)); }
+  async startSyncServer(): Promise<SyncServerStatus> { throw new Error('Run `cargo run -p lineuplab-core --bin lineuplab-server` or use the desktop app to host sync.'); }
+  async stopSyncServer() { throw new Error('No browser sync server.'); }
+  async getSyncServerStatus(): Promise<SyncServerStatus> { return { running: false }; }
+  async pairSync(): Promise<SyncPairResponse> { throw new Error('Pairing requires the desktop/mobile core (LAN HTTP is not browser-CORS enabled).'); }
+  async syncNow(): Promise<SyncReport> { throw new Error('Sync requires the desktop/mobile core.'); }
+  async discoverSync(): Promise<DiscoveredServer[]> { return []; }
 }
 export class TauriAdapter implements LibraryAdapter {
   kind = 'tauri' as const;
@@ -73,6 +79,12 @@ export class TauriAdapter implements LibraryAdapter {
   setOverlaySettings(settings: OverlaySettings) { return invoke<void>('set_overlay_settings', { settings }); }
   getCaptureSettings() { return invoke<CaptureSettings>('get_capture_settings'); }
   setCaptureSettings(settings: CaptureSettings) { return invoke<void>('set_capture_settings', { settings }); }
+  startSyncServer(name?: string) { return invoke<SyncServerStatus>('start_sync_server', { name }); }
+  stopSyncServer() { return invoke<void>('stop_sync_server'); }
+  getSyncServerStatus() { return invoke<SyncServerStatus>('get_sync_server_status'); }
+  pairSync(baseUrl: string, code: string, deviceName: string) { return invoke<SyncPairResponse>('pair_sync', { baseUrl, code, deviceName }); }
+  syncNow(baseUrl: string, token: string) { return invoke<SyncReport>('sync_now', { baseUrl, token }); }
+  discoverSync() { return invoke<DiscoveredServer[]>('discover_sync'); }
 }
 export function createAdapter(): LibraryAdapter { return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window ? new TauriAdapter() : new BrowserAdapter(); }
 async function sha256(bytes: Uint8Array) { const digest = await crypto.subtle.digest('SHA-256', bytes as BufferSource); return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join(''); }

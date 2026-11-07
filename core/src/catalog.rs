@@ -102,6 +102,7 @@ impl Default for ReqwestTransport {
 }
 impl ReqwestTransport {
     pub fn new() -> Self {
+        crate::ensure_crypto_provider();
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(15))
             .connect_timeout(Duration::from_secs(5))

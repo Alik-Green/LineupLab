@@ -18,6 +18,7 @@ pub struct AppState {
     pub overlay_lineup: Mutex<Option<String>>,
     pub capture: Mutex<CaptureSettings>,
     pub capture_blocked: AtomicBool,
+    pub sync_server: Mutex<Option<lineuplab_core::server::ServerHandle>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -56,7 +57,7 @@ pub fn run() {
             let overlay = std::fs::read(data_dir.join("overlay.json")).ok().and_then(|b| serde_json::from_slice::<OverlayState>(&b).ok()).unwrap_or_default();
             let capture = std::fs::read(data_dir.join("capture.json")).ok().and_then(|b| serde_json::from_slice::<CaptureSettings>(&b).ok()).unwrap_or_default();
             let api = ValorantApi::new(data_dir.join("art-cache"));
-            app.manage(AppState { db: Mutex::new(db), store, device_id, data_dir: data_dir.clone(), api, hotkeys: Mutex::new(hotkeys.clone()), overlay: Mutex::new(overlay.clone()), overlay_lineup: Mutex::new(None), capture: Mutex::new(capture), capture_blocked: AtomicBool::new(false) });
+            app.manage(AppState { db: Mutex::new(db), store, device_id, data_dir: data_dir.clone(), api, hotkeys: Mutex::new(hotkeys.clone()), overlay: Mutex::new(overlay.clone()), overlay_lineup: Mutex::new(None), capture: Mutex::new(capture), capture_blocked: AtomicBool::new(false), sync_server: Mutex::new(None) });
             commands::register_hotkeys(app.handle(), &hotkeys);
             if let Some(w) = app.get_webview_window("overlay") {
                 let _ = w.set_ignore_cursor_events(overlay.settings.click_through);
@@ -80,7 +81,9 @@ pub fn run() {
             commands::import_preview, commands::import_commit, commands::export_pack, commands::undo_import,
             commands::get_hotkeys, commands::rebind_hotkey, commands::get_overlay_settings, commands::set_overlay_settings,
             commands::get_capture_settings, commands::set_capture_settings, commands::get_overlay_view, commands::set_overlay_lineup,
-            commands::overlay_action
+            commands::overlay_action,
+            commands::start_sync_server, commands::stop_sync_server, commands::get_sync_server_status,
+            commands::pair_sync, commands::sync_now, commands::discover_sync
         ])
         .run(tauri::generate_context!())
         .expect("error while running LineupLab");
