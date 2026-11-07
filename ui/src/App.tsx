@@ -36,7 +36,7 @@ function AppInner({ adapter, platform }: { adapter: LibraryAdapter; platform: 'd
   return <AppShell platform={platform} page={page} onNavigate={navigate} catalog={catalog} assetProgress={assetProgress} native={native}>
     {error && <Card className="mb-4 border-ll-accent" role="alert"><p className="text-ll-accent">{error}</p><Button className="mt-2" onClick={refresh}>Retry</Button></Card>}
     {page === 'browse' && <Browse adapter={adapter} lineups={lineups} catalog={catalog} readOnly={browseOnly} onEdit={id => browseOnly ? undefined : openEditor(id)} onRefresh={refresh} />}
-    {page === 'editor' && !browseOnly && <Editor adapter={adapter} lineupId={editId} catalog={catalog} modes={modes} onSaved={() => { void refresh(); }} onCancel={() => setPage('browse')} />}
+    {page === 'editor' && !browseOnly && <Editor adapter={adapter} lineupId={editId} catalog={catalog} modes={modes} lineups={lineups} onSaved={() => { void refresh(); setPage('browse'); }} onCancel={() => setPage('browse')} />}
     {page === 'import' && !browseOnly && <ImportExport adapter={adapter} lineups={lineups} onRefresh={refresh} />}
     {page === 'sync' && <SyncSettings adapter={adapter} host={false} />}
     {page === 'settings' && <Settings adapter={adapter} catalog={catalog} onRefresh={refresh} browseOnly={browseOnly} />}

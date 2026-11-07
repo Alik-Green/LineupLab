@@ -49,7 +49,7 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
   };
   const { w, h } = size;
   return (
-    <div ref={ref} className={`relative select-none overflow-hidden rounded-lg bg-slate-900 ${editable ? 'cursor-crosshair' : ''} ${className}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={() => setDrag(null)} onDoubleClick={finishLine} data-testid="annotated-image">
+    <div ref={ref} className={`ll-annotated relative select-none overflow-hidden ${editable ? 'cursor-crosshair' : ''} ${className}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={() => setDrag(null)} onDoubleClick={finishLine} data-testid="annotated-image">
       <ValImage src={src} alt={alt} kind="media" className="block w-full" imgClassName="block h-auto w-full" onLoad={img => setSize({ w: img.naturalWidth || 1600, h: img.naturalHeight || 900 })} />
       <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
         <defs>
@@ -68,7 +68,7 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
         </g>)}
         {circles.filter(c => c.showZoom && !hideLens).map(c => { const lc = clampLens(c, w, h); const srcCrop = lensSource(lc, w, h); const lx = lc.zoomX * w, ly = lc.zoomY * h, ls = lc.zoomSize * w; const scale = lc.zoomScale;
           return <g key={`lens-${c.id}`} clipPath={`url(#${clipId}-${c.id})`}>
-            <rect x={lx} y={ly} width={ls} height={ls} fill="#0f172a" />
+            <rect x={lx} y={ly} width={ls} height={ls} fill="var(--ll-bg)" />
             <image href={imageSrc} x={lx - srcCrop.x * w * scale} y={ly - srcCrop.y * h * scale} width={w * scale} height={h * scale} preserveAspectRatio="none" />
             <circle cx={lx + (c.x - srcCrop.x) * w * scale} cy={ly + (c.y - srcCrop.y) * h * scale} r={c.radius * w * scale} fill="none" stroke={c.color} strokeWidth={Math.max(2, w * 0.0025 * scale)} />
             <rect x={lx} y={ly} width={ls} height={ls} fill="none" stroke={c.color} strokeWidth={Math.max(2, w * 0.002)} />
@@ -79,7 +79,7 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
         {circles.filter(c => c.showZoom && !hideLens).map(c => { const lc = clampLens(c, w, h); return <rect key={`hit-${c.id}`} x={lc.zoomX * w} y={lc.zoomY * h} width={lc.zoomSize * w} height={lc.zoomSize * w} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'lens', c.id, { x: lc.zoomX, y: lc.zoomY })} />; })}
         {lines.flatMap(l => l.points.map((p, i) => <circle key={`${l.id}-${i}`} cx={p.x * w} cy={p.y * h} r={10} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'line-point', l.id, p, i)} />))}
       </svg>}
-      {editable && tool === 'line' && pendingLine.length > 0 && <button className="absolute bottom-2 right-2 rounded bg-cyan-500 px-2 py-1 text-xs font-semibold text-slate-950" onClick={finishLine}>Finish line ({pendingLine.length})</button>}
+      {editable && tool === 'line' && pendingLine.length > 0 && <button className="ll-btn ll-btn--primary ll-annotated__finish" onClick={finishLine}>Finish line ({pendingLine.length})</button>}
     </div>
   );
 }

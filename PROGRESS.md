@@ -76,3 +76,9 @@ Entries are updated only after commands actually run. Platform-specific checks a
 ## 2026-11-07 · UI redesign M3 complete (Browse)
 - Rewrote Browse: resizable map/agent/ability selectors (role chips, search, pinned agents), lineup-able ability filtering, large pan/zoom minimap with ability-icon markers/bounce pins/site labels/hover preview/legend/toolbar/empty state, filter popover with active count + reset, virtualized card grid with sort/density/+New, quick actions, and detail drawer (slot rail, arrow-key nav, zoom, download, mini minimap, steps/notes/tags, edit/duplicate/delete/favorite, video).
 - Verified: typecheck, 15 UI tests, desktop/mobile builds, Playwright browse populated/filtered/drawer/empty + 1100/1920 overflow checks + image self-test (5 e2e passed). Screenshots `docs/screenshots/10–13`.
+
+## 2026-11-07 · UI redesign M4 complete (Create wizard)
+- Rewrote Editor as a 5-step wizard: icon-picker Setup with per-agent/ability modes; Capture slot rail (Alt+1..5, required/optional/done states, progress) with capture/choose/paste/retake/clear/annotate and drag-drop; Pins with tool palette, draggable markers, bounce tool, context ghosts and coordinate list; Details with suggested title, side/site/difficulty/throw/tags/notes/author/favorite and reorderable steps with image refs; Review with preview, minimap, validation checklist and Save / Save & Next.
+- Restyled AnnotationEditor (segmented tools, swatches, sliders, lens controls, copy-to-slot) and AnnotatedImage with the token system; kept all annotation/undo/redo/hotkey behaviour.
+- Added `lib/modes.ts` (core-mirroring mode resolution, visible slots, validation, auto-title) with 7 unit tests. Fixed minimap pin coordinate normalization and map URL double-resolution.
+- Verified: typecheck, 22 UI tests, desktop/mobile builds, 8 desktop Playwright tests incl. full wizard flow via hotkeys, validation, draft recovery. Screenshots `docs/screenshots/20–30`.

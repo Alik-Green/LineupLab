@@ -31,3 +31,7 @@ Defined once in `ui/src/styles/app.css` (`:root` CSS variables + Tailwind v4 `@t
 ## Shell
 
 Slim sticky top bar: logo, large uppercase nav with red active underline, game-version/data-status chip, library/sync indicator, native window controls on Windows (custom title bar, drag region). Android uses bottom navigation and safe-area padding. Global toasts and first-run download modal share the same tokens.
+
+## Create wizard
+
+The editor is a five-step wizard (Setup, Capture, Pins, Details, Review) with a persistent stepper, autosave indicator and draft-recovery banner. Setup uses the same icon pickers as Browse so entity selection is visual everywhere. Capture keeps a left slot rail with hotkey hints and required/optional/done states next to a large stage; annotation tools live in a right inspector only when requested, keeping the capture view uncluttered. Pins gives the minimap most of the width with a compact tool palette and coordinate readout. Details groups metadata into a two-column form with a step editor beside it. Review shows the card preview, minimap and a validation checklist whose items jump back to the offending step. Validation mirrors the Rust core (`validate_save`) so the UI never promises a save the backend would reject.

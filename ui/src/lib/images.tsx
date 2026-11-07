@@ -116,7 +116,10 @@ export function ValImage({ src, alt = '', kind = 'image', className = '', imgCla
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
   const candidates = useMemo(() => [cached.src, cached.remote && cached.remote !== cached.src ? cached.remote : undefined, cached.src].filter(Boolean) as string[], [cached.src, cached.remote]);
-  useEffect(() => { setAttempt(0); setLoaded(false); setFailed(false); }, [src, cached.src]);
+  // Reset synchronously when the source changes (avoids a late passive-effect reset racing error events).
+  const sourceKey = `${src ?? ''}|${cached.src ?? ''}`;
+  const [prevKey, setPrevKey] = useState(sourceKey);
+  if (prevKey !== sourceKey) { setPrevKey(sourceKey); setAttempt(0); setLoaded(false); setFailed(false); }
   const current = candidates[Math.min(attempt, candidates.length - 1)];
   const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => { setLoaded(true); setFailed(false); report({ url: src ?? '', resolved: current, kind, ok: true, at: Date.now() }); onLoad?.(e.currentTarget); };
   const handleError = () => {

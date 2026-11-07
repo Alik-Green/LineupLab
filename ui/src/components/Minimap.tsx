@@ -9,14 +9,14 @@ import { IconButton, Tooltip } from './ui';
 export type PinKey = 'stand1Pos' | 'aim1Pos' | 'stand2Pos' | 'aim2Pos' | 'landPos';
 export interface MinimapProps {
   src?: string; lineups: Lineup[]; selectedId?: string | null; onSelect?(id: string): void; onHover?(id: string | null): void;
-  editablePins?: Partial<Record<PinKey, Point | null>>; onPinChange?(key: string, p: Point): void; className?: string;
+  editablePins?: Partial<Record<PinKey, Point | null>>; editableBounces?: Point[]; onPinChange?(key: string, p: Point): void; className?: string;
   abilityIcons?: Record<string, string>; showToolbar?: boolean; emptyMessage?: ReactNode; contextLineups?: Lineup[]; activePinTool?: PinKey | 'bounces' | null; onMapClick?(p: Point): void;
 }
 const SIDE_COLOR: Record<string, string> = { attack: 'var(--ll-attack)', defense: 'var(--ll-defense)', both: 'var(--ll-muted)' };
-export function Minimap({ src, lineups, selectedId, onSelect, onHover, editablePins, onPinChange, className = '', abilityIcons = {}, showToolbar = true, emptyMessage, contextLineups = [], activePinTool, onMapClick }: MinimapProps) {
+export function Minimap({ src, lineups, selectedId, onSelect, onHover, editablePins, editableBounces = [], onPinChange, className = '', abilityIcons = {}, showToolbar = true, emptyMessage, contextLineups = [], activePinTool, onMapClick }: MinimapProps) {
   const ref = useRef<HTMLDivElement>(null); const drag = useRef<string | null>(null); const pan = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
   const [view, setView] = useState({ scale: 1, tx: 0, ty: 0 }); const [hover, setHover] = useState<string | null>(null); const [markerSize, setMarkerSize] = useState(1); const [lines, setLines] = useState(true);
-  const toMap = useCallback((clientX: number, clientY: number): Point => { const r = ref.current!.getBoundingClientRect(); const x = (clientX - r.left) / r.width * 1000; const y = (clientY - r.top) / r.height * 1000; return clampPoint({ x: (x - view.tx) / view.scale, y: (y - view.ty) / view.scale }); }, [view]);
+  const toMap = useCallback((clientX: number, clientY: number): Point => { const r = ref.current!.getBoundingClientRect(); const x = (clientX - r.left) / r.width * 1000; const y = (clientY - r.top) / r.height * 1000; return clampPoint({ x: (x - view.tx) / view.scale / 1000, y: (y - view.ty) / view.scale / 1000 }); }, [view]);
   useEffect(() => { const el = ref.current; if (!el) return; const onWheel = (e: WheelEvent) => { e.preventDefault(); const r = el.getBoundingClientRect(); const px = (e.clientX - r.left) / r.width * 1000; const py = (e.clientY - r.top) / r.height * 1000; setView(v => { const scale = Math.min(6, Math.max(1, v.scale * (e.deltaY < 0 ? 1.15 : 1 / 1.15))); return { scale, tx: px - (px - v.tx) * scale / v.scale, ty: py - (py - v.ty) * scale / v.scale }; }); }; el.addEventListener('wheel', onWheel, { passive: false }); return () => el.removeEventListener('wheel', onWheel); }, []);
   const siteLabels = useMemo(() => { const groups = new Map<string, { x: number; y: number; n: number }>(); for (const l of lineups) { const p = l.landPos ?? l.stand1Pos; if (!p || !l.site) continue; const g = groups.get(l.site) ?? { x: 0, y: 0, n: 0 }; g.x += p.x; g.y += p.y; g.n++; groups.set(l.site, g); } return [...groups.entries()].map(([site, g]) => ({ site, x: g.x / g.n * 1000, y: g.y / g.n * 1000 })); }, [lineups]);
   const reset = () => setView({ scale: 1, tx: 0, ty: 0 });
@@ -32,6 +32,7 @@ export function Minimap({ src, lineups, selectedId, onSelect, onHover, editableP
           {contextLineups.map(l => { const p = l.landPos ?? l.stand1Pos; return p ? <circle key={`ctx-${l.id}`} cx={p.x * 1000} cy={p.y * 1000} r={7} fill="none" stroke="var(--ll-muted)" strokeOpacity={0.35} strokeWidth={2} /> : null; })}
           {siteLabels.map(s => <text key={s.site} x={s.x} y={s.y - 28} textAnchor="middle" className="ll-minimap__site">{s.site}</text>)}
           {lineups.map(l => <MapMarker key={l.id} lineup={l} icon={abilityIcons[`${l.agentUuid}:${l.abilitySlot}`]} selected={l.id === selectedId} hovered={l.id === hover} size={markerSize} showLine={lines && (l.id === selectedId || l.id === hover)} onSelect={onSelect} onHover={id => { setHover(id); onHover?.(id); }} />)}
+          {editableBounces.map((b, i) => <rect key={`eb-${i}`} x={b.x * 1000 - 8} y={b.y * 1000 - 8} width={16} height={16} transform={`rotate(45 ${b.x * 1000} ${b.y * 1000})`} fill="var(--ll-warning)" stroke="#0E1015" strokeWidth={2} />)}
           {editablePins && Object.entries(editablePins).map(([key, p]) => p ? <g key={key} data-marker>
             <circle cx={p.x * 1000} cy={p.y * 1000} r={14} fill={key === 'landPos' ? 'var(--ll-accent)' : key.startsWith('aim') ? 'var(--ll-warning)' : 'var(--ll-defense)'} stroke="#fff" strokeWidth={3} style={{ cursor: 'move' }} onPointerDown={e => { e.stopPropagation(); drag.current = key; (e.target as Element).setPointerCapture?.(e.pointerId); }} />
             <text x={p.x * 1000 + 18} y={p.y * 1000 - 12} fill="#fff" fontSize={20} fontFamily="var(--ll-font-display)">{key.replace('Pos', '')}</text>
