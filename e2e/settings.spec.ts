@@ -21,7 +21,8 @@ test.describe('desktop settings', () => {
     await expect(page.getByTestId('overlay-preview')).toBeVisible();
     await page.getByRole('radio', { name: 'bottom left' }).click();
     await page.waitForTimeout(300);
-    await page.screenshot({ path: 'docs/screenshots/42-settings-overlay.png' });
+    await page.mouse.move(0, 0); await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.screenshot({ path: 'docs/screenshots/42-settings-overlay.png', fullPage: true });
     await page.getByRole('tab', { name: 'Capture' }).click();
     await expect(page.getByTestId('capture-settings')).toBeVisible();
     await page.screenshot({ path: 'docs/screenshots/43-settings-capture.png' });

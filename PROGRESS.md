@@ -87,3 +87,8 @@ Entries are updated only after commands actually run. Platform-specific checks a
 - New ImportExport screen: dropzone, preview table with status pills/warnings, select-all (errors excluded), policy segmented, import progress/report, undo batch, export summary + toggles.
 - Settings rewritten as tabs: General (motion/density/sort/reset + catalog), Hotkeys (grouped table, capture chips, conflicts), Overlay (corner picker, sliders, live preview, reading-comfort prefs), Capture, Sync (big pairing code, discover/pair/sync), Data (cache report/re-download), Diagnostics (self-test + errors), About (safety model).
 - Verified: typecheck, 22 UI tests, desktop/mobile builds, 10 desktop Playwright tests (settings tabs + hotkey conflict/rebind, import/export flow, diagnostics). Screenshots `docs/screenshots/40–52`.
+
+## 2026-11-07 · UI redesign M6 complete (Overlay)
+- Rewrote OverlayView: create checklist with thumbnails/required progress/current slot, view image + annotations + step caption, flip to minimap/steps/notes, prev/next, capture fade, local reading-comfort prefs, live Settings preview.
+- Editor publishes live draft snapshots to the overlay (UI-only event); overlay handles existing overlay hotkeys; fixed annotation SVG stacking above images app-wide.
+- Verified: typecheck, 24 UI tests, desktop/mobile builds, 13 desktop Playwright tests (overlay create/view/fade/prefs sync/live draft + settings). Screenshots `docs/screenshots/60–65`, refreshed 42.

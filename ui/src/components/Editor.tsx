@@ -12,10 +12,12 @@ import { AnnotatedImage } from './AnnotatedImage';
 import { AnnotationEditor } from './AnnotationEditor';
 import { Minimap, type PinKey } from './Minimap';
 import { Button, Card, Chip, EmptyState, IconButton, IconPicker, Input, Kbd, Modal, ProgressBar, Segmented, Select, Stepper, TextArea, Toggle, Tooltip, useToast } from './ui';
-import { listen } from '@tauri-apps/api/event';
+import { emit, listen } from '@tauri-apps/api/event';
+import type { OverlayDraft } from './OverlayView';
 
 const PIN_TOOLS: { id: PinKey | 'bounces'; label: string; required?: boolean }[] = [{ id: 'stand1Pos', label: 'Stand', required: true }, { id: 'aim1Pos', label: 'Aim' }, { id: 'stand2Pos', label: '2nd stand' }, { id: 'aim2Pos', label: '2nd aim' }, { id: 'landPos', label: 'Landing', required: true }, { id: 'bounces', label: 'Bounce' }];
 const THROW_TYPES = ['normal', 'run', 'jump', 'jump-throw', 'crouch'];
+const DEFAULT_REQUIRED: SlotId[] = ['stand1', 'aim1', 'landing'];
 
 export function Editor({ adapter, lineupId, catalog, modes, lineups = [], onSaved, onCancel }: { adapter: LibraryAdapter; lineupId?: string | null; catalog: Catalog | null; modes: AbilityMode[]; lineups?: Lineup[]; onSaved(next?: boolean): void; onCancel(): void }) {
   const toast = useToast();
@@ -44,7 +46,7 @@ export function Editor({ adapter, lineupId, catalog, modes, lineups = [], onSave
   const abilities = enabledAbilities(agent);
   const availableModes = useMemo(() => modesFor(agent?.displayName, l.abilitySlot, modes), [agent?.displayName, l.abilitySlot, modes]);
   const mode = availableModes.find(m => m.id === l.mode) ?? availableModes[0];
-  const required: SlotId[] = mode?.requiredSlots ?? ['stand1', 'aim1', 'landing'];
+  const required: SlotId[] = mode?.requiredSlots ?? DEFAULT_REQUIRED;
   const visible = visibleSlots(required, l.slots);
   const issues = validateLineup(l, required); const stepIssues = (s: WizardStep) => issues.filter(i => i.step === s);
   const mapUrl = map?.displayIcon; const slotUrl = useMediaUrl(adapter, l.slots[active].image);
@@ -87,6 +89,11 @@ export function Editor({ adapter, lineupId, catalog, modes, lineups = [], onSave
     else if (a === 'next_slot' || a === 'prev_slot') { const i = visible.indexOf(active); const n = visible[(i + (a === 'next_slot' ? 1 : visible.length - 1)) % visible.length]; if (n) { setActive(n); setStep('capture'); } }
   };
   useEffect(() => { if (adapter.kind !== 'tauri') return; let live = true; let un: (() => void) | undefined; void listen<string>('lineuplab://hotkey', e => hotkeyHandler.current(e.payload)).then(f => { if (live) un = f; else f(); }); return () => { live = false; un?.(); }; }, [adapter]);
+  // UI-only bridge: the overlay window shows the live draft checklist/thumbnails without changing core state or hotkeys.
+  const overlaySnapshot = useRef<OverlayDraft>({ editing: false });
+  overlaySnapshot.current = loaded ? { editing: true, lineup: l, activeSlot: active, requiredSlots: required } : { editing: false };
+  useEffect(() => { if (adapter.kind !== 'tauri') return; let live = true; let un: (() => void) | undefined; const publish = () => { void emit('lineuplab://overlay-draft', overlaySnapshot.current).catch(() => {}); }; void listen('lineuplab://overlay-draft-request', publish).then(f => { if (live) { un = f; publish(); } else f(); }); return () => { live = false; un?.(); void emit('lineuplab://overlay-draft', { editing: false }).catch(() => {}); }; }, [adapter]);
+  useEffect(() => { if (adapter.kind !== 'tauri' || !loaded) return; const t = window.setTimeout(() => { void emit('lineuplab://overlay-draft', overlaySnapshot.current).catch(() => {}); }, 150); return () => window.clearTimeout(t); }, [adapter, loaded, l, active, required]);
   const onMapClick = (p: Point) => { if (!pinTool) return; if (pinTool === 'bounces') patch({ bounces: [...l.bounces, p] }); else patch({ [pinTool]: p } as Partial<Lineup>); };
   const previewSlot: SlotId = l.slots.landing.image ? 'landing' : l.slots.aim1.image ? 'aim1' : 'stand1';
   if (!loaded) return <div className="ll-wizard"><EmptyState title="Loading lineup…" /></div>;

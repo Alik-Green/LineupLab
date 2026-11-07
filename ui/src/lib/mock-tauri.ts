@@ -6,7 +6,7 @@ import fixtureCatalog from '../fixtures/catalog.json';
 import type { Catalog, Lineup, SlotId } from '../types';
 import { SLOT_ORDER } from '../types';
 import { DEFAULT_HOTKEYS, rebindLocal } from './hotkeys';
-import { DEFAULT_OVERLAY, clampOverlay } from './overlay';
+import { DEFAULT_OVERLAY, clampOverlay, draftChecklist } from './overlay';
 import abilityModes from '@data/ability_modes.json';
 
 declare global { interface Window { __TAURI_INTERNALS__: { invoke(cmd: string, args?: Record<string, unknown>): Promise<unknown>; convertFileSrc(path: string): string; transformCallback(cb: (e: unknown) => void, once?: boolean): number }; __TAURI_EVENT_PLUGIN_INTERNALS__: { unregisterListener(event: string, id: number): void }; __LL_MOCK_EMIT__(event: string, payload: unknown): void; __LL_MOCK_STATE__: Record<string, unknown> } }
@@ -41,10 +41,17 @@ function fixtureLineups(): Lineup[] {
   });
 }
 let lineups = fixtureLineups();
+const mockDraft = lineups[0] ? structuredClone(lineups[0]) : null; if (mockDraft) { mockDraft.slots.landing.image = null; mockDraft.title = 'Mid Bend → B Site (draft)'; }
+let overlayLineup: Lineup | null = lineups[0] ?? null;
+const overlayState = { settings: { ...DEFAULT_OVERLAY, opacity: 0.92 }, visible: true, mode: params.get('overlayMode') === 'view' ? 'view' as const : 'create' as const, showChecklist: true, checklist: mockDraft ? draftChecklist(mockDraft, ['stand1', 'aim1', 'landing']) : [], viewSlots: ['stand1', 'aim1', 'landing'] as SlotId[], viewIndex: 1, flipped: params.has('flipped') };
 const listeners = new Map<string, Set<number>>();
 let callbackId = 1; let eventId = 1;
 const callbacks = new Map<number, (e: unknown) => void>();
-function emit(event: string, payload: unknown) { for (const id of listeners.get(event) ?? []) callbacks.get(id)?.({ event, id, payload }); }
+// Emulate Tauri's cross-window event bus for dev pages (main + overlay) in the same browser context.
+const mockBus = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('lineuplab-mock-events') : null;
+function emitLocal(event: string, payload: unknown) { for (const id of listeners.get(event) ?? []) callbacks.get(id)?.({ event, id, payload }); }
+function emit(event: string, payload: unknown) { emitLocal(event, payload); try { mockBus?.postMessage({ event, payload }); } catch { /* non-cloneable payload */ } }
+if (mockBus) mockBus.onmessage = e => { const { event, payload } = e.data ?? {}; if (typeof event === 'string') emitLocal(event, payload); };
 window.__LL_MOCK_EMIT__ = emit;
 window.__LL_MOCK_STATE__ = { lineups, catalog };
 function artPath(url: string) {
@@ -82,9 +89,9 @@ async function invoke(cmd: string, args: Record<string, unknown> = {}): Promise<
     case 'set_overlay_settings': localStorage.setItem('mock.overlay', JSON.stringify(args.settings)); return null;
     case 'get_capture_settings': return { maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150, ...JSON.parse(localStorage.getItem('mock.capture') ?? '{}') };
     case 'set_capture_settings': localStorage.setItem('mock.capture', JSON.stringify(args.settings)); return null;
-    case 'get_overlay_view': { const mode = params.get('overlayMode') === 'view' ? 'view' : 'create'; const l = lineups[0] ?? null; return { state: { mode, showChecklist: true, flipped: params.has('flipped'), checklist: SLOT_ORDER.slice(0, 3).map((s, i) => ({ slot: s, label: s, required: true, done: i < 2, skipped: false })), viewSlots: ['stand1', 'aim1', 'landing'], viewIndex: 1, settings: { opacity: 0.92 } }, lineup: l }; }
-    case 'overlay_action': emit('lineuplab://overlay-changed', {}); return null;
-    case 'set_overlay_lineup': return null;
+    case 'get_overlay_view': { overlayState.settings = { ...overlayState.settings, ...clampOverlay({ ...DEFAULT_OVERLAY, ...JSON.parse(localStorage.getItem('mock.overlay') ?? '{}') }) }; return { state: overlayState, lineup: overlayState.mode === 'create' ? mockDraft : overlayLineup }; }
+    case 'overlay_action': { const s = overlayState; switch (a.action) { case 'overlay_toggle': s.visible = !s.visible; break; case 'overlay_controls': s.settings.clickThrough = !s.settings.clickThrough; s.visible = true; break; case 'overlay_mode': s.mode = s.mode === 'create' ? 'view' : 'create'; s.flipped = false; break; case 'view_next': s.viewIndex = (s.viewIndex + 1) % Math.max(1, s.viewSlots.length); break; case 'view_prev': s.viewIndex = (s.viewIndex + s.viewSlots.length - 1) % Math.max(1, s.viewSlots.length); break; case 'view_flip': s.flipped = !s.flipped; break; case 'checklist_toggle': s.showChecklist = !s.showChecklist; break; } emit('lineuplab://overlay-changed', s); return null; }
+    case 'set_overlay_lineup': { overlayLineup = lineups.find(l => l.id === a.id) ?? null; if (overlayLineup) { overlayState.viewSlots = SLOT_ORDER.filter(k => overlayLineup!.slots[k].image); overlayState.viewIndex = 0; overlayState.checklist = draftChecklist(overlayLineup, ['stand1', 'aim1', 'landing']); } emit('lineuplab://overlay-changed', overlayState); return null; }
     case 'start_sync_server': return { running: true, address: '192.168.1.20:8765', pairingCode: '482913' };
     case 'stop_sync_server': return null;
     case 'get_sync_server_status': return { running: false };
