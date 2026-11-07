@@ -15,8 +15,10 @@ export function IconButton({ label, tooltip, className, children, ...rest }: But
   return tooltip ? <Tooltip label={tooltip}>{btn}</Tooltip> : btn;
 }
 /* Chips / segmented */
-export function Chip({ selected, tone = 'neutral', className, children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { selected?: boolean; tone?: 'neutral' | 'attack' | 'defense' | 'success' | 'warning' }) {
-  return <button type="button" aria-pressed={selected} className={clsx('ll-chip', selected && 'is-selected', `ll-chip--${tone}`, className)} {...rest}>{children}</button>;
+export function Chip({ selected, tone = 'neutral', className, children, onClick, ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { selected?: boolean; tone?: 'neutral' | 'attack' | 'defense' | 'success' | 'warning' }) {
+  const cls = clsx('ll-chip', selected && 'is-selected', `ll-chip--${tone}`, className);
+  if (!onClick) return <span className={cls} data-selected={selected || undefined}>{children}</span>;
+  return <button type="button" aria-pressed={selected} className={cls} onClick={onClick} {...rest}>{children}</button>;
 }
 export interface SegmentOption<T extends string> { value: T; label: string; icon?: ReactNode; description?: string; ariaLabel?: string }
 export function Segmented<T extends string>({ options, value, onChange, ariaLabel, className }: { options: SegmentOption<T>[]; value: T; onChange(v: T): void; ariaLabel: string; className?: string }) {

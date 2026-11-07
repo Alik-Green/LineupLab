@@ -75,9 +75,9 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
           </g>; })}
       </svg>
       {editable && <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" onPointerDown={e => { if (tool === 'select') onSelect?.(null); }} style={{ pointerEvents: 'none' }}>
-        {circles.map(c => <circle key={c.id} cx={c.x * w} cy={c.y * h} r={Math.max(c.radius * w, 14)} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'circle', c.id, { x: c.x, y: c.y })} />)}
+        {circles.map(c => <circle key={c.id} cx={c.x * w} cy={c.y * h} r={Math.max(c.radius * w, 40)} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'circle', c.id, { x: c.x, y: c.y })} />)}
         {circles.filter(c => c.showZoom && !hideLens).map(c => { const lc = clampLens(c, w, h); return <rect key={`hit-${c.id}`} x={lc.zoomX * w} y={lc.zoomY * h} width={lc.zoomSize * w} height={lc.zoomSize * w} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'lens', c.id, { x: lc.zoomX, y: lc.zoomY })} />; })}
-        {lines.flatMap(l => l.points.map((p, i) => <circle key={`${l.id}-${i}`} cx={p.x * w} cy={p.y * h} r={10} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'line-point', l.id, p, i)} />))}
+        {lines.flatMap(l => l.points.map((p, i) => <circle key={`${l.id}-${i}`} cx={p.x * w} cy={p.y * h} r={40} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'line-point', l.id, p, i)} />))}
       </svg>}
       {editable && tool === 'line' && pendingLine.length > 0 && <button className="ll-btn ll-btn--primary ll-annotated__finish" onClick={finishLine}>Finish line ({pendingLine.length})</button>}
     </div>

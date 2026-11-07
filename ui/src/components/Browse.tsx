@@ -79,7 +79,7 @@ export function Browse({ adapter, lineups, catalog, onEdit, onRefresh, readOnly 
     </Drawer>
     {detail && <LineupDetail adapter={adapter} lineup={lineups.find(l => l.id === detail.id) ?? detail} catalog={catalog} readOnly onClose={() => setDetail(null)} onEdit={() => {}} onRefresh={onRefresh} />}
   </div>;
-  return <div ref={container} className="ll-browse" data-testid="browse" style={{ gridTemplateColumns: `${leftPct.value}% 10px minmax(0,1fr)` }}>
+  return <div ref={container} className="ll-browse" data-testid="browse" style={{ gridTemplateColumns: `${leftPct.value}% 40px minmax(0,1fr)` }}>
     <section className="ll-browse__left" aria-label="Map and lineup filters">
       <div className="ll-selector-block"><div className="ll-selector-head"><h2 className="ll-h3">Map</h2></div><div className="ll-map-strip"><IconPicker ariaLabel="Map" kind="map" size="lg" allLabel="All" value={filters.map} onChange={v => set({ map: v })} options={(catalog?.maps ?? []).map(m => ({ id: m.uuid, name: m.displayName, icon: m.listViewIcon || m.splash || m.displayIcon }))} /></div></div>
       <div className="ll-selector-block"><div className="ll-selector-head"><h2 className="ll-h3">Agent</h2><div className="ll-agent-search"><Search size={14} /><input aria-label="Search agents" placeholder="Search agents" value={agentSearch} onChange={e => setAgentSearch(e.target.value)} /></div></div><div className="ll-role-chips">{['', ...ROLES].map(r => <Chip key={r} selected={role === r} onClick={() => setRole(r)}>{r || 'All roles'}</Chip>)}</div>

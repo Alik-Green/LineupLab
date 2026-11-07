@@ -5,7 +5,7 @@ Automated CI compiles the Windows installer and runs the portable core/UI suites
 ## Install & launch
 1. Install the NSIS artifact from CI (`windows-installer`). Confirm WebView2 bootstrapper completes.
 2. Launch LineupLab; main window opens; overlay window is hidden initially.
-3. Settings → Catalog refresh while online; disconnect network and confirm cached art + “offline cache” warning and last-updated time.
+3. Settings → Data: refresh/re-download catalog while online; Settings → Diagnostics: run the image self-test. Disconnect network and confirm cached art + “offline cache” warning and last-updated time.
 
 ## Safety boundary
 4. Confirm Valorant is **Borderless/Windowed**. Fullscreen exclusive is unsupported.
@@ -13,7 +13,7 @@ Automated CI compiles the Windows installer and runs the portable core/UI suites
 
 ## Overlay & capture exclusion
 6. Enable overlay; verify transparent/frameless/always-on-top/non-focusable, click-through by default (game receives clicks).
-7. Alt+O toggles controls; drag/configure corner/monitor/margins/size/opacity; click-through restores.
+7. Alt+O toggles controls; Settings → Overlay configures corner/monitor/margins/size/opacity plus reading-comfort scale/hide-annotations/fade; the live preview matches the real window; click-through restores.
 8. Capture a screenshot: overlay must **not** appear in the captured image (WDA_EXCLUDEFROMCAPTURE). On pre-2004 Windows, capture is blocked with a clear error.
 9. Move Valorant between monitors; title-based monitor selection follows; manual monitor override works.
 
@@ -34,6 +34,15 @@ Automated CI compiles the Windows installer and runs the portable core/UI suites
 ## Sync
 18. Start LAN server (opt-in); pair Android companion with six-digit code; wrong code/rate-limit rejected; sync transfers lineups + images + tombstones; offline browsing works after airplane mode.
 
+## Redesign UI checks (M1–M8)
+19. Browse: map/agent/ability selectors, filters popover, minimap markers (keyboard Enter opens), card grid density, detail drawer with annotated images and slot rail; no horizontal overflow at 1100/1920.
+20. Create wizard: five steps, mode-driven required slots, capture auto-advance, annotation tools, pins, validation, autosave/recovery; overlay Create checklist mirrors the live draft and active slot.
+21. Import/Export: dropzone preview table, error rows unselectable, conflict policy, progress/report, undo batch; export legacy JPEG/bake toggles.
+22. Settings tabs: General/Hotkeys/Overlay/Capture/Sync/Data/Diagnostics/About; hotkey rebind conflicts; image self-test under Diagnostics.
+23. Overlay: ≥13px text, 40px controls, capture fade, view image/flip to minimap+steps, prev/next; reading-comfort prefs sync live with Settings.
+24. Android companion (390×844): bottom nav Browse/Sync/Settings, single-column cards, filter drawer, list/map toggle, full-screen detail, pairing-only sync; no create/edit/import; no horizontal overflow at 360/390.
+25. Accessibility: every desktop control ≥40px and Android control ≥48px (automated Playwright audit), visible focus rings, icon-only controls labelled, static badges are not focusable, reduced-motion preference respected.
+
 ## Known untested paths
-- Actual WDA_EXCLUDEFROMCAPTURE behavior, global shortcut registration under Valorant focus, multi-monitor DPI scaling, WebView2 runtime variations, NSIS upgrade/uninstall. CI compile is not a substitute for this plan.
+- Actual WDA_EXCLUDEFROMCAPTURE behavior, global shortcut registration under Valorant focus, multi-monitor DPI scaling, WebView2 runtime variations, NSIS upgrade/uninstall, real Android device touch/sync. CI compile and Linux Playwright are not a substitute for this plan.
 EOF

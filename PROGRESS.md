@@ -96,3 +96,8 @@ Entries are updated only after commands actually run. Platform-specific checks a
 ## 2026-11-07 · UI redesign M7 complete (Android companion)
 - Mobile Browse: single-column cards, map dropdown, search, filter drawer (agent/ability/side/site/difficulty/tag/favorites), list/map toggle with enlarged touch markers, full-screen detail drawer. Sync pairing-only; Settings tabs General/Sync/Data/Diagnostics/About.
 - Verified: typecheck, 24 UI tests, desktop/mobile builds, 2 Android Playwright tests (full companion flow + no horizontal overflow at 390/360). Screenshots `docs/screenshots/70–78`.
+
+## 2026-11-07 · UI redesign M8 complete (polish & accessibility) — redesign finished
+- 40px/48px target floor across all screens; static badges non-focusable; keyboard-operable map markers; larger annotation hit areas; compact checkboxes in full-size labels; platform set before paint; focus/reduced-motion verified.
+- Added `docs/UI_CHANGELOG.md`; updated `docs/WINDOWS_TEST_PLAN.md` with redesign + a11y checks; refreshed all screenshots (desktop + Android 390×844).
+- Final verification: typecheck; 24 unit tests; desktop + mobile builds; 17 Playwright e2e (14 desktop + 3 Android, incl. target audits); 28 Rust tests. M1–M8 committed & pushed.

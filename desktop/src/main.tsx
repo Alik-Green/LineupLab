@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { App } from "@lineuplab/ui/App";
 import "@lineuplab/ui/styles";
 async function boot() {
+  document.documentElement.dataset.platform = "desktop";
   if (import.meta.env.DEV && new URLSearchParams(location.search).has("mock")) {
     const { installMockTauri } = await import("@lineuplab/ui/lib/mock-tauri");
     installMockTauri();

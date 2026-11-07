@@ -1,0 +1,56 @@
+# LineupLab UI redesign changelog
+
+Eight milestones on `arena/e082cc85-lineuplab`, preserving the core data model, legacy ZIP format, sync protocol and hotkey semantics.
+
+## M1 — Image loading fixed (`96d3ff2`)
+- Root-cause report in `docs/IMAGE_LOADING.md`; cache-first asset downloader with magic-byte validation, progress events and audit (`core/src/catalog.rs`).
+- Shared `useCachedImage`/`ValImage` layer: native asset URL first, remote fallback, explicit error/fallback states; never passes raw filesystem paths to `<img>`.
+- First-run progress modal; Settings → Data/Diagnostics cache report and image self-test.
+- Deterministic Vite fixture art (117 PNGs) + mock Tauri layer for Linux Playwright.
+- Screenshots: `01–03`.
+
+## M2 — Design system & shell (`49562c1`)
+- Tokens (dark Valorant-inspired palette, Barlow Condensed + Inter), component library (`ui.tsx`: Button/IconButton/Chip/Segmented/IconPicker/Modal/Drawer/Toast/Tabs/Stepper/fields) with focus trap and Esc handling.
+- Custom titlebar shell, top navigation, status chips, first-run wiring; frameless desktop window.
+- `docs/DESIGN_NOTES.md` started.
+
+## M3 — Browse (`85192e0`)
+- Map/agent/ability selectors, role chips, favorite agents, filters popover, virtualized card grid (comfortable/compact), minimap with throw lines/markers, detail drawer with annotated viewer and slot rail.
+- Persistent filters/sort/density/split; empty states; no horizontal overflow at 1100/1920.
+- Screenshots: `10–13`.
+
+## M4 — Create wizard (`9b45550`)
+- Five steps (Setup → Capture → Pins → Details → Review) mirroring core ability modes (`lib/modes.ts`), required-slot validation, capture auto-advance, hotkeys on every step.
+- Restyled annotation editor (circle/lens/line, colors, snap, copy-to-slot), minimap pin editing, undo/redo, 400 ms autosave + draft recovery.
+- Fixed double image resolution and minimap coordinate scaling bugs.
+- Screenshots: `20–30`.
+
+## M5 — Import/Export + Settings (`0d0ec14`)
+- Import/Export: dropzone, preview table with status pills/warnings, error rows unselectable, conflict policy, progress/report, undo batch; export summary + legacy-JPEG/bake toggles.
+- Settings tabs: General/Hotkeys/Overlay/Capture/Sync/Data/Diagnostics/About; grouped hotkey table with rebind/conflicts; overlay placement preview; large pairing code; self-test moved to Diagnostics.
+- Screenshots: `40–52`.
+
+## M6 — Overlay (`7f27afe`)
+- Translucent overlay using shared tokens: Create checklist with thumbnails/required progress/current slot; View annotated image + step caption, prev/next/flip to minimap + steps/notes; capture fade.
+- Reading-comfort prefs (scale/hide annotations/fade) sync live between Settings and overlay; Settings shows monitor placement + full-size content preview.
+- UI-only live-draft event bridge from Editor; overlay handles existing overlay hotkeys; fixed annotation SVG stacking above images app-wide.
+- Screenshots: `60–65`.
+
+## M7 — Android companion (`0a3919e`)
+- Browse-only mobile layout: bottom nav, single-column cards with always-visible actions, map dropdown + search + Filters drawer, list/map toggle with enlarged touch markers, full-screen detail drawer.
+- Pairing-only Sync; Settings hides desktop-only tabs; `html[data-platform]` sizes portaled drawers/toasts; icon-only segmented controls labelled.
+- Screenshots: `70–78` (390×844).
+
+## M8 — Polish & accessibility (this commit)
+- Touch targets: every desktop control ≥40px, Android ≥48px (chips, segmented, toolbar/card actions, agent pin, swatches, checkboxes via 40/48px labels, switches, bindings, corner picker, divider, search inputs). Automated Playwright target audit on both platforms.
+- Static badges are no longer focusable buttons; minimap markers are keyboard-operable `role=button` with larger transparent hit areas; annotation hit areas enlarged; visible focus rings; reduced-motion respected.
+- Platform set before first paint to avoid control-size flash; import checkboxes use compact visuals inside full-size labels.
+- Refreshed all screenshots; `docs/WINDOWS_TEST_PLAN.md` updated with redesign checks.
+
+## Verification (final)
+- `npm run typecheck` (ui + desktop + mobile) ✅
+- `npm test`: 7 files / 24 unit tests ✅
+- `npm run build`, `npm run build:mobile` ✅
+- Playwright: 17 e2e tests (14 desktop + 3 Android) ✅ including target-size audits and overflow checks
+- Rust: `cargo test --workspace --offline --lib --bins --tests` → 28 tests ✅
+- Real Windows capture/hotkeys/overlay affinity and real Android device sync remain manual (`docs/WINDOWS_TEST_PLAN.md`).

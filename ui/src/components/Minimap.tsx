@@ -26,7 +26,7 @@ export function Minimap({ src, lineups, selectedId, onSelect, onHover, editableP
       onPointerMove={e => { if (drag.current && onPinChange) { onPinChange(drag.current, snapPoint(toMap(e.clientX, e.clientY), false)); return; } if (pan.current) { const r = ref.current!.getBoundingClientRect(); setView(v => ({ ...v, tx: pan.current!.tx + (e.clientX - pan.current!.x) / r.width * 1000, ty: pan.current!.ty + (e.clientY - pan.current!.y) / r.height * 1000 })); } }}
       onPointerUp={() => { drag.current = null; pan.current = null; }} onPointerLeave={() => { pan.current = null; }}>
       {src ? <ValImage src={src} alt="Minimap" kind="minimap" className="ll-minimap__img" imgClassName="ll-minimap__img" loading="eager" /> : <div className="ll-minimap__placeholder" />}
-      <svg className="ll-minimap__svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" aria-hidden>
+      <svg className="ll-minimap__svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role={onSelect ? 'group' : undefined} aria-label={onSelect ? 'Lineup markers' : undefined} aria-hidden={onSelect ? undefined : true}>
         <defs><marker id="ll-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke" /></marker></defs>
         <g transform={`translate(${view.tx} ${view.ty}) scale(${view.scale})`}>
           {contextLineups.map(l => { const p = l.landPos ?? l.stand1Pos; return p ? <circle key={`ctx-${l.id}`} cx={p.x * 1000} cy={p.y * 1000} r={7} fill="none" stroke="var(--ll-muted)" strokeOpacity={0.35} strokeWidth={2} /> : null; })}
@@ -55,12 +55,13 @@ const MapMarker = memo(function MapMarker({ lineup: l, icon, selected, hovered, 
   const cached = useCachedImage(icon, 'ability');
   const p = l.landPos ?? l.stand1Pos; if (!p) return null;
   const color = SIDE_COLOR[l.side] ?? SIDE_COLOR.both; const r = (selected ? 30 : hovered ? 26 : 22) * size; const x = p.x * 1000, y = p.y * 1000;
-  return <g data-marker className="ll-minimap__marker" style={{ cursor: 'pointer' }} onClick={e => { e.stopPropagation(); onSelect?.(l.id); }} onMouseEnter={() => onHover(l.id)} onMouseLeave={() => onHover(null)}>
+  return <g data-marker className="ll-minimap__marker" style={{ cursor: onSelect ? 'pointer' : 'default' }} role={onSelect ? 'button' : undefined} tabIndex={onSelect ? 0 : undefined} aria-label={onSelect ? `Open ${l.title || 'lineup'}` : undefined} onKeyDown={onSelect ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(l.id); } } : undefined} onClick={e => { e.stopPropagation(); onSelect?.(l.id); }} onMouseEnter={() => onHover(l.id)} onMouseLeave={() => onHover(null)}>
     {(showLine || selected) && l.stand1Pos && l.landPos && <line x1={l.stand1Pos.x * 1000} y1={l.stand1Pos.y * 1000} x2={l.landPos.x * 1000} y2={l.landPos.y * 1000} stroke={selected ? '#ECE8E1' : color} strokeWidth={selected ? 3 : 2} strokeDasharray="7 5" markerEnd="url(#ll-arrow)" opacity={0.9} />}
     {l.bounces.map((b, i) => <rect key={i} x={b.x * 1000 - 7} y={b.y * 1000 - 7} width={14} height={14} transform={`rotate(45 ${b.x * 1000} ${b.y * 1000})`} fill={color} stroke="#0E1015" strokeWidth={2} />)}
     <circle cx={x} cy={y} r={r + 5} fill="#0E1015" opacity={0.85} />
     <circle cx={x} cy={y} r={r} fill="var(--ll-raised)" stroke={color} strokeWidth={selected ? 4 : 3} />
     {cached.src && <image href={cached.src} x={x - r * 0.7} y={y - r * 0.7} width={r * 1.4} height={r * 1.4} preserveAspectRatio="xMidYMid meet" />}
     {l.isFavorite && <circle cx={x + r * 0.8} cy={y - r * 0.8} r={4} fill="var(--ll-warning)" stroke="#0E1015" strokeWidth={1.5} />}
+    {onSelect && <circle cx={x} cy={y} r={Math.max(r + 5, 70)} fill="transparent" style={{ pointerEvents: 'all' }} />}
   </g>;
 });

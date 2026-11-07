@@ -504,7 +504,7 @@ html[data-platform="mobile"] { --ll-control-h: 48px; }
 .ll-app[data-platform="mobile"] .ll-logo { font-size: 20px; }
 .ll-app[data-platform="mobile"] .ll-page { padding: 16px 16px calc(88px + env(safe-area-inset-bottom)); }
 .ll-app[data-platform="mobile"] .ll-bottom-nav button { min-height: 64px; font-size: 13px; }
-.ll-app[data-platform="mobile"] .ll-segmented__item { min-height: 42px; padding: 4px 12px; }
+.ll-app[data-platform="mobile"] .ll-segmented__item { min-height: 48px; padding: 4px 12px; }
 .ll-mbrowse { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .ll-mbrowse__head { display: flex; flex-direction: column; gap: 10px; }
 .ll-mbrowse__title .ll-h1 { font-size: 26px; }
@@ -542,3 +542,41 @@ html[data-platform="mobile"] .ll-settings-body { margin-top: 16px; }
 html[data-platform="mobile"] .ll-pairing strong { font-size: 40px; letter-spacing: .18em; }
 html[data-platform="mobile"] .ll-input, html[data-platform="mobile"] .ll-select { font-size: 16px; }
 html[data-platform="mobile"] .ll-toast button { min-width: 40px; min-height: 40px; }
+
+/* Accessibility / touch targets (M8): ≥40px desktop, ≥48px Android for every control. */
+:root { --ll-target: 40px; }
+html[data-platform="mobile"] { --ll-target: 48px; }
+span.ll-chip { cursor: default; }
+.ll-chip { min-height: var(--ll-target); min-width: var(--ll-target); justify-content: center; }
+.ll-app[data-platform="mobile"] .ll-chip { min-height: 48px; }
+.ll-segmented__item { min-height: var(--ll-target); min-width: var(--ll-target); }
+html[data-platform="mobile"] .ll-segmented__item { min-height: 48px; }
+.ll-minimap__toolbar .ll-icon-btn, .ll-lineup-card__actions .ll-icon-btn { width: var(--ll-target); height: var(--ll-target); min-width: var(--ll-target); }
+.ll-agent-fav { top: 0; right: 0; width: var(--ll-target); height: var(--ll-target); }
+.ll-agent-search { min-height: var(--ll-target); }
+.ll-filterbar__controls .ll-select { min-height: var(--ll-target); }
+.ll-swatch { width: var(--ll-target); height: var(--ll-target); }
+.ll-window-controls button { width: 40px; height: 40px; }
+.ll-toast button { min-width: var(--ll-target); min-height: var(--ll-target); }
+.ll-binding { min-height: var(--ll-target); }
+.ll-corner-grid { grid-template-columns: repeat(2, var(--ll-target)); grid-template-rows: repeat(2, var(--ll-target)); }
+.ll-discovered button { min-height: var(--ll-target); }
+.ll-check { display: inline-grid; place-items: center; width: var(--ll-target); height: var(--ll-target); cursor: pointer; }
+.ll-check input { width: 18px; height: 18px; margin: 0; accent-color: var(--ll-accent); cursor: pointer; }
+.ll-minimap__size input { height: var(--ll-target); }
+.ll-annotation__toolbar .ll-toggle { min-height: var(--ll-target); }
+.ll-switch { width: 64px; height: var(--ll-target); margin-top: 0; }
+.ll-switch span { top: 7px; left: 7px; width: 24px; height: 24px; }
+.ll-switch.is-on span { transform: translateX(26px); }
+html[data-platform="mobile"] .ll-switch { width: 72px; height: 48px; }
+html[data-platform="mobile"] .ll-switch span { top: 7px; left: 7px; width: 32px; height: 32px; }
+html[data-platform="mobile"] .ll-switch.is-on span { transform: translateX(26px); }
+.ll-divider { margin: 0; background: linear-gradient(to right, transparent calc(50% - 1px), var(--ll-border) calc(50% - 1px), var(--ll-border) calc(50% + 1px), transparent calc(50% + 1px)); }
+.ll-divider:hover, .ll-divider:focus-visible { background: linear-gradient(to right, transparent calc(50% - 1px), var(--ll-accent) calc(50% - 1px), var(--ll-accent) calc(50% + 1px), transparent calc(50% + 1px)); }
+@media (max-width: 1100px) { .ll-browse { grid-template-columns: 42% 40px minmax(0,1fr) !important; } }
+.ll-minimap__marker:focus-visible { outline: 2px solid var(--ll-accent); outline-offset: 2px; }
+
+.ll-lineup-card__title { min-height: var(--ll-target); }
+.ll-search input, .ll-agent-search input { min-height: var(--ll-target); }
+
+html[data-platform="mobile"] .ll-search input, html[data-platform="mobile"] .ll-agent-search input { min-height: 48px; }
