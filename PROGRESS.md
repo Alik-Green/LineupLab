@@ -49,3 +49,11 @@ Entries are updated only after commands actually run. Platform-specific checks a
 ## 2026-11-07 · Milestone 7 complete (Android companion shell, CI build path)
 - Tauri 2 mobile shell: browse-only commands (library/catalog/modes/media), mDNS discovery, six-digit pairing and pull-only sync into local SQLite/media for offline browsing; min SDK 26; shared UI hides all mutation/create/overlay/hotkey controls.
 - Verified locally: mobile frontend typecheck/build and core/UI suites. APK build attempted: `tauri android init/build --apk` fails on missing Java/JDK + Android SDK/NDK (and offline Tauri vendor gap); CI Android workflow will produce the installable APK. No APK claimed yet.
+
+## 2026-11-07 · Milestone 8 complete (CI + docs)
+- GitHub Actions CI green: `core-ui-ubuntu` (Rust tests + doctests + fmt + UI tests/builds), `desktop-ubuntu` (shell check), `desktop-windows` (NSIS installer artifact). Android APK workflow green after SDK/NDK/env/DSL fixes (`android-apk` artifact).
+- README, BUILD, PACK_FORMAT, HOTKEYS, SYNC, COORDINATE_CHECK, WINDOWS_TEST_PLAN maintained.
+
+## 2026-11-07 · Milestone 9 complete (final report)
+- Windows cross-build attempted locally: cargo-xwin absent, MSVC target std missing, offline vendor lacks Tauri; native Windows CI succeeded instead.
+- Final honest completion/limitations report: `docs/COMPLETION.md`. Local: 28 Rust + 13 UI tests, typecheck/builds. CI artifacts: windows-installer (~7.7 MB), android-apk (~29.6 MB). Real-pack/runtime Windows/device testing limitations documented.

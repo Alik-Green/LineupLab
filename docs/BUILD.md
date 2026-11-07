@@ -41,11 +41,11 @@ npm run tauri:desktop build -- --runner cargo-xwin --target x86_64-pc-windows-ms
 
 ### Sandbox status (2026-11-07)
 
-The desktop shell source/config is complete, but this environment cannot compile it yet:
+The desktop shell **compiles and bundles in Windows CI** (NSIS artifact). This sandbox itself cannot compile it locally:
 
 - `crates.io` / `static.rust-lang.org` egress is blocked; the offline vendor cache used for the core does not contain Tauri/wry/tao. Online `cargo check` fails with TLS EOF while updating the crates.io index.
 - The Windows MSVC target stdlib and `cargo-xwin`/Windows SDK are not installed; cross-build is attempted and reported in the final milestone.
-- GitHub Actions Windows/Ubuntu workflows are the authoritative compile/test path for the shell.
+- GitHub Actions Windows/Ubuntu workflows are the authoritative compile/test path for the shell and are green (see `docs/COMPLETION.md`).
 
 No Riot art is bundled. Icons are synthetic LineupLab marks. Agent/map art is fetched and cached at runtime.
 
@@ -64,4 +64,4 @@ The companion shares `core/` and the browse UI; it **pulls** from a paired deskt
 
 ### Sandbox status (2026-11-07)
 
-`tauri android init/build` was attempted and fails because Java/JDK and the Android SDK/NDK are not installed in this environment (and Tauri crates are not vendored). The GitHub Actions Android workflow is the authoritative APK build path; no APK is claimed from this sandbox.
+`tauri android init/build` was attempted locally and fails because Java/JDK and the Android SDK/NDK are not installed in this environment. The **GitHub Actions Android workflow builds the APK successfully** (`android-apk` artifact); CI is the authoritative APK build path. The workflow installs the SDK/NDK directly, aligns `ANDROID_HOME`/`ANDROID_SDK_ROOT`, and enables `android.newDsl=false` for the Tauri Gradle plugin.

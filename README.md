@@ -49,7 +49,7 @@ cargo run -p lineuplab-core --bin lineuplab-pack -- inspect fixtures/generated/l
 
 ## Status & honesty
 
-The portable core, shared UI, pack codec, sync server/client and Tauri shell sources are implemented and covered by Linux tests. This development sandbox cannot compile the Tauri shells (crates.io egress blocked, no Windows SDK/Android SDK); **GitHub Actions Windows/Ubuntu/Android workflows are the authoritative build path**. No Windows binary or APK is claimed from the sandbox. Real user packs were not supplied, so pack tests use clearly synthetic fixtures; the Abyss coordinate convention was verified against the public minimap orientation. See `PROGRESS.md` for the exact verification matrix.
+The portable core, shared UI, pack codec, sync server/client and Tauri shells are implemented and covered by Linux tests. **GitHub Actions is green**: the Windows NSIS installer (`windows-installer`) and Android APK (`android-apk`) are built as CI artifacts — see the latest runs on [CI](https://github.com/Alik-Green/LineupLab/actions/workflows/ci.yml) and [Android APK](https://github.com/Alik-Green/LineupLab/actions/workflows/android.yml). This sandbox itself cannot cross-compile Windows/Android (blocked egress, no SDKs), so CI is the authoritative build path. Real user packs were not supplied; pack tests use synthetic fixtures and the Abyss coordinate convention was verified against the public minimap orientation. Full verification matrix and limitations: [`docs/COMPLETION.md`](docs/COMPLETION.md).
 
 ## License
 
