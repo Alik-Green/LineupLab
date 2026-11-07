@@ -58,3 +58,9 @@ Eight milestones on `arena/e082cc85-lineuplab`, preserving the core data model, 
 ## Release packaging
 - Published as [v0.1.0-preview.2](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.2) from `18bceb1`; Settings → About shows `0.1.0-preview.2` on desktop and Android.
 - Windows CI 42406781090 and Android CI 42406781048 succeeded on that exact revision; release verification run 42407951313 published the installer, APK and checksums. See `docs/releases/v0.1.0-preview.2.md` for signing/upgrade caveats.
+
+## Preview 3 — reported runtime fixes (`3dae13c`)
+- Import: off-thread preview/commit with staged progress events, persistent failure panel, busy-state guards, preview status summary and core-shaped import report. Legacy ZIP/undo semantics preserved.
+- Browse: Map/Agent/Ability current-value buttons open full picker dialogs (search, role filters, favorite-agent pinning); desktop minimap/cards get more room; Android uses the same touch-sized picker pattern.
+- Overlay: native monitor enumeration plus physical origin/size/scale conversion replaces hardcoded 1920×1080; logical settings clamp inside the selected monitor; Settings shows monitor/resolution/DPI/position and can reapply placement; startup applies saved placement.
+- Verification: typecheck; 25 UI unit tests; 30 Rust tests; desktop/mobile builds; 20 Playwright tests (17 desktop + 3 Android), including import progress/error, picker and 1440p placement regressions. Screenshots `14`, `53–54`, `66` and refreshed Browse/Import/Overlay/Android views.
