@@ -166,7 +166,8 @@ jobs:
               files.append({'name': p.name, 'bytes': len(b), 'sha256': hashlib.sha256(b).hexdigest()})
           badging = pathlib.Path('apk-badging.txt').read_text()
           signature = pathlib.Path('apk-signature.txt').read_text()
-          package = re.search(r"package: name='([^']+)' versionName='([^']+)'", badging)
+          package = re.search(r"package: name='([^']+)'", badging)
+          version = re.search(r"versionName='([^']+)'", badging)
           sdk = re.search(r"sdkVersion:'([^']+)'", badging)
           abis = re.search(r"native-code: (.+)", badging)
           # The workflow is intentionally fail-fast: no unsigned APK is uploaded.
@@ -175,7 +176,7 @@ jobs:
               'files': files,
               'windows': {'architecture': 'x64', 'format': 'NSIS', 'authenticodeStatus': 'No signing certificate configured in CI; Authenticode not independently verified'},
               'android': {'package': package.group(1) if package else None,
-                          'versionName': package.group(2) if package else None,
+                          'versionName': version.group(1) if version else None,
                           'minSdk': sdk.group(1) if sdk else None,
                           'nativeCode': abis.group(1) if abis else None,
                           'signature': signature.strip(),
@@ -203,7 +204,7 @@ jobs:
           body += "APK signature verification passed. SHA-256 certificate fingerprint: see below.\n\n"
           if a.get('signingMode') == 'ephemeral-preview':
               body += "**Preview signing:** The CI APK was unsigned. The release job aligned and signed it with an ephemeral, self-signed preview certificate (not a production identity). The private key was discarded. A future preview signed with a different key may require uninstalling this preview first; re-pair and sync afterward.\n\n"
-          fingerprints = [line.split(':', 1)[1].strip() for line in a['signature'].splitlines() if 'certificate SHA-256 digest' in line]
+          fingerprints = [line.rsplit(':', 1)[-1].strip() for line in a['signature'].splitlines() if 'certificate SHA-256 digest' in line]
           for fp in fingerprints:
               body += f'- `{fp}`\n'
           body += '\nThe Windows installer is unsigned; Windows SmartScreen may warn. The APK is a preview build, not a Play Store distribution. See the limitations above before installing.\n'
@@ -211,3 +212,15 @@ jobs:
           PY
           gh release edit "$TAG" --notes-file release-body.md
           gh release view "$TAG" --json tagName,isDraft,isPrerelease,assets --jq '{tagName,isDraft,isPrerelease,assets:[.assets[]|{name,size,digest}]}'
+      - name: Verify uploaded assets and publish prerelease
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p uploaded
+          gh release download "$TAG" --dir uploaded
+          (cd uploaded && sha256sum --check SHA256SUMS.txt)
+          APKSIGNER=$({ find /usr/local/lib/android/sdk/build-tools -type f -name apksigner 2>/dev/null || true; } | sort -V | tail -1)
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose uploaded/*.apk
+          gh release edit "$TAG" --draft=false --prerelease
+          gh release view "$TAG" --json tagName,isDraft,isPrerelease,url,assets --jq '{tagName,isDraft,isPrerelease,url,assets:[.assets[]|{name,size}]}'
