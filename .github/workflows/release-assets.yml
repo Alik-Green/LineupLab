@@ -1,0 +1,164 @@
+name: Publish verified release assets
+
+# Retrieve binaries inside GitHub Actions (the development sandbox cannot reach
+# GitHub's artifact storage CDN), verify them, and attach them to an existing draft.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing draft release tag
+        required: true
+        type: string
+      windows_run_id:
+        description: Successful CI run containing windows-installer
+        required: true
+        type: string
+      android_run_id:
+        description: Successful Android APK run containing android-apk
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  attach:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ inputs.tag }}
+      WINDOWS_RUN: ${{ inputs.windows_run_id }}
+      ANDROID_RUN: ${{ inputs.android_run_id }}
+    steps:
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Verify source runs and download original artifact ZIPs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-preview\.[0-9]+)?$ ]]
+          [[ "$WINDOWS_RUN" =~ ^[0-9]+$ && "$ANDROID_RUN" =~ ^[0-9]+$ ]]
+          test "$(gh release view "$TAG" --json isDraft --jq .isDraft)" = true
+          test "$(gh run view "$WINDOWS_RUN" --json conclusion --jq .conclusion)" = success
+          test "$(gh run view "$ANDROID_RUN" --json conclusion --jq .conclusion)" = success
+          mkdir -p incoming extracted/windows extracted/android release-assets
+          gh api "repos/$GH_REPO/actions/runs/$WINDOWS_RUN/artifacts" > windows-artifacts.json
+          gh api "repos/$GH_REPO/actions/runs/$ANDROID_RUN/artifacts" > android-artifacts.json
+          WID=$(jq -er '.artifacts[] | select(.name=="windows-installer" and .expired==false) | .id' windows-artifacts.json)
+          AID=$(jq -er '.artifacts[] | select(.name=="android-apk" and .expired==false) | .id' android-artifacts.json)
+          WSHA=$(jq -er '.artifacts[] | select(.name=="windows-installer") | .digest | sub("^sha256:"; "")' windows-artifacts.json)
+          ASHA=$(jq -er '.artifacts[] | select(.name=="android-apk") | .digest | sub("^sha256:"; "")' android-artifacts.json)
+          gh api "repos/$GH_REPO/actions/artifacts/$WID/zip" > incoming/windows.zip
+          gh api "repos/$GH_REPO/actions/artifacts/$AID/zip" > incoming/android.zip
+          echo "$WSHA  incoming/windows.zip" | sha256sum --check
+          echo "$ASHA  incoming/android.zip" | sha256sum --check
+          unzip -q incoming/windows.zip -d extracted/windows
+          unzip -q incoming/android.zip -d extracted/android
+          gh run view "$WINDOWS_RUN" --json headSha,url > windows-source.json
+          gh run view "$ANDROID_RUN" --json headSha,url > android-source.json
+      - name: Validate installer and APK signing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t EXES < <(find extracted/windows -type f -iname '*.exe' | sort)
+          mapfile -t APKS < <(find extracted/android -type f -iname '*.apk' | sort)
+          printf 'Windows candidates: %s\n' "${EXES[@]}"
+          printf 'APK candidates: %s\n' "${APKS[@]}"
+          test "${#EXES[@]}" -eq 1
+          if [ "${#APKS[@]}" -eq 1 ]; then APK="${APKS[0]}"; else
+            mapfile -t UNIVERSAL < <(printf '%s\n' "${APKS[@]}" | grep -E 'universal.*release.*\.apk$' | grep -v unsigned || true)
+            test "${#UNIVERSAL[@]}" -eq 1
+            APK="${UNIVERSAL[0]}"
+          fi
+          python3 - "${EXES[0]}" "$APK" <<'PY'
+          import pathlib, struct, sys, zipfile
+          exe, apk = map(pathlib.Path, sys.argv[1:])
+          data = exe.read_bytes()
+          assert len(data) > 1_000_000 and data[:2] == b'MZ', 'Invalid Windows executable'
+          pe = struct.unpack_from('<I', data, 0x3c)[0]
+          assert data[pe:pe+4] == b'PE\0\0', 'Missing PE header'
+          assert struct.unpack_from('<H', data, pe+4)[0] == 0x8664, 'Installer is not x64'
+          assert b'Nullsoft' in data or b'NSIS' in data, 'NSIS signature not found'
+          assert zipfile.is_zipfile(apk), 'Invalid APK ZIP'
+          with zipfile.ZipFile(apk) as z:
+              names = set(z.namelist())
+              assert {'AndroidManifest.xml', 'classes.dex'} <= names, 'Missing Android package entries'
+              assert any(n.startswith('lib/') and n.endswith('.so') for n in names), 'Missing native libraries'
+              assert z.testzip() is None, 'APK CRC failure'
+          print(f'Validated x64 NSIS installer ({len(data):,} bytes) and APK ({apk.stat().st_size:,} bytes)')
+          PY
+          APKSIGNER=$({ find /usr/local/lib/android/sdk/build-tools -type f -name apksigner 2>/dev/null || true; } | sort -V | tail -1)
+          AAPT=$({ find /usr/local/lib/android/sdk/build-tools -type f -name aapt 2>/dev/null || true; } | sort -V | tail -1)
+          if [ -z "$APKSIGNER" ] || [ -z "$AAPT" ]; then
+            SDKMANAGER=$(find /usr/local/lib/android/sdk/cmdline-tools -type f -name sdkmanager | sort -V | tail -1)
+            test -n "$SDKMANAGER"
+            "$SDKMANAGER" 'build-tools;34.0.0' >/dev/null
+            APKSIGNER=/usr/local/lib/android/sdk/build-tools/34.0.0/apksigner
+            AAPT=/usr/local/lib/android/sdk/build-tools/34.0.0/aapt
+          fi
+          "$APKSIGNER" verify --verbose --print-certs "$APK" > apk-signature.txt
+          cat apk-signature.txt
+          "$AAPT" dump badging "$APK" > apk-badging.txt
+          grep -E "^package:|^sdkVersion:|^targetSdkVersion:|^native-code:" apk-badging.txt
+          VERSION=$(jq -r '.tag_name | ltrimstr("v")' <(gh release view "$TAG" --json tagName))
+          cp "${EXES[0]}" "release-assets/LineupLab-${VERSION}-x64-setup.exe"
+          cp "$APK" "release-assets/LineupLab-Companion-${VERSION}.apk"
+      - name: Generate checksums and attach to draft
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, pathlib, re
+          root = pathlib.Path('release-assets')
+          files = []
+          for p in sorted(root.iterdir()):
+              b = p.read_bytes()
+              files.append({'name': p.name, 'bytes': len(b), 'sha256': hashlib.sha256(b).hexdigest()})
+          badging = pathlib.Path('apk-badging.txt').read_text()
+          signature = pathlib.Path('apk-signature.txt').read_text()
+          package = re.search(r"package: name='([^']+)' versionName='([^']+)'", badging)
+          sdk = re.search(r"sdkVersion:'([^']+)'", badging)
+          abis = re.search(r"native-code: (.+)", badging)
+          # The workflow is intentionally fail-fast: no unsigned APK is uploaded.
+          metadata = {
+              'tag': __import__('os').environ['TAG'],
+              'files': files,
+              'windows': {'architecture': 'x64', 'format': 'NSIS', 'authenticodeStatus': 'No signing certificate configured in CI; Authenticode not independently verified'},
+              'android': {'package': package.group(1) if package else None,
+                          'versionName': package.group(2) if package else None,
+                          'minSdk': sdk.group(1) if sdk else None,
+                          'nativeCode': abis.group(1) if abis else None,
+                          'signature': signature.strip()},
+              'sourceRuns': {'windows': json.load(open('windows-source.json')),
+                             'android': json.load(open('android-source.json'))},
+          }
+          pathlib.Path('asset-verification.json').write_text(json.dumps(metadata, indent=2) + '\n')
+          (root / 'SHA256SUMS.txt').write_text(''.join(f"{f['sha256']}  {f['name']}\n" for f in files))
+          print(json.dumps(metadata, indent=2))
+          PY
+          gh release upload "$TAG" release-assets/* --clobber
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          tag = os.environ['TAG']
+          m = json.load(open('asset-verification.json'))
+          body = subprocess.check_output(['gh', 'release', 'view', tag, '--json', 'body', '--jq', '.body'], text=True)
+          body = body.split('\n## Verified release assets\n')[0].rstrip()
+          body += '\n\n## Verified release assets\n\n'
+          body += '| File | Size | SHA-256 |\n|---|---:|---|\n'
+          for f in m['files']:
+              body += f"| `{f['name']}` | {f['bytes']:,} bytes | `{f['sha256']}` |\n"
+          a = m['android']
+          body += f"\nAndroid package: `{a['package']}`, version `{a['versionName']}`, minimum API {a['minSdk']}.\n"
+          body += f"APK signature verification passed. SHA-256 certificate fingerprint: see below.\n\n"
+          fingerprints = [line.split(':', 1)[1].strip() for line in a['signature'].splitlines() if 'certificate SHA-256 digest' in line]
+          for fp in fingerprints:
+              body += f'- `{fp}`\n'
+          body += '\nThe Windows installer is unsigned; Windows SmartScreen may warn. The APK is a preview build, not a Play Store distribution. See the limitations above before installing.\n'
+          pathlib.Path('release-body.md').write_text(body)
+          PY
+          gh release edit "$TAG" --notes-file release-body.md
+          gh release view "$TAG" --json tagName,isDraft,isPrerelease,assets --jq '{tagName,isDraft,isPrerelease,assets:[.assets[]|{name,size,digest}]}'
