@@ -33,10 +33,20 @@ fn icon_url(_app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantApi,
 #[tauri::command] pub async fn pair_sync(base_url: String, code: String, device_name: String) -> CmdResult<Value> { let p = lineuplab_core::sync::SyncClient::pair(&base_url, &code, &device_name).await.map_err(err)?; Ok(serde_json::to_value(p).map_err(err)?) }
 #[tauri::command] pub async fn sync_now(app: tauri::AppHandle, base_url: String, token: String) -> CmdResult<Value> {
     let state = app.state::<MobileState>(); let data_dir = state.data_dir.clone(); let store = state.store.clone(); drop(state);
-    let client = lineuplab_core::sync::SyncClient::new(base_url, token);
-    let mut db = lineuplab_core::db::Database::open(data_dir.join("lineuplab.sqlite3")).map_err(err)?;
-    // Browse-only companion pulls; it never pushes local edits.
-    let report = lineuplab_core::sync::pull(&client, &mut db, &store, None).await.map_err(err)?;
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    std::thread::spawn(move || {
+        let result = (|| -> lineuplab_core::Result<lineuplab_core::sync::SyncReport> {
+            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| lineuplab_core::Error::Invalid(e.to_string()))?;
+            rt.block_on(async move {
+                let client = lineuplab_core::sync::SyncClient::new(base_url, token);
+                let mut db = lineuplab_core::db::Database::open(data_dir.join("lineuplab.sqlite3"))?;
+                // Browse-only companion pulls; it never pushes local edits.
+                lineuplab_core::sync::pull(&client, &mut db, &store, None).await
+            })
+        })();
+        let _ = tx.send(result);
+    });
+    let report = rx.await.map_err(|e| e.to_string())?.map_err(err)?;
     Ok(serde_json::to_value(report).map_err(err)?)
 }
 #[tauri::command] pub fn discover_sync() -> CmdResult<Vec<lineuplab_core::sync::DiscoveredServer>> { lineuplab_core::sync::discover(std::time::Duration::from_millis(1500)).map_err(err) }

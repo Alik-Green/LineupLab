@@ -162,9 +162,21 @@ fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
     let state = app.state::<AppState>();
     let data_dir = state.data_dir.clone(); let store = state.store.clone(); let device_id = state.device_id.clone();
     drop(state);
-    let client = lineuplab_core::sync::SyncClient::new(base_url, token);
-    let mut db = lineuplab_core::db::Database::open(data_dir.join("lineuplab.sqlite3")).map_err(err)?;
-    let report = lineuplab_core::sync::sync_both(&client, &mut db, &store, &device_id, None).await.map_err(err)?;
+    // SQLite connections are not Sync; run the sync future on a dedicated current-thread runtime
+    // so no database reference is held across await inside the Tauri (Send) command future.
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    std::thread::spawn(move || {
+        let result = (|| -> lineuplab_core::Result<lineuplab_core::sync::SyncReport> {
+            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| lineuplab_core::Error::Invalid(e.to_string()))?;
+            rt.block_on(async move {
+                let client = lineuplab_core::sync::SyncClient::new(base_url, token);
+                let mut db = lineuplab_core::db::Database::open(data_dir.join("lineuplab.sqlite3"))?;
+                lineuplab_core::sync::sync_both(&client, &mut db, &store, &device_id, None).await
+            })
+        })();
+        let _ = tx.send(result);
+    });
+    let report = rx.await.map_err(|e| e.to_string())?.map_err(err)?;
     Ok(serde_json::to_value(report).map_err(err)?)
 }
 #[tauri::command] pub fn discover_sync() -> CmdResult<Vec<lineuplab_core::sync::DiscoveredServer>> { lineuplab_core::sync::discover(std::time::Duration::from_millis(1500)).map_err(err) }
