@@ -95,6 +95,6 @@ jobs:
       actions: read
     uses: ./.github/workflows/release-assets.yml
     with:
-      tag: v0.1.0-preview.1
-      windows_run_id: '42386769967'
-      android_run_id: '42388911819'
+      tag: v0.1.0-preview.2
+      windows_run_id: '42406781090'
+      android_run_id: '42406781048'
