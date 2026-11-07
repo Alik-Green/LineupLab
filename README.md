@@ -10,6 +10,10 @@
 
 LineupLab **never** injects, hooks, attaches to, or reads Valorant/Vanguard memory. It uses only a separate overlay window, global hotkeys and normal screen capture. The only game-specific logic is window-**title** inspection to choose the capture monitor. The overlay is excluded from capture with `WDA_EXCLUDEFROMCAPTURE` (Windows 10 2004+). **Valorant must be Borderless/Windowed**; exclusive fullscreen is unsupported. No Riot assets are bundled — agent/map art is fetched and cached at runtime.
 
+## Download
+
+**[LineupLab 0.1.0 Preview 1](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.1)** — Windows x64 installer, Android companion APK and SHA-256 checksums. This is a prerelease: the Windows installer is unsigned and the APK uses an ephemeral preview signing certificate; see the release notes before installing.
+
 ## Quick start
 
 ```bash

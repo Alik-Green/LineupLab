@@ -51,3 +51,8 @@ The **native Windows CI job succeeded** and produced the NSIS installer, so the 
 ## Milestone commits
 
 1. `5449c56` foundation · 2. `9fe8b7b`/`751826b` packs + Abyss check · 3. `27d45f6` shared UI · 4. `35e82f5` hotkeys/capture/overlay · 5. `2489e58` desktop shell · 6. `6f45708` sync · 7. `aba6ccb` Android shell · 8–9. CI/docs/final (see git log).
+
+
+## GitHub release
+
+Published prerelease: https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.1 — Windows x64 NSIS installer, signed Android preview APK and `SHA256SUMS.txt`. The CI APK was unsigned; release packaging aligned and signed it with an ephemeral preview certificate (discarded after signing). Windows installer remains unsigned. Release asset checksums and APK signature were verified by CI run 42392314298; real Windows/Android runtime testing remains pending.

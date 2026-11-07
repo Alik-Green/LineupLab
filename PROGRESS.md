@@ -57,3 +57,9 @@ Entries are updated only after commands actually run. Platform-specific checks a
 ## 2026-11-07 · Milestone 9 complete (final report)
 - Windows cross-build attempted locally: cargo-xwin absent, MSVC target std missing, offline vendor lacks Tauri; native Windows CI succeeded instead.
 - Final honest completion/limitations report: `docs/COMPLETION.md`. Local: 28 Rust + 13 UI tests, typecheck/builds. CI artifacts: windows-installer (~7.7 MB), android-apk (~29.6 MB). Real-pack/runtime Windows/device testing limitations documented.
+
+## 2026-11-07 · GitHub prerelease published
+- Release: https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.1 (`v0.1.0-preview.1`, prerelease, tag target `c6e5984`).
+- Assets: `LineupLab-0.1.0-preview.1-x64-setup.exe` (7,692,647 bytes), `LineupLab-Companion-0.1.0-preview.1.apk` (79,427,862 bytes), `SHA256SUMS.txt`.
+- Source builds: Windows CI run 42386769967 (`ebb75c7`); Android CI run 42388911819 (`81879e9`). Release packaging/verification run 42392314298 passed, including re-download and checksum/signature verification of the uploaded assets.
+- APK: `app.lineuplab.companion` 0.1.0, min API 26, universal ABIs; unsigned CI output aligned and signed with a disclosed ephemeral preview key. Windows installer unsigned. No real-device/runtime validation claimed.
