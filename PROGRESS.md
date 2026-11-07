@@ -101,3 +101,9 @@ Entries are updated only after commands actually run. Platform-specific checks a
 - 40px/48px target floor across all screens; static badges non-focusable; keyboard-operable map markers; larger annotation hit areas; compact checkboxes in full-size labels; platform set before paint; focus/reduced-motion verified.
 - Added `docs/UI_CHANGELOG.md`; updated `docs/WINDOWS_TEST_PLAN.md` with redesign + a11y checks; refreshed all screenshots (desktop + Android 390×844).
 - Final verification: typecheck; 24 unit tests; desktop + mobile builds; 17 Playwright e2e (14 desktop + 3 Android, incl. target audits); 28 Rust tests. M1–M8 committed & pushed.
+
+## 2026-11-07 · Preview 2 release published (Windows + Android)
+- Fixed native catalog role-icon conversion (`8c855b3`) and labelled the redesigned UI `0.1.0-preview.2` (`18bceb1`).
+- Green same-revision builds: CI/Windows [42406781090](https://github.com/Alik-Green/LineupLab/actions/runs/42406781090), Android [42406781048](https://github.com/Alik-Green/LineupLab/actions/runs/42406781048), source `18bceb1c5727ed264b8fc0cb70296644e6f4ea9e`.
+- Published [v0.1.0-preview.2](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.2) via packaging run [42407951313](https://github.com/Alik-Green/LineupLab/actions/runs/42407951313): x64 NSIS installer, signed universal companion APK, SHA256SUMS; source equality, artifact digests, package structure, checksums and APK signature verified.
+- Final local checks: typecheck, 24 unit tests, 28 Rust tests, desktop/mobile builds, 17 Playwright tests. Unsigned Windows / ephemeral Android signing and pending real-device/gameplay checks are disclosed in `docs/releases/v0.1.0-preview.2.md`.

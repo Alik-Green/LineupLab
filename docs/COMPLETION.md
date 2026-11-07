@@ -8,24 +8,25 @@ Date: 2026-11-07 · Branch: `arena/e082cc85-lineuplab`
 |---|---|---|
 | Portable Rust core (SQLite + SHA-256 media, catalog cache/retry/offline, modes, geometry, state machine) | Implemented | `core/`, 28 Rust tests |
 | Legacy ZIP pack import/export (sole format), safe unzip, tolerant validation, conflicts/undo, canonical circles, lossless unknown/string forms, WebP dual export | Implemented | `core/src/pack.rs`, `docs/PACK_FORMAT.md`, 12 pack tests + 13 synthetic fixtures |
-| Shared UI browse/create/annotation editor, virtualized grid, minimap, drafts, undo/redo | Implemented | `ui/`, 13 UI tests, typecheck + builds |
+| Shared UI browse/create/annotation editor, virtualized grid, minimap, drafts, undo/redo | Implemented | `ui/`, 24 UI tests, 17 Playwright checks, typecheck + builds; redesign M1–M8 |
 | Alt hotkeys, fast capture pipeline, overlay state | Implemented (portable + Windows adapter) | `core/src/hotkeys.rs`, `overlay.rs`, `capture.rs`, `docs/HOTKEYS.md`, 6 desktop-feature tests |
-| Tauri 2 Windows desktop shell + overlay window + commands | **Compiles and bundles in CI** | CI `desktop-windows` success; `windows-installer` artifact (NSIS, ~7.7 MB) |
+| Tauri 2 Windows desktop shell + overlay window + commands | **Compiles and bundles in CI** | CI `desktop-windows` success; `windows-installer` artifact (NSIS; Preview 2 ZIP ~8.3 MB) |
 | LAN sync server/client, pairing, mDNS, tombstones, deterministic conflicts | Implemented | `core/src/server.rs`, `sync.rs`, `docs/SYNC.md`, 4 sync tests |
-| Tauri 2 Android browse-only companion, discovery/pair/pull sync, min SDK 26 | **APK built in CI** | CI `Android APK` success; `android-apk` artifact (~29.6 MB) |
+| Tauri 2 Android browse-only companion, discovery/pair/pull sync, min SDK 26 | **APK built in CI** | CI `Android APK` success; `android-apk` artifact (Preview 2 ZIP ~32.3 MB) |
 | CI Windows/Ubuntu + Android, README/BUILD/PACK_FORMAT/WINDOWS_TEST_PLAN/DECISIONS/PROGRESS | Complete | `.github/workflows/`, `docs/` |
 
 ### Authoritative CI runs (green)
 
-- CI: https://github.com/Alik-Green/LineupLab/actions/runs/42388911808 — `core-ui-ubuntu`, `desktop-ubuntu`, `desktop-windows` all success. Artifacts: `windows-installer`, `frontend-dist`.
-- Android: https://github.com/Alik-Green/LineupLab/actions/runs/42388911819 — `apk` success. Artifact: `android-apk`.
+- CI: https://github.com/Alik-Green/LineupLab/actions/runs/42406781090 — `core-ui-ubuntu`, `desktop-ubuntu`, `desktop-windows` all success on `18bceb1`. Artifacts: `windows-installer`, `frontend-dist`.
+- Android: https://github.com/Alik-Green/LineupLab/actions/runs/42406781048 — `apk` success on the same `18bceb1` revision. Artifact: `android-apk`.
 
 Artifacts are downloadable from those run pages (GitHub login required). They are not committed to Git.
 
 ## Local verification (this sandbox)
 
 - `cargo test --workspace --offline --lib --bins --tests`: **28 passed** (6 foundation + 12 pack + 6 desktop features + 4 sync server).
-- `npm run typecheck`, `npm test` (**13 passed**), `npm run build`, `npm run build:mobile`: passed.
+- `npm run typecheck`, `npm test` (**24 passed / 7 files**), `npm run build`, `npm run build:mobile`: passed.
+- Playwright: **17 passed** (14 desktop + 3 Android viewport/accessibility), including 40px/48px target audits.
 - Live browser demo: port 5173 (synthetic placeholder art; Tauri commands activate inside the shells).
 
 ## Windows cross-build attempt (Linux → Windows)
@@ -46,13 +47,17 @@ The **native Windows CI job succeeded** and produced the NSIS installer, so the 
 - **Sync transport** is the documented LAN-only HTTP + pairing/token alternative to pinned HTTPS; do not expose it to the Internet (`docs/SYNC.md`).
 - Core CI currently runs without `--locked` because the sandbox-generated offline lockfile lacks crates.io checksums; local offline tests pass with the committed lockfile. Regenerate the lockfile on a networked machine for fully reproducible online builds if desired.
 - No Riot assets are bundled. Agent/map art is fetched/cached at runtime. No game memory/hooks/injection/Vanguard interaction; Borderless/Windowed only.
-- No PR or GitHub release was opened; deliverables are on the session branch and CI artifacts.
+- No PR was opened. Published prereleases and verified assets are listed below; source remains on the session branch.
 
 ## Milestone commits
 
 1. `5449c56` foundation · 2. `9fe8b7b`/`751826b` packs + Abyss check · 3. `27d45f6` shared UI · 4. `35e82f5` hotkeys/capture/overlay · 5. `2489e58` desktop shell · 6. `6f45708` sync · 7. `aba6ccb` Android shell · 8–9. CI/docs/final (see git log).
 
 
-## GitHub release
+## GitHub releases
 
-Published prerelease: https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.1 — Windows x64 NSIS installer, signed Android preview APK and `SHA256SUMS.txt`. The CI APK was unsigned; release packaging aligned and signed it with an ephemeral preview certificate (discarded after signing). Windows installer remains unsigned. Release asset checksums and APK signature were verified by CI run 42392314298; real Windows/Android runtime testing remains pending.
+**Current: [v0.1.0-preview.2](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.2)** — redesigned M1–M8 desktop + Android companion, both built from `18bceb1c5727ed264b8fc0cb70296644e6f4ea9e`. Assets: `LineupLab-0.1.0-preview.2-x64-setup.exe` (8,329,649 B), `LineupLab-Companion-0.1.0-preview.2.apk` (82,987,286 B), `SHA256SUMS.txt`. Packaging/verification run [42407951313](https://github.com/Alik-Green/LineupLab/actions/runs/42407951313) passed: source-run equality, artifact ZIP digests, NSIS/APK structure, ephemeral APK signing, checksum re-download and signature verification. Full notes: `docs/releases/v0.1.0-preview.2.md`.
+
+The Windows installer is unsigned; the APK uses a discarded ephemeral preview certificate. Preview 1 → Preview 2 on Android requires uninstall/re-pair because the signing identity differs. Back up the Windows library first. Real Windows gameplay and physical Android testing remain pending.
+
+Historical: [v0.1.0-preview.1](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.1), packaging run 42392314298. Superseded by Preview 2; do not use its older binaries for the redesigned app.

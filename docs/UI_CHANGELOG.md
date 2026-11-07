@@ -54,3 +54,7 @@ Eight milestones on `arena/e082cc85-lineuplab`, preserving the core data model, 
 - Playwright: 17 e2e tests (14 desktop + 3 Android) ✅ including target-size audits and overflow checks
 - Rust: `cargo test --workspace --offline --lib --bins --tests` → 28 tests ✅
 - Real Windows capture/hotkeys/overlay affinity and real Android device sync remain manual (`docs/WINDOWS_TEST_PLAN.md`).
+
+## Release packaging
+- Published as [v0.1.0-preview.2](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.2) from `18bceb1`; Settings → About shows `0.1.0-preview.2` on desktop and Android.
+- Windows CI 42406781090 and Android CI 42406781048 succeeded on that exact revision; release verification run 42407951313 published the installer, APK and checksums. See `docs/releases/v0.1.0-preview.2.md` for signing/upgrade caveats.

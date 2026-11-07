@@ -1,5 +1,9 @@
 # Building LineupLab
 
+## Prebuilt releases
+
+Current prerelease: [v0.1.0-preview.2](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.2) — Windows x64 NSIS installer, Android companion APK and `SHA256SUMS.txt`. See `docs/releases/v0.1.0-preview.2.md` for install/upgrade steps and checksums. Windows is unsigned; Android uses an ephemeral preview key, so upgrading from Preview 1 requires uninstall/re-pair. Back up first. CI builds are not physical-device/gameplay validation.
+
 ## Portable core (Linux/macOS/Windows)
 
 ```bash
