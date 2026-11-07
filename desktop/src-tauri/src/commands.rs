@@ -45,12 +45,12 @@ pub fn from_ui(v: Value) -> Result<Lineup, String> {
 fn icon_url(app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantApi, url: Option<&str>) -> Value {
     match url { Some(u) => { if let Ok(p) = api.image_path(u) { if p.exists() { if let Ok(asset) = app.path().convert_file_src(&p) { return json!(asset.to_string()); } } } json!(u) }, None => Value::Null }
 }
-#[tauri::command] pub async fn get_catalog(app: tauri::AppHandle, state: State<'_, AppState>) -> CmdResult<Value> {
-    let lineups = state.db.lock().unwrap().all(false).map_err(err)?;
-    let mut c = state.api.refresh(false).await.map_err(err)?;
+#[tauri::command] pub async fn get_catalog(app: tauri::AppHandle) -> CmdResult<Value> {
+    let (lineups, api) = { let state = app.state::<AppState>(); (state.db.lock().unwrap().all(false).map_err(err)?, state.api.clone()) };
+    let mut c = api.refresh(false).await.map_err(err)?;
     c.archive_missing(&lineups);
-    let agents: Vec<Value> = c.agents.iter().map(|a| json!({"uuid":a.uuid,"displayName":a.display_name,"displayIcon":icon_url(&app,&state.api,a.display_icon.as_deref()),"role":Value::Null,"isArchived":a.archived})).collect();
-    let maps: Vec<Value> = c.maps.iter().map(|m| json!({"uuid":m.uuid,"displayName":m.display_name,"displayIcon":icon_url(&app,&state.api,m.display_icon.as_deref()),"isArchived":m.archived})).collect();
+    let agents: Vec<Value> = c.agents.iter().map(|a| json!({"uuid":a.uuid,"displayName":a.display_name,"displayIcon":icon_url(&app,&api,a.display_icon.as_deref()),"role":Value::Null,"isArchived":a.archived})).collect();
+    let maps: Vec<Value> = c.maps.iter().map(|m| json!({"uuid":m.uuid,"displayName":m.display_name,"displayIcon":icon_url(&app,&api,m.display_icon.as_deref()),"isArchived":m.archived})).collect();
     Ok(json!({"agents":agents,"maps":maps,"version":c.version,"updatedAt":c.last_updated.unwrap_or_else(lineuplab_core::now),"stale":c.offline,"warning":c.warning}))
 }
 #[tauri::command] pub fn get_modes() -> CmdResult<Vec<Value>> {
@@ -135,20 +135,23 @@ fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
 }
 
 // ---- LAN sync (opt-in) ----
-#[tauri::command] pub async fn start_sync_server(state: State<'_, AppState>, name: Option<String>) -> CmdResult<Value> {
-    if let Some(h) = state.sync_server.lock().unwrap().as_ref() { return Ok(json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code})); }
-    let config = lineuplab_core::server::ServerConfig { data_dir: state.data_dir.clone(), name: name.unwrap_or_else(|| "LineupLab Desktop".into()), ..Default::default() };
+#[tauri::command] pub async fn start_sync_server(app: tauri::AppHandle, name: Option<String>) -> CmdResult<Value> {
+    let config = { let state = app.state::<AppState>();
+        if let Some(h) = state.sync_server.lock().unwrap().as_ref() { return Ok(json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code})); }
+        lineuplab_core::server::ServerConfig { data_dir: state.data_dir.clone(), name: name.unwrap_or_else(|| "LineupLab Desktop".into()), ..Default::default() }
+    };
     let h = lineuplab_core::server::spawn(config).await.map_err(err)?;
     let out = json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code});
-    *state.sync_server.lock().unwrap() = Some(h); Ok(out)
+    *app.state::<AppState>().sync_server.lock().unwrap() = Some(h); Ok(out)
 }
-#[tauri::command] pub async fn stop_sync_server(state: State<'_, AppState>) -> CmdResult<()> { let h = state.sync_server.lock().unwrap().take(); if let Some(h) = h { h.shutdown().await.map_err(err)?; } Ok(()) }
+#[tauri::command] pub async fn stop_sync_server(app: tauri::AppHandle) -> CmdResult<()> { let h = app.state::<AppState>().sync_server.lock().unwrap().take(); if let Some(h) = h { h.shutdown().await.map_err(err)?; } Ok(()) }
 #[tauri::command] pub fn get_sync_server_status(state: State<AppState>) -> CmdResult<Value> { let g = state.sync_server.lock().unwrap(); Ok(match g.as_ref() { Some(h) => json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code}), None => json!({"running":false}) }) }
 #[tauri::command] pub async fn pair_sync(base_url: String, code: String, device_name: String) -> CmdResult<Value> { let p = lineuplab_core::sync::SyncClient::pair(&base_url, &code, &device_name).await.map_err(err)?; Ok(serde_json::to_value(p).map_err(err)?) }
-#[tauri::command] pub async fn sync_now(state: State<'_, AppState>, base_url: String, token: String) -> CmdResult<Value> {
+#[tauri::command] pub async fn sync_now(app: tauri::AppHandle, base_url: String, token: String) -> CmdResult<Value> {
+    let (data_dir, store, device_id) = { let state = app.state::<AppState>(); (state.data_dir.clone(), state.store.clone(), state.device_id.clone()) };
     let client = lineuplab_core::sync::SyncClient::new(base_url, token);
-    let mut db = lineuplab_core::db::Database::open(state.data_dir.join("lineuplab.sqlite3")).map_err(err)?;
-    let report = lineuplab_core::sync::sync_both(&client, &mut db, &state.store, &state.device_id, None).await.map_err(err)?;
+    let mut db = lineuplab_core::db::Database::open(data_dir.join("lineuplab.sqlite3")).map_err(err)?;
+    let report = lineuplab_core::sync::sync_both(&client, &mut db, &store, &device_id, None).await.map_err(err)?;
     Ok(serde_json::to_value(report).map_err(err)?)
 }
 #[tauri::command] pub fn discover_sync() -> CmdResult<Vec<lineuplab_core::sync::DiscoveredServer>> { lineuplab_core::sync::discover(std::time::Duration::from_millis(1500)).map_err(err) }

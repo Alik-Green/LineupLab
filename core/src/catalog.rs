@@ -126,6 +126,7 @@ impl HttpTransport for ReqwestTransport {
             .to_vec())
     }
 }
+#[derive(Clone)]
 pub struct ValorantApi {
     pub base_url: String,
     pub cache_dir: PathBuf,
