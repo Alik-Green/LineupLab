@@ -3,6 +3,7 @@ import type { AbilityMode, Catalog, ImportPreview, ImportReport, LibraryAdapter,
 import { createAdapter } from './lib/adapter';
 import { Browse } from './components/Browse';
 import { Editor } from './components/Editor';
+import { DesktopSettings } from './components/DesktopSettings';
 
 type Page = 'browse' | 'editor' | 'import' | 'settings';
 export function App({ platform }: { platform: 'desktop' | 'mobile' }) {
@@ -31,7 +32,7 @@ export function App({ platform }: { platform: 'desktop' | 'mobile' }) {
       {page === 'browse' && <Browse adapter={adapter} lineups={lineups} catalog={catalog} readOnly={browseOnly} onEdit={id => browseOnly ? undefined : openEditor(id)} onRefresh={refresh} />}
       {page === 'editor' && !browseOnly && <Editor adapter={adapter} lineupId={editId} catalog={catalog} modes={modes} onSaved={() => { void refresh(); }} onCancel={() => setPage('browse')} />}
       {page === 'import' && !browseOnly && <ImportExport adapter={adapter} lineups={lineups} onRefresh={refresh} />}
-      {page === 'settings' && <Settings adapter={adapter} catalog={catalog} onRefresh={refresh} />}
+      {page === 'settings' && <Settings adapter={adapter} catalog={catalog} onRefresh={refresh} browseOnly={browseOnly} />}
     </div>
   </main>;
 }
@@ -49,10 +50,11 @@ function ImportExport({ adapter, lineups, onRefresh }: { adapter: LibraryAdapter
     {msg && <p className="text-sm text-cyan-300" role="status">{msg}</p>}
   </div>;
 }
-function Settings({ adapter, catalog, onRefresh }: { adapter: LibraryAdapter; catalog: Catalog | null; onRefresh(): void }) {
+function Settings({ adapter, catalog, onRefresh, browseOnly = false }: { adapter: LibraryAdapter; catalog: Catalog | null; onRefresh(): void; browseOnly?: boolean }) {
   return <div className="mx-auto max-w-2xl space-y-4" data-testid="settings">
     <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"><h2 className="mb-2 text-lg font-semibold">Catalog</h2><p className="text-sm text-slate-400">Version {catalog?.version ?? '—'} · last updated {catalog ? new Date(catalog.updatedAt).toLocaleString() : '—'}{catalog?.stale ? ' (offline cache)' : ''}</p><button onClick={onRefresh} className="mt-2 rounded bg-slate-800 px-3 py-1.5 text-sm">Refresh</button><p className="mt-2 text-xs text-slate-500">Agent/map art is fetched at runtime and cached; no Riot assets are bundled. Archived references are kept so lineups never disappear.</p></section>
-    <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"><h2 className="mb-2 text-lg font-semibold">Capture, hotkeys & overlay</h2><p className="text-sm text-slate-400">{adapter.kind === 'tauri' ? 'Desktop adapters are registered by the Tauri shell.' : 'Browser demo: capture/hotkeys/overlay require the Windows desktop app.'}</p><ul className="mt-2 list-disc pl-5 text-xs text-slate-500"><li>Overlay works with Valorant Borderless/Windowed only.</li><li>No game memory, hooks, injection, or Vanguard interaction — separate overlay + normal screen capture only.</li><li>Windows-specific paths are isolated behind traits and mocks for Linux tests.</li></ul></section>
+    {!browseOnly && <DesktopSettings adapter={adapter} />}
+    {browseOnly && <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"><h2 className="mb-2 text-lg font-semibold">Browse-only companion</h2><p className="text-sm text-slate-400">Creation, overlay and hotkeys are desktop-only. Pair with a desktop library to browse offline.</p></section>}
     <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-4"><h2 className="mb-2 text-lg font-semibold">LAN sync</h2><p className="text-sm text-slate-400">Opt-in pairing server and Android companion sync are implemented in the core/server milestone.</p></section>
   </div>;
 }

@@ -1,0 +1,4 @@
+import type { OverlayCorner, OverlaySettings } from '../types';
+export const DEFAULT_OVERLAY: OverlaySettings = { enabled: true, clickThrough: true, corner: 'top-right', monitor: 0, marginX: 24, marginY: 24, width: 420, height: 320, opacity: 0.9 };
+export function clampOverlay(s: OverlaySettings): OverlaySettings { return { ...s, opacity: Math.min(1, Math.max(0.2, s.opacity)), width: Math.min(1600, Math.max(200, s.width)), height: Math.min(1400, Math.max(160, s.height)), marginX: Math.max(0, s.marginX), marginY: Math.max(0, s.marginY) }; }
+export function overlayPosition(s: OverlaySettings, screenW: number, screenH: number): { x: number; y: number } { const c: OverlayCorner = s.corner; return { x: c.endsWith('left') ? s.marginX : Math.max(0, screenW - s.width - s.marginX), y: c.startsWith('top') ? s.marginY : Math.max(0, screenH - s.height - s.marginY) }; }

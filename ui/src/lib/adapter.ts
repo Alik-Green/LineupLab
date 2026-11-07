@@ -1,5 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { AbilityMode, CaptureResult, Catalog, ImportPreview, ImportReport, LibraryAdapter, Lineup, SlotData, SlotId } from '../types';
+import type { AbilityMode, CaptureResult, CaptureSettings, Catalog, HotkeyBinding, HotkeyFeedback, ImportPreview, ImportReport, LibraryAdapter, Lineup, OverlaySettings, SlotData, SlotId } from '../types';
+import { DEFAULT_HOTKEYS, rebindLocal } from './hotkeys';
+import { clampOverlay, DEFAULT_OVERLAY } from './overlay';
 import { SLOT_ORDER } from '../types';
 
 export const emptySlot = (): SlotData => ({ image: null, circles: [], lines: [] });
@@ -41,6 +43,12 @@ export class BrowserAdapter implements LibraryAdapter {
   async importCommit(): Promise<ImportReport> { throw new Error('Pack import requires the desktop core (or CLI).'); }
   async exportPack(): Promise<Uint8Array> { throw new Error('Pack export requires the desktop core (or CLI).'); }
   async undoImport(): Promise<void> { throw new Error('Undo import requires the desktop core.'); }
+  async getHotkeys(): Promise<HotkeyBinding[]> { try { return JSON.parse(localStorage.getItem('lineuplab.hotkeys') ?? 'null') ?? DEFAULT_HOTKEYS; } catch { return DEFAULT_HOTKEYS; } }
+  async rebindHotkey(action: string, keys: string): Promise<HotkeyFeedback> { const { bindings, feedback } = rebindLocal(await this.getHotkeys(), action, keys); if (feedback.kind === 'ok') localStorage.setItem('lineuplab.hotkeys', JSON.stringify(bindings)); return feedback; }
+  async getOverlaySettings(): Promise<OverlaySettings> { try { return clampOverlay({ ...DEFAULT_OVERLAY, ...JSON.parse(localStorage.getItem('lineuplab.overlay') ?? '{}') }); } catch { return DEFAULT_OVERLAY; } }
+  async setOverlaySettings(settings: OverlaySettings) { localStorage.setItem('lineuplab.overlay', JSON.stringify(clampOverlay(settings))); }
+  async getCaptureSettings(): Promise<CaptureSettings> { try { return { maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150, ...JSON.parse(localStorage.getItem('lineuplab.capture') ?? '{}') }; } catch { return { maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150 }; } }
+  async setCaptureSettings(settings: CaptureSettings) { localStorage.setItem('lineuplab.capture', JSON.stringify(settings)); }
 }
 export class TauriAdapter implements LibraryAdapter {
   kind = 'tauri' as const;
@@ -59,6 +67,12 @@ export class TauriAdapter implements LibraryAdapter {
   importCommit(bytes: Uint8Array, selected: string[], policy: string) { return invoke<ImportReport>('import_commit', { bytes: Array.from(bytes), selected, policy }); }
   async exportPack(ids: string[] | null, legacyImages: boolean, bake: boolean) { return new Uint8Array(await invoke<number[]>('export_pack', { ids, legacyImages, bake })); }
   undoImport(batchId: string) { return invoke<void>('undo_import', { batchId }); }
+  getHotkeys() { return invoke<HotkeyBinding[]>('get_hotkeys'); }
+  rebindHotkey(action: string, keys: string) { return invoke<HotkeyFeedback>('rebind_hotkey', { action, keys }); }
+  getOverlaySettings() { return invoke<OverlaySettings>('get_overlay_settings'); }
+  setOverlaySettings(settings: OverlaySettings) { return invoke<void>('set_overlay_settings', { settings }); }
+  getCaptureSettings() { return invoke<CaptureSettings>('get_capture_settings'); }
+  setCaptureSettings(settings: CaptureSettings) { return invoke<void>('set_capture_settings', { settings }); }
 }
 export function createAdapter(): LibraryAdapter { return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window ? new TauriAdapter() : new BrowserAdapter(); }
 async function sha256(bytes: Uint8Array) { const digest = await crypto.subtle.digest('SHA-256', bytes as BufferSource); return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join(''); }

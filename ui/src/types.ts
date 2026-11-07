@@ -51,4 +51,15 @@ export interface LibraryAdapter {
   importCommit(bytes: Uint8Array, selected: string[], policy: string): Promise<ImportReport>;
   exportPack(ids: string[] | null, legacyImages: boolean, bake: boolean): Promise<Uint8Array>;
   undoImport(batchId: string): Promise<void>;
+  getHotkeys(): Promise<HotkeyBinding[]>;
+  rebindHotkey(action: string, keys: string): Promise<HotkeyFeedback>;
+  getOverlaySettings(): Promise<OverlaySettings>;
+  setOverlaySettings(settings: OverlaySettings): Promise<void>;
+  getCaptureSettings(): Promise<CaptureSettings>;
+  setCaptureSettings(settings: CaptureSettings): Promise<void>;
 }
+export interface HotkeyBinding { action: string; label: string; keys: string }
+export type HotkeyFeedback = { kind: 'ok'; message: string } | { kind: 'conflict'; message: string; action: string } | { kind: 'invalid'; message: string };
+export type OverlayCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+export interface OverlaySettings { enabled: boolean; clickThrough: boolean; corner: OverlayCorner; monitor: number; marginX: number; marginY: number; width: number; height: number; opacity: number }
+export interface CaptureSettings { maxWidth: number; quality: number; webp: boolean; thumbnail: boolean; targetMs: number }
