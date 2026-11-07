@@ -6,10 +6,10 @@ import { Modal } from './ui';
 import { ValImage } from '../lib/images';
 
 /** Compact current-value trigger; the full choice grid lives in an accessible dialog. */
-export function BrowsePicker({ label, value, options, onChange, allLabel, kind = 'picker', size = 'md', disabled, searchable, header, favoriteIds, onToggleFavorite, className }: {
+export function BrowsePicker({ label, value, options, onChange, allLabel, kind = 'picker', size = 'md', disabled, searchable, header, favoriteIds, onToggleFavorite, className, square }: {
   label: string; value: string; options: PickerOption[]; onChange(id: string): void; allLabel: string;
   kind?: string; size?: 'md' | 'lg'; disabled?: boolean; searchable?: boolean; header?: ReactNode;
-  favoriteIds?: string[]; onToggleFavorite?(id: string): void; className?: string;
+  favoriteIds?: string[]; onToggleFavorite?(id: string): void; className?: string; square?: boolean;
 }) {
   const [open, setOpen] = useState(false); const [query, setQuery] = useState('');
   useEffect(() => { if (open) setQuery(''); }, [open]);
@@ -18,7 +18,7 @@ export function BrowsePicker({ label, value, options, onChange, allLabel, kind =
   const shown = options.filter(o => !query || o.name.toLowerCase().includes(query.toLowerCase()) || o.sublabel?.toLowerCase().includes(query.toLowerCase()));
   const choose = (id: string) => { onChange(id); setOpen(false); };
   const lower = label.toLowerCase();
-  return <div className={clsx('ll-browse-picker', className)}>
+  return <div className={clsx('ll-browse-picker', square && 'll-browse-picker--square', className)}>
     <button type="button" className="ll-browse-picker__trigger" aria-label={`Choose ${lower}`} aria-haspopup="dialog" aria-expanded={open} disabled={disabled} onClick={() => setOpen(true)}>
       <span className="ll-browse-picker__thumb">{current?.icon ? <ValImage src={current.icon} alt="" kind={kind} className="ll-browse-picker__img" imgClassName="ll-browse-picker__img" /> : <span className="ll-browse-picker__all" aria-hidden>{value ? currentName.slice(0, 2) : 'All'}</span>}</span>
       <span className="ll-browse-picker__text"><small>{label}</small><strong>{disabled ? 'Select an agent' : currentName}</strong></span>

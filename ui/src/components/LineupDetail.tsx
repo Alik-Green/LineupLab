@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Copy, Download, Pencil, Star, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Copy, Download, GraduationCap, Pencil, Star, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import type { Catalog, LibraryAdapter, Lineup, SlotId } from '../types';
 import { SLOT_LABELS, SLOT_ORDER } from '../types';
 import { AnnotatedImage } from './AnnotatedImage';
@@ -27,6 +27,7 @@ export function LineupDetail({ adapter, lineup, catalog, onClose, onEdit, onRefr
     {!readOnly && <Button onClick={duplicate} icon={<Copy size={16} />}>Duplicate</Button>}
     {!readOnly && <Button variant="danger" onClick={remove} icon={<Trash2 size={16} />}>Delete</Button>}
     {!readOnly && <Button variant="primary" onClick={() => onEdit(lineup.id)} icon={<Pencil size={16} />}>Edit</Button>}
+    {adapter.kind === 'tauri' && document.documentElement.dataset.platform !== 'mobile' && <Button icon={<GraduationCap size={16} />} onClick={async () => { try { await adapter.learnLineup(lineup.id); toast.push('Sent to overlay in Learn mode.', 'success'); } catch (e) { toast.push(String(e), 'error'); } }}>Learn in overlay</Button>}
   </>}>
     <div className="ll-detail" data-testid="lineup-detail">
       <div className="ll-detail__viewer">

@@ -53,7 +53,8 @@ pub fn run() {
                 Some(serde_json::Value::String(s)) => s,
                 _ => { let id = uuid::Uuid::new_v4().to_string(); db.set_metadata("deviceId", &serde_json::json!(id))?; id }
             };
-            let hotkeys = std::fs::read(data_dir.join("hotkeys.json")).ok().and_then(|b| serde_json::from_slice::<HotkeyConfig>(&b).ok()).filter(|c| c.validate().is_ok()).unwrap_or_default();
+            let mut hotkeys = std::fs::read(data_dir.join("hotkeys.json")).ok().and_then(|b| serde_json::from_slice::<HotkeyConfig>(&b).ok()).filter(|c| c.validate().is_ok()).unwrap_or_default();
+            for b in lineuplab_core::hotkeys::default_bindings() { if !hotkeys.bindings.iter().any(|x| x.action == b.action) { hotkeys.bindings.push(b); } }
             let overlay = std::fs::read(data_dir.join("overlay.json")).ok().and_then(|b| serde_json::from_slice::<OverlayState>(&b).ok()).unwrap_or_default();
             let capture = std::fs::read(data_dir.join("capture.json")).ok().and_then(|b| serde_json::from_slice::<CaptureSettings>(&b).ok()).unwrap_or_default();
             let api = ValorantApi::new(data_dir.join("art-cache"));
@@ -82,9 +83,9 @@ pub fn run() {
             commands::import_preview, commands::import_commit, commands::export_pack, commands::undo_import,
             commands::get_hotkeys, commands::rebind_hotkey, commands::get_overlay_settings, commands::set_overlay_settings,
             commands::get_capture_settings, commands::set_capture_settings, commands::list_monitors, commands::get_overlay_view, commands::set_overlay_lineup,
-            commands::overlay_action,
+            commands::overlay_action, commands::learn_lineup,
             commands::start_sync_server, commands::stop_sync_server, commands::get_sync_server_status,
-            commands::pair_sync, commands::sync_now, commands::discover_sync
+            commands::pair_sync, commands::sync_now, commands::download_library, commands::discover_sync
         ])
         .run(tauri::generate_context!())
         .expect("error while running LineupLab");

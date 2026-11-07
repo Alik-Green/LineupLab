@@ -26,14 +26,19 @@ async fn main() -> anyhow::Result<()> {
         bind: args.bind,
         data_dir: args.data_dir,
         name: args.name,
+        require_pairing_code: args.pairing_code.is_some(),
         pairing_code: args.pairing_code,
         advertise_mdns: !args.no_mdns,
     })
     .await?;
     println!("LineupLab sync server: http://{}", handle.addr);
     println!(
-        "Pairing code: {}  (enter this on the companion; keep it private)",
-        handle.pairing_code
+        "Access code: {}  (not required = one-tap trusted-LAN download)",
+        if handle.require_pairing_code {
+            &handle.pairing_code
+        } else {
+            "not required"
+        }
     );
     println!("Security: trusted LAN only — plain HTTP + bearer token, not for Internet exposure. Ctrl+C to stop.");
     tokio::signal::ctrl_c().await?;

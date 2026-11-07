@@ -5,7 +5,7 @@ import { BookOpen, Check, ChevronLeft, ChevronRight, Circle, EyeOff, Image as Im
 import clsx from 'clsx';
 import type { Catalog, LibraryAdapter, Lineup, OverlaySettings, SlotId } from '../types';
 import { SLOT_LABELS, SLOT_ORDER } from '../types';
-import { DEFAULT_OVERLAY, draftChecklist, useOverlayViewPrefs, type OverlayChecklistItem, type OverlayViewPrefs } from '../lib/overlay';
+import { DEFAULT_OVERLAY, draftChecklist, useOverlayViewPrefs, writeViewPrefs, readViewPrefs, type OverlayChecklistItem, type OverlayViewPrefs } from '../lib/overlay';
 import { ValImage } from '../lib/images';
 import { AnnotatedImage } from './AnnotatedImage';
 import { Minimap } from './Minimap';
@@ -61,7 +61,8 @@ export function OverlayView({ adapter }: { adapter: LibraryAdapter }) {
     add(listen<OverlayDraft>('lineuplab://overlay-draft', e => { if (live) setDraft(e.payload?.editing && e.payload.lineup ? e.payload : null); }));
     add(listen<string>('lineuplab://hotkey', e => {
       if (!live) return;
-      if (OVERLAY_ACTIONS.has(e.payload)) act(e.payload);
+      if (e.payload === 'overlay_minimal') { const p = readViewPrefs(); writeViewPrefs({ ...p, minimal: !p.minimal }); }
+      else if (OVERLAY_ACTIONS.has(e.payload)) act(e.payload);
       if ((e.payload === 'capture' || e.payload === 'retake') && prefs.fade) { setFading(true); window.clearTimeout(fadeTimer.current); fadeTimer.current = window.setTimeout(() => setFading(false), 450); }
     }));
     void emit('lineuplab://overlay-draft-request').catch(() => {});
@@ -91,26 +92,29 @@ export function OverlayContent({ data, lineup, checklist, activeSlot, catalog, p
   const step = slotData?.image ? lineup?.steps.find(x => x.imageRef === slotData.image) : undefined;
   const key = (a: string, fallback: string) => keys[a] ?? fallback;
   const disabled = !onAction;
+  const createSlot: SlotId = activeSlot && lineup?.slots[activeSlot]?.image ? activeSlot : [...checklist].reverse().find(c => c.done && lineup?.slots[c.slot]?.image)?.slot ?? activeSlot ?? 'stand1';
+  const createImage = !view && lineup?.slots[createSlot]?.image ? lineup.slots[createSlot].image! : null;
+  if (prefs.minimal) {
+    const src = view ? slotData?.image : createImage;
+    const minSlot = view ? slotData : lineup?.slots[createSlot];
+    return <div className={clsx('ll-ov ll-ov--minimal', prefs.outline && 'has-outline', preview && 'll-ov--preview')} data-mode={s.mode} data-testid={preview ? 'overlay-content-preview' : 'overlay-content'} style={{ '--ov-scale': prefs.scale } as React.CSSProperties}>
+      {src && minSlot ? <AnnotatedImage src={src} slot={prefs.hideAnnotations ? { ...minSlot, circles: [], lines: [] } : minSlot} alt={view && slot ? SLOT_LABELS[slot] : SLOT_LABELS[createSlot]} className="ll-ov__minimal-img" /> : <div className="ll-ov__minimal-empty" aria-label="No image yet" />}
+    </div>;
+  }
   return <div className={clsx('ll-ov', preview && 'll-ov--preview')} data-mode={s.mode} data-testid={preview ? 'overlay-content-preview' : 'overlay-content'} style={{ '--ov-scale': prefs.scale } as React.CSSProperties}>
     <header className="ll-ov__head"><span className="ll-logo__mark" aria-hidden /><strong className="ll-ov__title" title={view ? lineup?.title : 'Create checklist'}>{view ? lineup?.title || 'No lineup selected' : lineup?.title || 'Create checklist'}</strong>
-      <button className="ll-ov__mode" disabled={disabled} onClick={() => onAction?.('overlay_mode')} title={`Switch mode (${key('overlay_mode', 'Alt+M')})`} aria-label={`Switch to ${view ? 'create' : 'view'} mode`}>{view ? 'View' : 'Create'}</button>
+      <button className="ll-ov__mode" disabled={disabled} onClick={() => onAction?.('overlay_mode')} title={`Switch mode (${key('overlay_mode', 'Alt+M')})`} aria-label={`Switch to ${view ? 'create' : 'learn'} mode`}>{view ? 'Learn' : 'Create'}</button>
       <IconButton label="Toggle overlay controls" tooltip={`Controls (${key('overlay_controls', 'Alt+O')})`} disabled={disabled} onClick={() => onAction?.('overlay_controls')} className={s.settings.clickThrough ? '' : 'is-active'}><MousePointer2 size={16} /></IconButton>
       <IconButton label="Hide overlay" tooltip={`Hide (${key('overlay_toggle', 'Alt+V')})`} disabled={disabled} onClick={() => onAction?.('overlay_toggle')}><EyeOff size={16} /></IconButton>
     </header>
     {error && <div className="ll-ov__error" role="alert"><span>{error}</span>{onRetry && <button onClick={onRetry}>Retry</button>}</div>}
     {!view && <>
-      <div className="ll-ov__summary"><span>{done}/{required.length} required captured</span><ProgressBar value={done} max={required.length || 1} label="Required captures" /><IconButton label={s.showChecklist ? 'Hide checklist' : 'Show checklist'} tooltip={`Checklist (${key('checklist_toggle', 'Alt+H')})`} disabled={disabled} onClick={() => onAction?.('checklist_toggle')} className={s.showChecklist ? 'is-active' : ''}><ListChecks size={16} /></IconButton></div>
-      <div className="ll-ov__body">
-        {!s.showChecklist ? <EmptyState title="Checklist hidden" description={`Press ${key('checklist_toggle', 'Alt+H')} to show it again.`} /> : checklist.length === 0 ? <EmptyState title="No draft yet" description="Open Create in the main window; captures appear here as you take them." /> : <ul className="ll-ov__checklist" aria-label="Capture checklist">{checklist.map(c => {
-          const image = lineup?.slots[c.slot]?.image; const active = activeSlot === c.slot;
-          return <li key={c.slot} className={clsx('ll-ov__item', c.done && 'is-done', c.skipped && 'is-skipped', active && 'is-active')} data-testid={`overlay-checklist-${c.slot}`} aria-current={active ? 'step' : undefined}>
-            <span className="ll-ov__status" aria-hidden>{c.done ? <Check size={16} /> : c.skipped ? <Minus size={16} /> : <Circle size={16} />}</span>
-            <span className="ll-ov__thumb">{image ? <ValImage src={image} alt={`${c.label} capture`} kind="media" loading="eager" /> : <ImageIcon size={16} aria-hidden />}</span>
-            <span className="ll-ov__item-text"><span className="ll-ov__item-label">{c.label}{c.required && <span className="ll-ov__req" title="Required">*</span>}</span><small>{c.done ? 'Captured' : c.skipped ? 'Skipped' : active ? 'Current slot' : c.required ? 'Required' : 'Optional'}</small></span>
-            {active && <span className="ll-ov__active-dot" aria-hidden />}
-          </li>; })}</ul>}
+      <div className="ll-ov__summary"><span>{done}/{required.length} required captured</span><ProgressBar value={done} max={required.length || 1} label="Required captures" /><span className="ll-ov__current-slot">{SLOT_LABELS[createSlot]}</span></div>
+      <div className={clsx('ll-ov__body', createImage && 'll-ov__body--create')}>
+        {createImage && <AnnotatedImage src={createImage} slot={prefs.hideAnnotations ? { ...lineup!.slots[createSlot], circles: [], lines: [] } : lineup!.slots[createSlot]} alt={SLOT_LABELS[createSlot]} className="ll-ov__image ll-ov__image--create" />}
+        {!s.showChecklist ? (createImage ? null : <EmptyState title="Checklist hidden" description={`Press ${key('checklist_toggle', 'Alt+H')} to show it again.`} />) : checklist.length === 0 && !createImage ? <EmptyState title="No draft yet" description="Open Create in the main window; captures appear here as you take them." /> : <ul className={clsx('ll-ov__checklist', createImage && 'll-ov__checklist--compact')} aria-label="Capture checklist">{checklist.map(c => { const image = lineup?.slots[c.slot]?.image; const active = activeSlot === c.slot; return <li key={c.slot} className={clsx('ll-ov__item', c.done && 'is-done', c.skipped && 'is-skipped', active && 'is-active')} data-testid={`overlay-checklist-${c.slot}`} aria-current={active ? 'step' : undefined}><span className="ll-ov__status" aria-hidden>{c.done ? <Check size={16} /> : c.skipped ? <Minus size={16} /> : <Circle size={16} />}</span><span className="ll-ov__thumb">{image ? <ValImage src={image} alt={`${c.label} capture`} kind="media" loading="eager" /> : <ImageIcon size={16} aria-hidden />}</span><span className="ll-ov__item-text"><span className="ll-ov__item-label">{c.label}{c.required && <span className="ll-ov__req" title="Required">*</span>}</span><small>{c.done ? 'Captured' : c.skipped ? 'Skipped' : active ? 'Current slot' : c.required ? 'Required' : 'Optional'}</small></span>{active && <span className="ll-ov__active-dot" aria-hidden />}</li>; })}</ul>}
       </div>
-      <footer className="ll-ov__foot"><span><Kbd>{key('capture', 'Alt+C')}</Kbd> capture</span><span><Kbd>{key('next_slot', 'Alt+N')}</Kbd>/<Kbd>{key('prev_slot', 'Alt+P')}</Kbd> slot</span><span><Kbd>{key('save', 'Alt+S')}</Kbd> save</span></footer>
+      <footer className="ll-ov__foot"><span><Kbd>{key('capture', 'Alt+C')}</Kbd> capture</span><span><Kbd>{key('next_slot', 'Alt+N')}</Kbd>/<Kbd>{key('prev_slot', 'Alt+P')}</Kbd> slot</span><span><Kbd>{key('save', 'Alt+S')}</Kbd> save</span><IconButton label={s.showChecklist ? 'Hide checklist' : 'Show checklist'} tooltip={`Checklist (${key('checklist_toggle', 'Alt+H')})`} disabled={disabled} onClick={() => onAction?.('checklist_toggle')} className={s.showChecklist ? 'is-active' : ''}><ListChecks size={16} /></IconButton></footer>
     </>}
     {view && (!lineup || !slot || !slotData?.image ? <div className="ll-ov__body"><EmptyState title="No lineup to show" description="Pick a lineup in Browse and send it to the overlay, or switch to Create." /></div> : <>
       <div className="ll-ov__meta"><span>{map?.displayName ?? 'Unknown map'}</span><span>{agent?.displayName ?? '—'} · {ability?.displayName ?? lineup.abilitySlot}</span><span className={clsx('ll-ov__side', `ll-ov__side--${lineup.side}`)}>{lineup.side}{lineup.site ? ` · ${lineup.site}` : ''}</span></div>

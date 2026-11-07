@@ -1,5 +1,5 @@
 //! Deterministic last-writer-wins merge. The transport is added in the LAN milestone.
-use crate::{Lineup, Result};
+use crate::{storage::valid_hash, Error, Lineup, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 pub const PROTOCOL_VERSION: u32 = 1;
@@ -31,7 +31,7 @@ pub fn missing_hashes(lineups: &[Lineup], has: impl Fn(&str) -> bool) -> Vec<Str
     let mut set = BTreeSet::new();
     for l in lineups {
         for h in l.image_hashes() {
-            if !has(&h) {
+            if valid_hash(&h) && !has(&h) {
                 set.insert(h);
             }
         }
@@ -132,7 +132,28 @@ impl SyncClient {
                 .unwrap_or_default(),
         }
     }
+    /// Open, explicitly started LAN sharing: no code entry. Older/code-protected
+    /// servers still use `pair`; this never bypasses a configured access code.
+    pub async fn connect(base_url: &str, device_name: &str) -> Result<PairResponse> {
+        crate::ensure_crypto_provider();
+        let resp = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(15))
+            .build()?
+            .post(format!("{}/connect", base_url.trim_end_matches('/')))
+            .json(&serde_json::json!({"deviceName": device_name}))
+            .send()
+            .await?;
+        if resp.status() == reqwest::StatusCode::NOT_FOUND
+            || resp.status() == reqwest::StatusCode::UNAUTHORIZED
+        {
+            return Err(Error::Invalid("This desktop uses an access code, or is running an older version. Update LineupLab on the desktop, or enter its access code under Advanced.".into()));
+        }
+        Ok(resp.error_for_status()?.json().await?)
+    }
     pub async fn pair(base_url: &str, code: &str, device_name: &str) -> Result<PairResponse> {
+        if code.trim().is_empty() {
+            return Self::connect(base_url, device_name).await;
+        }
         crate::ensure_crypto_provider();
         let http = reqwest::Client::new();
         let resp = http
@@ -170,6 +191,9 @@ impl SyncClient {
             .await?)
     }
     pub async fn image(&self, hash: &str) -> Result<Vec<u8>> {
+        if !valid_hash(hash) {
+            return Err(Error::Invalid(format!("Invalid media hash: {hash:?}")));
+        }
         Ok(self
             .auth(self.http.get(format!("{}/images/{hash}", self.base_url)))
             .send()
@@ -346,4 +370,142 @@ pub fn discover(timeout: std::time::Duration) -> Result<Vec<DiscoveredServer>> {
     }
     let _ = daemon.shutdown();
     Ok(out.into_values().collect())
+}
+
+/// Phone downloads are additive: remote tombstones never erase an offline copy.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadReport {
+    pub downloaded: usize,
+    pub existing: usize,
+    pub images: usize,
+    pub failed: usize,
+    pub total_lineups: usize,
+    pub total_images: usize,
+    pub warnings: Vec<String>,
+    pub finished_at: String,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadProgress {
+    pub phase: String,
+    pub message: String,
+    pub current: usize,
+    pub total: usize,
+}
+pub async fn download_library(
+    client: &SyncClient,
+    db: &mut crate::db::Database,
+    store: &crate::storage::MediaStore,
+    mut progress: impl FnMut(DownloadProgress),
+) -> Result<DownloadReport> {
+    progress(DownloadProgress {
+        phase: "manifest".into(),
+        message: "Reading the desktop library…".into(),
+        current: 0,
+        total: 0,
+    });
+    // Always inspect the full manifest: deduplication is by saved revision/media hash,
+    // not a cursor that can hide content after a failed/partial download.
+    let manifest = client.manifest(None).await?;
+    if manifest.protocol_version != PROTOCOL_VERSION {
+        return Err(Error::Invalid(format!(
+            "Unsupported download protocol {}",
+            manifest.protocol_version
+        )));
+    }
+    let ids: Vec<_> = manifest
+        .entries
+        .iter()
+        .filter(|e| !e.deleted)
+        .map(|e| e.id.clone())
+        .collect();
+    let mut report = DownloadReport {
+        total_lineups: ids.len(),
+        ..Default::default()
+    };
+    let mut incoming = vec![];
+    for (i, chunk) in ids.chunks(200).enumerate() {
+        progress(DownloadProgress {
+            phase: "lineups".into(),
+            message: format!(
+                "Reading lineups {}–{} of {}",
+                i * 200 + 1,
+                i * 200 + chunk.len(),
+                ids.len()
+            ),
+            current: i * 200,
+            total: ids.len(),
+        });
+        incoming.extend(client.lineups(chunk).await?);
+    }
+    let hashes: BTreeSet<_> = incoming
+        .iter()
+        .flat_map(|l| l.image_hashes())
+        .filter(|h| !h.trim().is_empty())
+        .collect();
+    report.total_images = hashes.len();
+    for (i, hash) in hashes.iter().enumerate() {
+        progress(DownloadProgress {
+            phase: "images".into(),
+            message: format!("Downloading image {} of {}", i + 1, hashes.len()),
+            current: i,
+            total: hashes.len(),
+        });
+        if !valid_hash(hash) {
+            report.failed += 1;
+            report
+                .warnings
+                .push(format!("Invalid media reference {hash:?}; skipped."));
+            continue;
+        }
+        if store.has(hash) {
+            continue;
+        }
+        match client.image(hash).await {
+            Ok(bytes) if crate::storage::hash_bytes(&bytes) == *hash => {
+                store.put(&bytes)?;
+                report.images += 1;
+            }
+            Ok(_) => {
+                report.failed += 1;
+                report
+                    .warnings
+                    .push(format!("Image {hash} failed its integrity check; skipped."));
+            }
+            Err(e) => {
+                report.failed += 1;
+                report.warnings.push(format!("Image {hash}: {e}"));
+            }
+        }
+    }
+    for (i, l) in incoming.iter().filter(|l| !l.deleted).enumerate() {
+        progress(DownloadProgress {
+            phase: "saving".into(),
+            message: format!("Saving lineup {} of {}", i + 1, report.total_lineups),
+            current: i,
+            total: report.total_lineups,
+        });
+        let local = db.get(&l.id)?;
+        if local
+            .as_ref()
+            .is_none_or(|old| old.deleted || is_newer(l, old))
+        {
+            db.put(l)?;
+            report.downloaded += 1;
+        } else {
+            report.existing += 1;
+        }
+    }
+    report.finished_at = crate::now();
+    progress(DownloadProgress {
+        phase: "complete".into(),
+        message: format!(
+            "{} new lineups, {} new images; {} already saved. {} media warnings.",
+            report.downloaded, report.images, report.existing, report.failed
+        ),
+        current: report.total_images,
+        total: report.total_images,
+    });
+    Ok(report)
 }

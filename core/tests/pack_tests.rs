@@ -565,3 +565,23 @@ fn import_progress_reports_media_entries_and_completion() {
         .any(|p| p.phase == "lineups" && p.current == p.total));
     assert_eq!(events.last().unwrap().phase, "done");
 }
+
+#[test]
+fn decompression_progress_reports_bytes_and_entries() {
+    let bytes = fixture("legacy-sample.zip");
+    let mut events = vec![];
+    let archive = read_archive_with_progress(&bytes, |p| events.push(p)).unwrap();
+    assert!(archive.total_bytes > 0);
+    assert!(events
+        .iter()
+        .any(|p| p.phase == "decompressing" && p.total > 0));
+    assert!(events
+        .iter()
+        .any(|p| p.phase == "decompressing" && p.message.starts_with("Read ")));
+    let last = events
+        .iter()
+        .filter(|p| p.phase == "decompressing")
+        .last()
+        .unwrap();
+    assert_eq!(last.current as u64, archive.total_bytes);
+}

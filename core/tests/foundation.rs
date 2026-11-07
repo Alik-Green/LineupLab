@@ -13,7 +13,7 @@ fn database_round_trip_and_tombstone() {
     let mut l = Lineup::new(
         "map".into(),
         "Sova".into(),
-        "Ability1".into(),
+        "Ability2".into(),
         device.clone(),
     );
     l.title = "A site execute".into();
@@ -65,7 +65,7 @@ fn modes_and_multilevel_undo() {
     let mut state = DraftState::new(Lineup::new(
         "map".into(),
         "Sova".into(),
-        "Ability1".into(),
+        "Ability2".into(),
         "device".into(),
     ));
     state.switch_mode("single", &cfg).unwrap();
@@ -117,7 +117,8 @@ fn mock_capture_and_alt_x_geometry() {
 #[test]
 fn default_configs_and_archived_references() {
     let modes = ModeConfig::load().unwrap();
-    assert_eq!(modes.modes("Sova", "Grenade").len(), 9);
+    assert_eq!(modes.modes("Sova", "Grenade").len(), 10);
+    assert!(modes.mode("Sova", "Grenade", "recon").is_some());
     let abilities = LineupAbilityConfig::load().unwrap();
     assert!(abilities.enabled("Sova", "Ability1", &serde_json::json!({})));
     assert!(!abilities.enabled(

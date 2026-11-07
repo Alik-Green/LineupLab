@@ -1,5 +1,5 @@
 use crate::AppState;
-use lineuplab_core::{capture, config::ModeConfig, hotkeys::{HotkeyConfig, HotkeyFeedback}, overlay::{OverlaySettings, OverlayState}, pack::{self, ConflictPolicy, ExportOptions}, Lineup, Slot, SLOT_ORDER};
+use lineuplab_core::{capture, config::ModeConfig, hotkeys::{HotkeyConfig, HotkeyFeedback}, overlay::{OverlayMode, OverlaySettings, OverlayState}, pack::{self, ConflictPolicy, ExportOptions}, Lineup, Slot, SLOT_ORDER};
 use serde_json::{json, Map, Value};
 use std::collections::BTreeSet;
 use tauri::{Emitter, Manager, State};
@@ -62,7 +62,8 @@ fn catalog_json(app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantA
         "displayIcon": remote_or_cached(api, m.display_icon.as_deref()),
         "listViewIcon": remote_or_cached(api, m.list_view_icon.as_deref()),
         "splash": remote_or_cached(api, m.splash.as_deref()),
-        "isArchived": m.archived
+        "isArchived": m.archived,
+        "callouts": m.callouts
     })).collect();
     json!({"agents": agents, "maps": maps, "version": c.version, "updatedAt": c.last_updated.clone().unwrap_or_else(lineuplab_core::now), "stale": c.offline, "warning": c.warning, "dataDir": app.state::<AppState>().data_dir.to_string_lossy()})
 }
@@ -118,8 +119,8 @@ fn catalog_json(app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantA
 #[tauri::command] pub async fn import_preview(app: tauri::AppHandle, bytes: Vec<u8>) -> CmdResult<Value> {
     tokio::task::spawn_blocking(move || {
         let state = app.state::<AppState>();
-        let _ = app.emit("lineuplab://import-progress", json!({"phase":"reading","message":"Reading ZIP pack","current":0,"total":0}));
-        let archive = pack::read_archive(&bytes).map_err(err)?;
+        let reader = app.clone();
+        let archive = pack::read_archive_with_progress(&bytes, move |p| { let _ = reader.emit("lineuplab://import-progress", p); }).map_err(err)?;
         let _ = app.emit("lineuplab://import-progress", json!({"phase":"validating","message":"Validating legacy entries and media","current":0,"total":archive.lineups.len()}));
         let db = state.db.lock().unwrap(); let p = pack::preview(&archive, &db).map_err(err)?;
         let entries: Vec<Value> = p.entries.iter().map(|e| json!({"id":e.id,"title":e.title,"status":e.status,"selected":e.selected,"warnings":e.warnings})).collect();
@@ -131,8 +132,8 @@ fn catalog_json(app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantA
     tokio::task::spawn_blocking(move || {
         let state = app.state::<AppState>();
         let policy = match policy.as_str() { "skip" => ConflictPolicy::Skip, "import-as-copy" => ConflictPolicy::ImportAsCopy, _ => ConflictPolicy::OverwriteIfNewer };
-        let _ = app.emit("lineuplab://import-progress", json!({"phase":"reading","message":"Reading ZIP pack","current":0,"total":0}));
-        let archive = pack::read_archive(&bytes).map_err(err)?;
+        let reader = app.clone();
+        let archive = pack::read_archive_with_progress(&bytes, move |p| { let _ = reader.emit("lineuplab://import-progress", p); }).map_err(err)?;
         let _ = app.emit("lineuplab://import-progress", json!({"phase":"validating","message":"Checking conflicts","current":0,"total":archive.lineups.len()}));
         let mut db = state.db.lock().unwrap(); let p = pack::preview(&archive, &db).map_err(err)?;
         let emitter = app.clone();
@@ -214,6 +215,15 @@ pub(crate) fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
     if let Some(id) = id { if let Some(l) = state.db.lock().unwrap().get(&id).map_err(err)? { let mut s = state.overlay.lock().unwrap(); s.set_view_lineup(&l); let required = ModeConfig::load().ok().and_then(|c| c.mode(&l.agent_id, &l.ability_slot, &l.mode).or_else(|| c.mode("*", &l.ability_slot, &l.mode))).map(|m| m.required_slots).unwrap_or_else(|| vec![Slot::Stand1, Slot::Aim1, Slot::Landing]); s.update_checklist(&l, &required, &[]); } }
     let _ = app.emit("lineuplab://overlay-changed", &*state.overlay.lock().unwrap()); Ok(())
 }
+#[tauri::command] pub fn learn_lineup(app: tauri::AppHandle, state: State<AppState>, id: String) -> CmdResult<()> {
+    let l = state.db.lock().unwrap().get(&id).map_err(err)?.ok_or_else(|| "Lineup not found".to_string())?;
+    *state.overlay_lineup.lock().unwrap() = Some(id);
+    let mut s = state.overlay.lock().unwrap();
+    s.mode = OverlayMode::View; s.visible = true; s.flipped = false; s.set_view_lineup(&l);
+    let required = ModeConfig::load().ok().and_then(|c| c.mode(&l.agent_id, &l.ability_slot, &l.mode).or_else(|| c.mode("*", &l.ability_slot, &l.mode))).map(|m| m.required_slots).unwrap_or_else(|| vec![Slot::Stand1, Slot::Aim1, Slot::Landing]);
+    s.update_checklist(&l, &required, &[]);
+    apply_overlay(&app, &s); let _ = app.emit("lineuplab://overlay-changed", &*s); Ok(())
+}
 #[tauri::command] pub fn overlay_action(app: tauri::AppHandle, state: State<AppState>, action: String) -> CmdResult<()> {
     let mut s = state.overlay.lock().unwrap();
     match action.as_str() { "overlay_toggle" => s.toggle_visible(), "overlay_controls" => s.controls(), "overlay_mode" => s.toggle_mode(), "view_next" => s.view_next(), "view_prev" => s.view_prev(), "view_flip" => s.flip(), "checklist_toggle" => s.show_checklist = !s.show_checklist, _ => {} }
@@ -224,17 +234,17 @@ pub(crate) fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
 #[tauri::command] pub async fn start_sync_server(app: tauri::AppHandle, name: Option<String>) -> CmdResult<Value> {
     let config = {
         let state = app.state::<AppState>();
-        if let Some(h) = state.sync_server.lock().unwrap().as_ref() { return Ok(json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code})); }
+        if let Some(h) = state.sync_server.lock().unwrap().as_ref() { return Ok(json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code,"requiresCode":h.require_pairing_code})); }
         let data_dir = state.data_dir.clone();
         drop(state);
         lineuplab_core::server::ServerConfig { data_dir, name: name.unwrap_or_else(|| "LineupLab Desktop".into()), ..Default::default() }
     };
     let h = lineuplab_core::server::spawn(config).await.map_err(err)?;
-    let out = json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code});
+    let out = json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code,"requiresCode":h.require_pairing_code});
     *app.state::<AppState>().sync_server.lock().unwrap() = Some(h); Ok(out)
 }
 #[tauri::command] pub async fn stop_sync_server(app: tauri::AppHandle) -> CmdResult<()> { let h = app.state::<AppState>().sync_server.lock().unwrap().take(); if let Some(h) = h { h.shutdown().await.map_err(err)?; } Ok(()) }
-#[tauri::command] pub fn get_sync_server_status(state: State<AppState>) -> CmdResult<Value> { let g = state.sync_server.lock().unwrap(); Ok(match g.as_ref() { Some(h) => json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code}), None => json!({"running":false}) }) }
+#[tauri::command] pub fn get_sync_server_status(state: State<AppState>) -> CmdResult<Value> { let g = state.sync_server.lock().unwrap(); Ok(match g.as_ref() { Some(h) => json!({"running":true,"address":h.addr.to_string(),"pairingCode":h.pairing_code,"requiresCode":h.require_pairing_code}), None => json!({"running":false}) }) }
 #[tauri::command] pub async fn pair_sync(base_url: String, code: String, device_name: String) -> CmdResult<Value> { let p = lineuplab_core::sync::SyncClient::pair(&base_url, &code, &device_name).await.map_err(err)?; Ok(serde_json::to_value(p).map_err(err)?) }
 #[tauri::command] pub async fn sync_now(app: tauri::AppHandle, base_url: String, token: String) -> CmdResult<Value> {
     let state = app.state::<AppState>();
@@ -253,6 +263,22 @@ pub(crate) fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
             })
         })();
         let _ = tx.send(result);
+    });
+    let report = rx.await.map_err(|e| e.to_string())?.map_err(err)?;
+    Ok(serde_json::to_value(report).map_err(err)?)
+}
+#[tauri::command] pub async fn download_library(app: tauri::AppHandle, base_url: String, token: String) -> CmdResult<Value> {
+    let state = app.state::<AppState>(); let data_dir = state.data_dir.clone(); let store = state.store.clone(); drop(state);
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    std::thread::spawn(move || {
+        let result = (|| -> lineuplab_core::Result<lineuplab_core::sync::DownloadReport> {
+            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| lineuplab_core::Error::Invalid(e.to_string()))?;
+            rt.block_on(async move {
+                let client = lineuplab_core::sync::SyncClient::new(base_url, token);
+                let mut db = lineuplab_core::db::Database::open(data_dir.join("lineuplab.sqlite3"))?;
+                lineuplab_core::sync::download_library(&client, &mut db, &store, |p| { let _ = app.emit("lineuplab://download-progress", p); }).await
+            })
+        })(); let _ = tx.send(result);
     });
     let report = rx.await.map_err(|e| e.to_string())?.map_err(err)?;
     Ok(serde_json::to_value(report).map_err(err)?)

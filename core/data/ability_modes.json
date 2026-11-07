@@ -1,29 +1,270 @@
 {
   "version": 1,
   "defaults": [
-    {"id":"standard","label":"Standard","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{}},
-    {"id":"placement","label":"Placement","requiredSlots":["stand1","landing"],"optionalSlots":["aim1"],"attributes":{}}
+    {
+      "id": "standard",
+      "label": "Standard",
+      "requiredSlots": [
+        "stand1",
+        "aim1",
+        "landing"
+      ],
+      "optionalSlots": [],
+      "attributes": {}
+    },
+    {
+      "id": "placement",
+      "label": "Placement",
+      "requiredSlots": [
+        "stand1",
+        "landing"
+      ],
+      "optionalSlots": [
+        "aim1"
+      ],
+      "attributes": {}
+    }
   ],
   "rules": [
-    {"agent":"Sova","ability":"Ability1","modes":[
-      {"id":"single","label":"Single shock","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{"doubleShock":false,"hasSecondStand":false}},
-      {"id":"double","label":"Double shock","requiredSlots":["stand1","aim1","aim2","landing"],"optionalSlots":["stand2"],"attributes":{"doubleShock":true,"hasSecondStand":true}}
-    ]},
-    {"agent":"Sova","ability":"Grenade","modes":[
-      {"id":"recon-0-0","label":"Recon · 0 bounces · no charge","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{"bounces":0,"chargeStage":0,"chargeBars":0}},
-      {"id":"recon-0-1","label":"Recon · 0 bounces · 1 charge","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{"bounces":0,"chargeStage":1,"chargeBars":1}},
-      {"id":"recon-0-2","label":"Recon · 0 bounces · full charge","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{"bounces":0,"chargeStage":2,"chargeBars":2}},
-      {"id":"recon-1-0","label":"Recon · 1 bounce · no charge","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{"bounces":1,"chargeStage":0,"chargeBars":0}},
-      {"id":"recon-1-1","label":"Recon · 1 bounce · 1 charge","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{"bounces":1,"chargeStage":1,"chargeBars":1}},
-      {"id":"recon-1-2","label":"Recon · 1 bounce · full charge","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{"bounces":1,"chargeStage":2,"chargeBars":2}},
-      {"id":"recon-2-0","label":"Recon · 2 bounces · no charge","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{"bounces":2,"chargeStage":0,"chargeBars":0}},
-      {"id":"recon-2-1","label":"Recon · 2 bounces · 1 charge","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{"bounces":2,"chargeStage":1,"chargeBars":1}},
-      {"id":"recon-2-2","label":"Recon · 2 bounces · full charge","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{"bounces":2,"chargeStage":2,"chargeBars":2}}
-    ]},
-    {"agent":"*","ability":"Grenade","modes":[
-      {"id":"standard","label":"Standard","requiredSlots":["stand1","aim1","landing"],"optionalSlots":[],"attributes":{}},
-      {"id":"placement","label":"Placement","requiredSlots":["stand1","landing"],"optionalSlots":["aim1"],"attributes":{}},
-      {"id":"double","label":"Double / follow-up","requiredSlots":["stand1","aim1","aim2","landing"],"optionalSlots":["stand2"],"attributes":{"doubleShock":true,"hasSecondStand":true}}
-    ]}
+    {
+      "agent": "Sova",
+      "ability": "Ability2",
+      "modes": [
+        {
+          "id": "single",
+          "label": "Single shock",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "doubleShock": false,
+            "hasSecondStand": false
+          }
+        },
+        {
+          "id": "double",
+          "label": "Double shock",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "aim2",
+            "landing"
+          ],
+          "optionalSlots": [
+            "stand2"
+          ],
+          "attributes": {
+            "doubleShock": true,
+            "hasSecondStand": true
+          }
+        }
+      ]
+    },
+    {
+      "agent": "Sova",
+      "ability": "Grenade",
+      "modes": [
+        {
+          "id": "recon",
+          "label": "Recon Dart",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "chargeLevel": 1,
+            "chargeStage": 0,
+            "chargeBars": 1,
+            "bounces": 0
+          }
+        },
+        {
+          "id": "recon-0-0",
+          "label": "Recon \u00b7 0 bounces \u00b7 no charge",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "bounces": 0,
+            "chargeStage": 0,
+            "chargeBars": 0
+          }
+        },
+        {
+          "id": "recon-0-1",
+          "label": "Recon \u00b7 0 bounces \u00b7 1 charge",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "bounces": 0,
+            "chargeStage": 1,
+            "chargeBars": 1
+          }
+        },
+        {
+          "id": "recon-0-2",
+          "label": "Recon \u00b7 0 bounces \u00b7 full charge",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "bounces": 0,
+            "chargeStage": 2,
+            "chargeBars": 2
+          }
+        },
+        {
+          "id": "recon-1-0",
+          "label": "Recon \u00b7 1 bounce \u00b7 no charge",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "bounces": 1,
+            "chargeStage": 0,
+            "chargeBars": 0
+          }
+        },
+        {
+          "id": "recon-1-1",
+          "label": "Recon \u00b7 1 bounce \u00b7 1 charge",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "bounces": 1,
+            "chargeStage": 1,
+            "chargeBars": 1
+          }
+        },
+        {
+          "id": "recon-1-2",
+          "label": "Recon \u00b7 1 bounce \u00b7 full charge",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "bounces": 1,
+            "chargeStage": 2,
+            "chargeBars": 2
+          }
+        },
+        {
+          "id": "recon-2-0",
+          "label": "Recon \u00b7 2 bounces \u00b7 no charge",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "bounces": 2,
+            "chargeStage": 0,
+            "chargeBars": 0
+          }
+        },
+        {
+          "id": "recon-2-1",
+          "label": "Recon \u00b7 2 bounces \u00b7 1 charge",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "bounces": 2,
+            "chargeStage": 1,
+            "chargeBars": 1
+          }
+        },
+        {
+          "id": "recon-2-2",
+          "label": "Recon \u00b7 2 bounces \u00b7 full charge",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {
+            "bounces": 2,
+            "chargeStage": 2,
+            "chargeBars": 2
+          }
+        }
+      ]
+    },
+    {
+      "agent": "*",
+      "ability": "Grenade",
+      "modes": [
+        {
+          "id": "standard",
+          "label": "Standard",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "landing"
+          ],
+          "optionalSlots": [],
+          "attributes": {}
+        },
+        {
+          "id": "placement",
+          "label": "Placement",
+          "requiredSlots": [
+            "stand1",
+            "landing"
+          ],
+          "optionalSlots": [
+            "aim1"
+          ],
+          "attributes": {}
+        },
+        {
+          "id": "double",
+          "label": "Double / follow-up",
+          "requiredSlots": [
+            "stand1",
+            "aim1",
+            "aim2",
+            "landing"
+          ],
+          "optionalSlots": [
+            "stand2"
+          ],
+          "attributes": {
+            "doubleShock": true,
+            "hasSecondStand": true
+          }
+        }
+      ]
+    }
   ]
 }

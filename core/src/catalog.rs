@@ -50,6 +50,46 @@ pub struct GameMap {
     pub list_view_icon: Option<String>,
     #[serde(default)]
     pub archived: bool,
+    /// Optional normalized map callouts for location-aware titles. Unknown or
+    /// non-normalized upstream shapes are ignored rather than breaking catalog load.
+    #[serde(default, deserialize_with = "deserialize_callouts")]
+    pub callouts: Vec<MapCallout>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapCallout {
+    pub name: String,
+    pub x: f64,
+    pub y: f64,
+}
+fn deserialize_callouts<'de, D>(d: D) -> std::result::Result<Vec<MapCallout>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let v = Value::deserialize(d)?;
+    let mut out = vec![];
+    if let Some(arr) = v.as_array() {
+        for c in arr {
+            let name = c
+                .get("name")
+                .or_else(|| c.get("regionName"))
+                .or_else(|| c.get("superRegionName"))
+                .and_then(Value::as_str);
+            let loc = c.get("location").unwrap_or(c);
+            let x = loc.get("x").and_then(Value::as_f64);
+            let y = loc.get("y").and_then(Value::as_f64);
+            if let (Some(name), Some(x), Some(y)) = (name, x, y) {
+                if (0.0..=1.0).contains(&x) && (0.0..=1.0).contains(&y) {
+                    out.push(MapCallout {
+                        name: name.into(),
+                        x,
+                        y,
+                    });
+                }
+            }
+        }
+    }
+    Ok(out)
 }
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -73,6 +113,7 @@ impl Catalog {
                     display_icon: None,
                     splash: None,
                     list_view_icon: None,
+                    callouts: vec![],
                     archived: true,
                 });
             }

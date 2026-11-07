@@ -23,7 +23,7 @@ fn remote_url(url: Option<&str>) -> Value { match url { Some(u) => json!(u), Non
 fn catalog_json(api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::catalog::Catalog, lineups: &[Lineup]) -> Value {
     let mut c = c.clone(); c.archive_missing(lineups);
     let agents: Vec<Value> = c.agents.iter().map(|a| json!({"uuid":a.uuid,"displayName":a.display_name,"displayIcon":remote_url(a.display_icon.as_deref()),"role":a.role.as_ref().map(|r| r.display_name.clone()),"roleIcon":a.role.as_ref().and_then(|r| r.display_icon.as_deref()).map(|u| json!(u)).unwrap_or(Value::Null),"isArchived":a.archived,"abilities":a.abilities.iter().map(|b| json!({"slot":b.slot,"displayName":b.display_name,"displayIcon":remote_url(b.display_icon.as_deref()),"description":b.description})).collect::<Vec<_>>()})).collect();
-    let maps: Vec<Value> = c.maps.iter().map(|m| json!({"uuid":m.uuid,"displayName":m.display_name,"displayIcon":remote_url(m.display_icon.as_deref()),"listViewIcon":remote_url(m.list_view_icon.as_deref()),"splash":remote_url(m.splash.as_deref()),"isArchived":m.archived})).collect();
+    let maps: Vec<Value> = c.maps.iter().map(|m| json!({"uuid":m.uuid,"displayName":m.display_name,"displayIcon":remote_url(m.display_icon.as_deref()),"listViewIcon":remote_url(m.list_view_icon.as_deref()),"splash":remote_url(m.splash.as_deref()),"isArchived":m.archived,"callouts":m.callouts})).collect();
     json!({"agents":agents,"maps":maps,"version":c.version,"updatedAt":c.last_updated.clone().unwrap_or_else(lineuplab_core::now),"stale":c.offline,"warning":c.warning})
 }
 #[tauri::command] pub async fn get_catalog(app: tauri::AppHandle) -> CmdResult<Value> {
@@ -61,6 +61,22 @@ fn catalog_json(api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::
             })
         })();
         let _ = tx.send(result);
+    });
+    let report = rx.await.map_err(|e| e.to_string())?.map_err(err)?;
+    Ok(serde_json::to_value(report).map_err(err)?)
+}
+#[tauri::command] pub async fn download_library(app: tauri::AppHandle, base_url: String, token: String) -> CmdResult<Value> {
+    let state = app.state::<MobileState>(); let data_dir = state.data_dir.clone(); let store = state.store.clone(); drop(state);
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    std::thread::spawn(move || {
+        let result = (|| -> lineuplab_core::Result<lineuplab_core::sync::DownloadReport> {
+            let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().map_err(|e| lineuplab_core::Error::Invalid(e.to_string()))?;
+            rt.block_on(async move {
+                let client = lineuplab_core::sync::SyncClient::new(base_url, token);
+                let mut db = lineuplab_core::db::Database::open(data_dir.join("lineuplab.sqlite3"))?;
+                lineuplab_core::sync::download_library(&client, &mut db, &store, |p| { let _ = app.emit("lineuplab://download-progress", p); }).await
+            })
+        })(); let _ = tx.send(result);
     });
     let report = rx.await.map_err(|e| e.to_string())?.map_err(err)?;
     Ok(serde_json::to_value(report).map_err(err)?)

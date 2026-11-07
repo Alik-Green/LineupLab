@@ -39,17 +39,14 @@ test.describe('android companion', () => {
     await page.locator('.ll-minimap__marker').first().locator('image').first().click();
     await expect(page.getByTestId('lineup-detail')).toBeVisible();
     await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
-    await nav.getByRole('button', { name: 'Sync' }).click();
+    await nav.getByRole('button', { name: 'Download' }).click();
     await expect(page.getByTestId('sync-settings')).toBeVisible();
-    await page.getByRole('button', { name: 'Discover (mDNS)' }).click();
+    await page.getByRole('button', { name: 'Find desktop' }).click();
     await page.locator('.ll-discovered button').first().click();
-    await page.getByLabel('Pairing code').fill('482913');
-    await page.getByRole('button', { name: 'Pair', exact: true }).click();
-    await expect(page.getByTestId('sync-settings').getByText('Paired with Desktop library.')).toBeVisible();
-    await page.getByRole('button', { name: 'Sync now' }).click();
-    await expect(page.getByTestId('sync-settings').getByText(/Synced: 0 pushed, 12 pulled/)).toBeVisible();
+    await page.getByRole('button', { name: 'Connect & download' }).click();
+    await expect(page.getByTestId('sync-settings').getByText(/Saved 12 new lineups/)).toBeVisible();
     while (await page.locator('.ll-toast button[aria-label="Dismiss"]').count()) await page.locator('.ll-toast button[aria-label="Dismiss"]').first().click();
-    await page.screenshot({ path: 'docs/screenshots/74-android-sync.png' });
+    await page.screenshot({ path: 'docs/screenshots/74-android-download.png' });
     await nav.getByRole('button', { name: 'Settings' }).click();
     await expect(page.getByTestId('settings')).toBeVisible();
     await expect(page.getByRole('tab', { name: 'Hotkeys' })).toHaveCount(0);
@@ -74,4 +71,15 @@ test.describe('android companion', () => {
       expect(overflow).toBeLessThanOrEqual(0);
     }
   });
+});
+
+test('empty map no-match action recovers instead of opening a grey screen', async ({ page }) => {
+  await page.goto('/?mock&empty');
+  await expect(page.getByTestId('browse')).toBeVisible();
+  await page.getByRole('button', { name: 'Map view' }).click();
+  await expect(page.getByText('No lineups match')).toBeVisible();
+  await page.getByRole('button', { name: 'Reset filters' }).click();
+  await expect(page.getByTestId('browse')).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Download' })).toBeVisible();
+  await expect(page.getByTestId('lineup-grid')).toBeVisible();
 });

@@ -4,7 +4,7 @@ import { newLineup } from './adapter';
 
 describe('overlay view prefs', () => {
   it('clamps scale and coerces booleans', () => {
-    expect(clampViewPrefs({ scale: 9, hideAnnotations: true, fade: false })).toEqual({ scale: 1.75, hideAnnotations: true, fade: false });
+    expect(clampViewPrefs({ scale: 9, hideAnnotations: true, fade: false })).toEqual({ scale: 1.75, hideAnnotations: true, fade: false, minimal: false, outline: false });
     expect(clampViewPrefs({ scale: 0.1 })).toEqual({ ...DEFAULT_VIEW_PREFS, scale: 0.75 });
     expect(clampViewPrefs({ scale: Number.NaN, fade: undefined })).toEqual(DEFAULT_VIEW_PREFS);
   });

@@ -26,10 +26,10 @@ test.describe('desktop settings', () => {
     await page.getByRole('tab', { name: 'Capture' }).click();
     await expect(page.getByTestId('capture-settings')).toBeVisible();
     await page.screenshot({ path: 'docs/screenshots/43-settings-capture.png' });
-    await page.getByRole('tab', { name: 'Sync' }).click();
-    await page.getByRole('button', { name: 'Start sync server' }).click();
-    await expect(page.getByTestId('pairing-code')).toHaveText('482913');
-    await page.screenshot({ path: 'docs/screenshots/44-settings-sync.png' });
+    await page.getByRole('tab', { name: 'Sharing' }).click();
+    await page.getByRole('button', { name: 'Start sharing' }).click();
+    await expect(page.getByTestId('server-address')).toHaveText('http://192.168.1.20:8765');
+    await page.screenshot({ path: 'docs/screenshots/44-settings-sharing.png' });
     await page.getByRole('tab', { name: 'Data' }).click();
     await expect(page.getByTestId('data-settings')).toBeVisible();
     await page.screenshot({ path: 'docs/screenshots/45-settings-data.png' });

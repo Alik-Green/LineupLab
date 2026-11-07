@@ -13,10 +13,15 @@ async function hotkey(page: Page, action: string) {
 }
 async function setupSova(page: Page) {
   const setup = page.getByTestId('wizard-setup');
-  await setup.getByRole('listbox', { name: 'Map' }).getByRole('option', { name: 'Abyss' }).click();
-  await setup.getByRole('listbox', { name: 'Agent' }).getByRole('option', { name: 'Sova' }).click();
-  await setup.getByRole('listbox', { name: 'Ability' }).getByRole('option', { name: /Recon Bolt/ }).click();
-  await setup.getByRole('radio', { name: /Recon · 1 bounce · full charge/ }).click();
+  await setup.getByRole('button', { name: 'Choose map' }).click();
+  await page.getByRole('dialog', { name: 'Choose map' }).getByRole('option', { name: 'Abyss' }).click();
+  await setup.getByRole('button', { name: 'Choose agent' }).click();
+  await page.getByRole('dialog', { name: 'Choose agent' }).getByRole('option', { name: 'Sova' }).click();
+  await setup.getByRole('button', { name: 'Choose ability' }).click();
+  await page.getByRole('dialog', { name: 'Choose ability' }).getByRole('option', { name: /Recon Bolt/ }).click();
+  await setup.getByRole('radio', { name: 'Recon Dart' }).click();
+  await setup.getByRole('radio', { name: 'Full', exact: true }).click();
+  await setup.getByRole('radio', { name: '1', exact: true }).click();
 }
 
 test.describe('desktop create wizard', () => {
@@ -50,7 +55,7 @@ test.describe('desktop create wizard', () => {
     const stage = page.getByTestId('wizard-pins').locator('.ll-minimap__stage');
     const box = (await stage.boundingBox())!;
     await stage.click({ position: { x: box.width * 0.3, y: box.height * 0.6 } });
-    await page.getByRole('radio', { name: 'Landing *' }).click();
+    await page.getByRole('radio', { name: 'Land *' }).click();
     await stage.click({ position: { x: box.width * 0.6, y: box.height * 0.3 } });
     await page.getByRole('radio', { name: 'Bounce', exact: true }).click();
     await stage.click({ position: { x: box.width * 0.45, y: box.height * 0.45 } });
@@ -92,7 +97,8 @@ test.describe('desktop create wizard', () => {
   });
   test('autosaves a draft and offers recovery', async ({ page }) => {
     await openCreate(page);
-    await page.getByTestId('wizard-setup').getByRole('listbox', { name: 'Map' }).getByRole('option', { name: 'Bind' }).click();
+    await page.getByTestId('wizard-setup').getByRole('button', { name: 'Choose map' }).click();
+    await page.getByRole('dialog', { name: 'Choose map' }).getByRole('option', { name: 'Bind' }).click();
     await expect(page.getByText(/Draft saved/)).toBeVisible();
     await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Browse' }).click();
     await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Create' }).click();

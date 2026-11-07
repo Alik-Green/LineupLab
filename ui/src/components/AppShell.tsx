@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Cloud, FolderOpen, Import, LibraryBig, Minus, PlusSquare, Settings, Square, X } from 'lucide-react';
+import { Download, FolderOpen, Import, LibraryBig, Minus, PlusSquare, Settings, Square, X } from 'lucide-react';
 import clsx from 'clsx';
 import type { AssetProgress, Catalog } from '../types';
 import { StatusDot } from './ui';
@@ -9,7 +9,7 @@ export function AppShell({ platform, page, onNavigate, catalog, assetProgress, n
   const updating = assetProgress?.phase === 'downloading';
   const dataLabel = updating ? `Updating ${assetProgress.done}/${assetProgress.total}` : catalog?.stale ? 'Offline cache' : 'Up to date';
   const desktopNav = [{ id: 'browse', label: 'Browse', icon: <LibraryBig size={16} /> }, { id: 'editor', label: 'Create', icon: <PlusSquare size={16} /> }, { id: 'import', label: 'Import / Export', icon: <Import size={16} /> }, { id: 'settings', label: 'Settings', icon: <Settings size={16} /> }] as const;
-  const mobileNav = [{ id: 'browse', label: 'Browse', icon: <LibraryBig size={20} /> }, { id: 'sync', label: 'Sync', icon: <Cloud size={20} /> }, { id: 'settings', label: 'Settings', icon: <Settings size={20} /> }] as const;
+  const mobileNav = [{ id: 'browse', label: 'Browse', icon: <LibraryBig size={20} /> }, { id: 'sync', label: 'Download', icon: <Download size={20} /> }, { id: 'settings', label: 'Settings', icon: <Settings size={20} /> }] as const;
   const win = async (action: 'minimize' | 'toggleMaximize' | 'close') => { try { const { getCurrentWindow } = await import('@tauri-apps/api/window'); await getCurrentWindow()[action](); } catch (e) { console.warn('Window control failed', e); } };
   return <div className="ll-app" data-platform={platform}>
     <header className="ll-topbar" data-tauri-drag-region>

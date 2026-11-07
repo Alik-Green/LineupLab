@@ -66,8 +66,10 @@ export function ImportExport({ adapter, lineups, onRefresh }: { adapter: Library
 function ImportProgressPanel({ progress }: { progress: ImportProgress | null }) {
   const current = progress?.current ?? 0; const total = progress?.total ?? 0;
   const pct = total > 0 ? Math.min(100, Math.round(current / total * 100)) : null;
+  const bytes = (n: number) => n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.round(n / 1024)} KB`;
+  const count = progress?.phase === 'decompressing' ? `${bytes(current)} / ${bytes(total)}` : `${current}/${total}`;
   return <div className="ll-import-progress" role="status" data-testid="import-progress" aria-live="polite">
-    <div className="ll-import-progress__head"><strong>{progress?.message ?? 'Working…'}</strong>{pct !== null && <span>{current}/{total} · {pct}%</span>}</div>
+    <div className="ll-import-progress__head"><strong>{progress?.message ?? 'Working…'}</strong>{pct !== null && <span>{count} · {pct}%</span>}</div>
     <ProgressBar value={current} max={total} label={progress?.message ?? 'Import progress'} />
     {pct === null && <span className="ll-muted">This step does not report a fixed count yet.</span>}
   </div>;

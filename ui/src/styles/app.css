@@ -622,3 +622,50 @@ html[data-motion="reduce"] .ll-progress.is-indeterminate > div { animation: none
 .ll-mbrowse__pickers .ll-browse-picker__text strong { font-size: 13px; }
 .ll-mbrowse__pickers .ll-browse-picker__trigger > svg { display: none; }
 .ll-mbrowse__controls { justify-content: space-between; }
+
+/* Feedback batch: safe areas, reachable short-window Browse, square current-value pickers. */
+.ll-app[data-platform="mobile"] .ll-topbar { height: calc(56px + env(safe-area-inset-top)); padding-top: env(safe-area-inset-top); padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+.ll-app[data-platform="mobile"] .ll-page { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+.ll-bottom-nav { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+html[data-platform="mobile"] .ll-modal { max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px); }
+.ll-browse { min-height: 0; height: auto; max-height: calc(100dvh - 56px - var(--ll-page-pad) * 2); }
+.ll-browse__left { overflow-y: auto; padding-bottom: 8px; }
+.ll-browse__right { min-height: 320px; overflow: auto; }
+.ll-browse__map-wrap { min-height: 280px; }
+.ll-browse__pickers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ll-browse-picker--square .ll-browse-picker__trigger { aspect-ratio: 1; min-height: 84px; flex-direction: column; justify-content: center; gap: 4px; padding: 8px; text-align: center; }
+.ll-browse-picker--square .ll-browse-picker__thumb { width: 44px; height: 44px; }
+.ll-browse-picker--square .ll-browse-picker__text { flex: none; width: 100%; align-items: center; gap: 0; }
+.ll-browse-picker--square .ll-browse-picker__text strong { max-width: 100%; font-size: 12px; }
+.ll-browse-picker--square .ll-browse-picker__trigger > svg { position: absolute; top: 6px; right: 6px; width: 12px; height: 12px; color: var(--ll-muted); }
+.ll-browse-picker--square .ll-browse-picker__trigger { position: relative; }
+@media (max-height: 760px) and (min-width: 761px) { .ll-browse { max-height: none; } .ll-browse__left { overflow: visible; } .ll-browse__right { min-height: 360px; } }
+.ll-minimap__stage { display: block; }
+.ll-minimap__canvas { position: absolute; left: 50%; top: 50%; margin-left: calc(-1 * var(--map-side, 0px)); transform-origin: 0 0; will-change: transform; }
+.ll-minimap__canvas { margin-left: 0; margin-top: 0; translate: -50% -50%; }
+.ll-minimap__canvas .ll-minimap__img { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.ll-minimap__canvas .ll-minimap__svg { transform: none; }
+.ll-minimap__empty { pointer-events: none; }
+.ll-minimap__empty > * { pointer-events: auto; }
+.ll-setup__pickers { max-width: 520px; }
+.ll-dart-controls { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 12px; }
+.ll-charge-bars { display: flex; gap: 6px; }
+.ll-charge-bars button { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; color: var(--ll-muted); cursor: pointer; padding: 4px; }
+.ll-charge-bars__bar { width: 34px; height: 10px; border: 1px solid var(--ll-border); background: var(--ll-bg); }
+.ll-charge-bars button.is-filled .ll-charge-bars__bar { background: var(--ll-accent); border-color: var(--ll-accent); }
+.ll-charge-bars button[aria-checked="true"] small { color: var(--ll-text); font-weight: 700; }
+.ll-bounce-diamonds { display: flex; gap: 8px; }
+.ll-diamond { display: inline-block; width: 10px; height: 10px; transform: rotate(45deg); background: currentColor; margin-right: 4px; }
+.ll-throw-type { max-width: 260px; margin: 8px 0; }
+.ll-ov--minimal { padding: 0; background: transparent; border: 0; display: flex; align-items: center; justify-content: center; }
+.ll-ov--minimal.has-outline { border: 1px solid var(--ll-border); }
+.ll-ov__minimal-img { width: 100%; height: 100%; object-fit: contain; }
+.ll-ov__minimal-empty { width: 100%; height: 100%; }
+.ll-ov__current-slot { margin-left: auto; font-weight: 600; color: var(--ll-text); }
+.ll-ov__body--create { padding: 4px; }
+.ll-ov__body--create .ll-ov__image { width: 100%; max-height: 100%; }
+.ll-ov__body--create { display: flex; flex-direction: column; gap: 4px; }
+.ll-ov__image--create { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+.ll-ov__checklist--compact { flex: none; max-height: 92px; overflow: auto; }
+.ll-ov__checklist--compact .ll-ov__thumb { width: 30px; height: 22px; }
+.ll-ov__checklist--compact .ll-ov__item { padding: 2px 4px; }

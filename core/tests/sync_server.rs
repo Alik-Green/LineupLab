@@ -16,6 +16,7 @@ async fn server() -> (
         data_dir: dir.path().to_path_buf(),
         name: "test".into(),
         pairing_code: Some("123456".into()),
+        require_pairing_code: true,
         advertise_mdns: false,
     })
     .await
@@ -142,7 +143,7 @@ async fn incremental_push_pull_images_tombstones_and_conflicts() {
 #[tokio::test]
 async fn manifest_since_is_incremental_and_complete_fields_round_trip() {
     let (h, _sdir, client) = server().await;
-    let (mut a, ast, _ad) = local();
+    let (a, ast, _ad) = local();
     let mut l = lineup("Full fields", "2026-03-01T00:00:00Z", "device-a", 3);
     l.tags = vec!["tag".into()];
     l.attributes
@@ -162,5 +163,57 @@ async fn manifest_since_is_incremental_and_complete_fields_round_trip() {
     assert_eq!(full[0].legacy["future"]["x"], 1);
     assert_eq!(full[0].land_pos, l.land_pos);
     assert_eq!(full[0].tags, l.tags);
+    h.shutdown().await.unwrap();
+}
+
+#[tokio::test]
+async fn open_lan_download_is_additive_resumable_and_never_requests_empty_image_route() {
+    let _dir = tempfile::tempdir().unwrap();
+    let h = spawn(ServerConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        data_dir: _dir.path().into(),
+        name: "open".into(),
+        pairing_code: None,
+        require_pairing_code: false,
+        advertise_mdns: false,
+    })
+    .await
+    .unwrap();
+    let base = format!("http://{}", h.addr);
+    let p = SyncClient::connect(&base, "phone").await.unwrap();
+    let client = SyncClient::new(&base, p.token);
+    let (host, hs, _hd) = local();
+    let (mut phone, ps, _pd) = local();
+    let hash = hs.put(b"offline image").unwrap();
+    let mut l = lineup("Offline", "2026-01-01T00:00:00Z", "desktop", 1);
+    l.slot_mut(Slot::Aim1).image = Some(hash.clone());
+    l.slot_mut(Slot::Stand1).image = Some("".into()); // legacy blank must not GET /images/
+    l.slot_mut(Slot::Stand2).image = Some("missing-image".into()); // invalid warning, not fatal
+    host.put(&l).unwrap();
+    push_local(&client, &host, &hs, "desktop").await.unwrap();
+    let mut phases = vec![];
+    let r = download_library(&client, &mut phone, &ps, |p| phases.push(p.phase))
+        .await
+        .unwrap();
+    assert_eq!((r.downloaded, r.images, r.failed), (1, 1, 1));
+    assert!(ps.has(&hash));
+    assert!(
+        phases.contains(&"manifest".to_string())
+            && phases.contains(&"images".to_string())
+            && phases.contains(&"complete".to_string())
+    );
+    let again = download_library(&client, &mut phone, &ps, |_| {})
+        .await
+        .unwrap();
+    assert_eq!((again.downloaded, again.existing, again.images), (0, 1, 0));
+    assert_eq!(again.failed, 1);
+    host.tombstone(&l.id, "desktop").unwrap();
+    push_local(&client, &host, &hs, "desktop").await.unwrap();
+    download_library(&client, &mut phone, &ps, |_| {})
+        .await
+        .unwrap();
+    assert_eq!(phone.get(&l.id).unwrap().unwrap().title, "Offline");
+    assert!(ps.has(&hash));
+    assert!(client.image("").await.is_err());
     h.shutdown().await.unwrap();
 }

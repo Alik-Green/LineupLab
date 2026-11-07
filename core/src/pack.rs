@@ -154,12 +154,33 @@ pub struct PackArchive {
 
 /// Reads into memory with hard limits; never extracts archive paths to the filesystem.
 pub fn read_archive(bytes: &[u8]) -> Result<PackArchive> {
+    read_archive_with_progress(bytes, |_| {})
+}
+/// Reports actual decompressed bytes while reading, including large stored media.
+/// The callback is synchronous and throttled by the caller if needed.
+pub fn read_archive_with_progress(
+    bytes: &[u8],
+    mut progress: impl FnMut(ImportProgress),
+) -> Result<PackArchive> {
     let mut zip = ZipArchive::new(Cursor::new(bytes))?;
     if zip.len() > MAX_ENTRIES {
         return Err(Error::Invalid(format!(
             "Archive exceeds {MAX_ENTRIES} entries"
         )));
     }
+    let mut expected_total = 0u64;
+    for i in 0..zip.len() {
+        expected_total =
+            expected_total.saturating_add(zip.by_index(i)?.size().min(MAX_ENTRY_BYTES));
+    }
+    let expected_total = expected_total.min(MAX_TOTAL_BYTES) as usize;
+    let mut processed = 0usize;
+    progress(ImportProgress {
+        phase: "decompressing".into(),
+        message: "Opening ZIP entries…".into(),
+        current: 0,
+        total: expected_total,
+    });
     let mut names = BTreeSet::new();
     let mut media = BTreeMap::new();
     let mut documents = vec![];
@@ -215,7 +236,36 @@ pub fn read_archive(bytes: &[u8]) -> Result<PackArchive> {
             )));
         }
         let mut buf = Vec::with_capacity(entry.size().min(limit) as usize);
-        entry.by_ref().take(limit + 1).read_to_end(&mut buf)?;
+        let mut chunk = [0u8; 64 * 1024];
+        let mut last_report = std::time::Instant::now();
+        loop {
+            let n = entry.read(&mut chunk)?;
+            if n == 0 {
+                break;
+            }
+            if buf.len() as u64 + n as u64 > limit {
+                return Err(Error::Invalid(format!(
+                    "Decompressed entry too large: {name}"
+                )));
+            }
+            buf.extend_from_slice(&chunk[..n]);
+            processed = processed.saturating_add(n);
+            if last_report.elapsed() >= std::time::Duration::from_millis(40) {
+                progress(ImportProgress {
+                    phase: "decompressing".into(),
+                    message: format!("Reading {name}"),
+                    current: processed,
+                    total: expected_total.max(processed),
+                });
+                last_report = std::time::Instant::now();
+            }
+        }
+        progress(ImportProgress {
+            phase: "decompressing".into(),
+            message: format!("Read {name}"),
+            current: processed,
+            total: expected_total.max(processed),
+        });
         if buf.len() as u64 > limit {
             return Err(Error::Invalid(format!(
                 "Decompressed entry too large: {name}"

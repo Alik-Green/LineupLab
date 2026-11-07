@@ -158,7 +158,7 @@
       "agent": "Sova",
       "slots": {
         "Ability1": true,
-        "Ability2": false,
+        "Ability2": true,
         "Grenade": true,
         "Ultimate": true
       }

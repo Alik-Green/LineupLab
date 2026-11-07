@@ -27,7 +27,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::list_lineups, commands::get_lineup, commands::get_catalog, commands::prepare_assets, commands::catalog_image_url, commands::asset_diagnostics, commands::log_image_error, commands::get_modes,
-            commands::media_path, commands::pair_sync, commands::sync_now, commands::discover_sync,
+            commands::media_path, commands::pair_sync, commands::sync_now, commands::download_library, commands::discover_sync,
             commands::get_sync_settings, commands::set_sync_settings
         ])
         .run(tauri::generate_context!())

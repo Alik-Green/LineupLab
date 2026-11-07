@@ -13,10 +13,14 @@ export function modeIdsFor(agentName: string, abilitySlot: string): string[] {
 export function modesFor(agentName: string | undefined, abilitySlot: string, all: AbilityMode[]): AbilityMode[] {
   const ids = modeIdsFor(agentName ?? '*', abilitySlot);
   const byId = new Map(all.map(m => [m.id, m]));
-  const fromAll = ids.map(id => byId.get(id)).filter((m): m is AbilityMode => !!m);
+  let fromAll = ids.map(id => byId.get(id)).filter((m): m is AbilityMode => !!m);
+  // Legacy recon-<bounce>-<charge> ids remain valid data, but the editor uses one
+  // canonical Recon Dart mode plus explicit charge/bounce controls.
+  if (agentName === 'Sova' && abilitySlot === 'Grenade') fromAll = fromAll.filter(m => m.id === 'recon');
   if (fromAll.length) return fromAll;
   const rule = cfg.rules.find(r => (r.agent === agentName || r.agent === '*') && (r.ability === abilitySlot || r.ability === '*'));
-  return rule?.modes ?? cfg.defaults;
+  const fallback = rule?.modes ?? cfg.defaults;
+  return agentName === 'Sova' && abilitySlot === 'Grenade' ? fallback.filter(m => m.id === 'recon') : fallback;
 }
 export function modeAttributes(mode: AbilityMode | undefined): Record<string, unknown> {
   const out: Record<string, unknown> = {};
@@ -45,11 +49,20 @@ export function validateLineup(l: Lineup, required: SlotId[]): ValidationIssue[]
   if (!l.title.trim()) issues.push({ step: 'details', field: 'title', message: 'Give the lineup a title (or use the suggested one).' });
   return issues;
 }
+export function nearestCallout(callouts: { name: string; x: number; y: number }[] | undefined, p: { x: number; y: number } | null | undefined): string | null {
+  if (!callouts?.length || !p) return null;
+  let best: { name: string; d: number } | null = null;
+  for (const c of callouts) { const d = Math.hypot(c.x - p.x, c.y - p.y); if (!best || d < best.d) best = { name: c.name, d }; }
+  return best?.name ?? null;
+}
 export function autoTitle(l: Lineup, catalog: Catalog | null): string {
   const agent = catalog?.agents.find(a => a.uuid === l.agentUuid)?.displayName ?? '';
-  const map = catalog?.maps.find(m => m.uuid === l.mapUuid)?.displayName ?? '';
+  const mapObj = catalog?.maps.find(m => m.uuid === l.mapUuid);
+  const map = mapObj?.displayName ?? '';
   const ability = l.agentUuid ? abilityName(catalog, l.agentUuid, l.abilitySlot) : '';
-  const where = [map, l.site.trim()].filter(Boolean).join(' ');
+  const start = nearestCallout(mapObj?.callouts, l.stand1Pos);
+  const end = nearestCallout(mapObj?.callouts, l.landPos);
+  const where = [map, start && end ? `${start} → ${end}` : l.site.trim()].filter(Boolean).join(' ');
   const side = l.side === 'both' ? '' : ` (${l.side === 'attack' ? 'Attack' : 'Defense'})`;
   return [`${agent} ${ability}`.trim(), where].filter(Boolean).join(' · ') + side;
 }

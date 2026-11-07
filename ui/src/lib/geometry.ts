@@ -27,3 +27,14 @@ export function newCircle(x: number, y: number, color: string, lens = false): Fo
   return { id: crypto.randomUUID(), color, x: clamp01(x), y: clamp01(y), radius: 0.025, showZoom: lens, zoomScale: 3.5, zoomSize: 0.24, zoomX: 0.72, zoomY: 0.04 };
 }
 export function newLine(points: Point[], color: string): AnnotationLine { return { id: crypto.randomUUID(), color, width: 0.003, points: points.map(clampPoint), style: 'solid', arrow: 'none', label: null }; }
+
+export interface MapView { scale: number; tx: number; ty: number }
+export function constrainMapPan(v: MapView, side: number): MapView {
+  const min = side * (1 - v.scale);
+  return { ...v, tx: Math.min(0, Math.max(min, v.tx)), ty: Math.min(0, Math.max(min, v.ty)) };
+}
+/** Zoom around a point in the untransformed square canvas; art and SVG share this transform. */
+export function zoomMapAt(v: MapView, factor: number, px: number, py: number, side: number): MapView {
+  const scale = Math.min(6, Math.max(1, v.scale * factor));
+  return constrainMapPan({ scale, tx: px - (px - v.tx) * scale / v.scale, ty: py - (py - v.ty) * scale / v.scale }, side);
+}

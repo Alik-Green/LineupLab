@@ -31,7 +31,7 @@ test.describe('desktop import/export', () => {
     await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Import / Export' }).click();
     await page.locator('input[type="file"]').setInputFiles({ name: 'old-pack.zip', mimeType: 'application/zip', buffer: Buffer.from([80, 75, 3, 4]) });
     await expect(page.getByTestId('import-progress')).toBeVisible();
-    await expect(page.getByTestId('import-progress')).toContainText(/Reading|Validating/);
+    await expect(page.getByTestId('import-progress')).toContainText(/Reading media|Validating/);
     await page.screenshot({ path: 'docs/screenshots/53-import-progress.png' });
     await expect(page.locator('.ll-import-table tbody tr')).toHaveCount(4);
     await page.getByRole('checkbox', { name: 'Select all entries' }).check();

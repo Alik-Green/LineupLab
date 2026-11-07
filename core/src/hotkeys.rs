@@ -52,10 +52,11 @@ pub fn default_bindings() -> Vec<HotkeyBinding> {
             "Overlay controls (disable click-through)",
             "Alt+O",
         ),
-        ("overlay_mode", "Toggle Create/View overlay mode", "Alt+M"),
-        ("view_next", "View: next image", "Alt+Right"),
-        ("view_prev", "View: previous image", "Alt+Left"),
-        ("view_flip", "View: flip steps/notes", "Alt+F"),
+        ("overlay_mode", "Toggle Create/Learn overlay mode", "Alt+M"),
+        ("overlay_minimal", "Toggle minimal overlay", "Alt+I"),
+        ("view_next", "Learn: next image", "Alt+Right"),
+        ("view_prev", "Learn: previous image", "Alt+Left"),
+        ("view_flip", "Learn: flip steps/map", "Alt+F"),
         ("checklist_toggle", "Create: toggle checklist", "Alt+H"),
     ];
     rows.into_iter()

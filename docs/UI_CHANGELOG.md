@@ -65,3 +65,10 @@ Eight milestones on `arena/e082cc85-lineuplab`, preserving the core data model, 
 - Overlay: native monitor enumeration plus physical origin/size/scale conversion replaces hardcoded 1920×1080; logical settings clamp inside the selected monitor; Settings shows monitor/resolution/DPI/position and can reapply placement; startup applies saved placement.
 - Verification: typecheck; 25 UI unit tests; 30 Rust tests; desktop/mobile builds; 20 Playwright tests (17 desktop + 3 Android), including import progress/error, picker and 1440p placement regressions. Screenshots `14`, `53–54`, `66` and refreshed Browse/Import/Overlay/Android views.
 - Published as [v0.1.0-preview.3](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.3); Windows CI 42413896601 and Android CI 42413896621 succeeded on `3dae13c`, release verification run 42415179026 published installer/APK/checksums. See `docs/releases/v0.1.0-preview.3.md`.
+
+## Preview 4 — reported desktop/mobile feedback (implementation batch)
+- Checklist: `docs/TODO_CHECKLIST.md`. Download unblocked: no-code trusted-LAN connect, additive persistent phone downloads, blank-hash `/images/` fix, progress/warnings/retry, safe-area padding, empty-map recovery.
+- ZIP import reports real decompression bytes/entries. Browse/Create use three square Map/Agent/Ability pickers; TDM maps filtered; short-window minimap reachable.
+- Minimap art + markers zoom/pan together; letterbox-safe pin placement; stand/land toggles; simplified Create pins. Sova Recon Dart charge/bounce controls, all Sova abilities, per-aim throw type, A/B/C/Mid sites, Save & create another, optional callout-based titles.
+- Overlay numeric fields clamp on blur; Learn mode + Learn in overlay action; Minimal image-only mode with optional outline; Create shows large current capture.
+- Local verification: typecheck, 32 UI unit tests, 32 Rust integration tests, desktop/mobile builds, 25 Playwright tests. Native CI/manual checks pending release.

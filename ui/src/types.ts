@@ -29,7 +29,8 @@ export interface Lineup {
 export interface AbilityMode { id: string; label: string; requiredSlots: SlotId[]; optionalSlots?: SlotId[]; attributes: Record<string, { type: string; default?: unknown; min?: number; max?: number; options?: unknown[] }>; }
 export interface CatalogAbility { slot: string; displayName: string; displayIcon?: string | null; description?: string }
 export interface Agent { uuid: string; displayName: string; displayIcon: string; role?: string | null; roleIcon?: string | null; abilities?: CatalogAbility[]; isArchived?: boolean }
-export interface GameMap { uuid: string; displayName: string; displayIcon: string; listViewIcon?: string | null; splash?: string | null; isArchived?: boolean }
+export interface MapCallout { name: string; x: number; y: number }
+export interface GameMap { uuid: string; displayName: string; displayIcon: string; listViewIcon?: string | null; splash?: string | null; isArchived?: boolean; callouts?: MapCallout[] }
 export interface Catalog { agents: Agent[]; maps: GameMap[]; version: string; updatedAt: string; stale?: boolean; warning?: string | null; dataDir?: string }
 export interface AssetProgress { phase: 'downloading' | 'ready' | 'offline' | string; done: number; total: number; failed: number; current: string; version: string }
 export interface AssetTypeReport { total: number; cached: number; missing: number; invalid: number; bytes: number }
@@ -68,6 +69,7 @@ export interface LibraryAdapter {
   rebindHotkey(action: string, keys: string): Promise<HotkeyFeedback>;
   getOverlaySettings(): Promise<OverlaySettings>;
   setOverlaySettings(settings: OverlaySettings): Promise<void>;
+  learnLineup(id: string): Promise<void>;
   getCaptureSettings(): Promise<CaptureSettings>;
   setCaptureSettings(settings: CaptureSettings): Promise<void>;
   startSyncServer(name?: string): Promise<SyncServerStatus>;
@@ -75,6 +77,7 @@ export interface LibraryAdapter {
   getSyncServerStatus(): Promise<SyncServerStatus>;
   pairSync(baseUrl: string, code: string, deviceName: string): Promise<SyncPairResponse>;
   syncNow(baseUrl: string, token: string): Promise<SyncReport>;
+  downloadLibrary(baseUrl: string, token: string): Promise<DownloadReport>;
   discoverSync(): Promise<DiscoveredServer[]>;
 }
 export interface HotkeyBinding { action: string; label: string; keys: string }
@@ -83,7 +86,9 @@ export type OverlayCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-r
 export interface OverlaySettings { enabled: boolean; clickThrough: boolean; corner: OverlayCorner; monitor: number; marginX: number; marginY: number; width: number; height: number; opacity: number }
 export interface MonitorInfo { index: number; name: string; isPrimary: boolean; x: number; y: number; physicalWidth: number; physicalHeight: number; logicalWidth: number; logicalHeight: number; scaleFactor: number }
 export interface CaptureSettings { maxWidth: number; quality: number; webp: boolean; thumbnail: boolean; targetMs: number }
-export interface SyncServerStatus { running: boolean; address?: string; pairingCode?: string }
+export interface SyncServerStatus { running: boolean; address?: string; pairingCode?: string; requiresCode?: boolean }
 export interface SyncPairResponse { token: string; serverName: string; deviceId: string; protocolVersion: number }
 export interface SyncReport { pulled: number; pushed: number; images: number; conflicts: number }
+export interface DownloadReport { downloaded: number; existing: number; images: number; failed: number; totalLineups: number; totalImages: number; warnings: string[]; finishedAt: string }
+export interface DownloadProgress { phase: string; message: string; current: number; total: number }
 export interface DiscoveredServer { name: string; address: string; port: number }

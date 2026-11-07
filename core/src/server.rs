@@ -34,6 +34,8 @@ pub struct ServerConfig {
     pub data_dir: std::path::PathBuf,
     pub name: String,
     pub pairing_code: Option<String>,
+    /// No-code sharing is the default; a configured code remains enforced.
+    pub require_pairing_code: bool,
     pub advertise_mdns: bool,
 }
 impl Default for ServerConfig {
@@ -43,6 +45,7 @@ impl Default for ServerConfig {
             data_dir: std::path::PathBuf::from("."),
             name: "LineupLab".into(),
             pairing_code: None,
+            require_pairing_code: false,
             advertise_mdns: true,
         }
     }
@@ -50,6 +53,7 @@ impl Default for ServerConfig {
 pub struct ServerHandle {
     pub addr: SocketAddr,
     pub pairing_code: String,
+    pub require_pairing_code: bool,
     pub join: JoinHandle<Result<()>>,
     shutdown: Option<oneshot::Sender<()>>,
     _mdns: Option<mdns_sd::ServiceDaemon>,
@@ -68,6 +72,7 @@ struct ServerState {
     device_id: String,
     name: String,
     pairing_code: String,
+    require_pairing_code: bool,
     tokens: Mutex<BTreeSet<String>>,
     tokens_path: std::path::PathBuf,
     attempts: Mutex<VecDeque<Instant>>,
@@ -88,7 +93,7 @@ async fn auth(
     next: Next,
 ) -> axum::response::Response {
     let path = req.uri().path();
-    if path == "/pair" || path == "/health" {
+    if path == "/pair" || path == "/health" || path == "/connect" {
         return next.run(req).await;
     }
     let token = req
@@ -108,10 +113,48 @@ struct PairBody {
     #[serde(default)]
     device_name: String,
 }
+fn issue_token(st: &ServerState, device: &str) -> axum::response::Response {
+    let token = uuid::Uuid::new_v4().simple().to_string();
+    {
+        let mut tokens = st.tokens.lock().unwrap();
+        tokens.insert(token.clone());
+        if let Err(e) = std::fs::write(
+            &st.tokens_path,
+            serde_json::to_vec_pretty(&*tokens).unwrap_or_default(),
+        ) {
+            tracing::error!(error=%e, "Could not persist download token");
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "could not save connection",
+            )
+                .into_response();
+        }
+    }
+    tracing::info!(%device, "Connected download client");
+    (StatusCode::OK, Json(json!({"token":token,"serverName":st.name,"deviceId":st.device_id,"protocolVersion":PROTOCOL_VERSION}))).into_response()
+}
+async fn connect(
+    State(st): State<Arc<ServerState>>,
+    Json(body): Json<ConnectBody>,
+) -> axum::response::Response {
+    if st.require_pairing_code {
+        return unauthorized();
+    }
+    issue_token(&st, &body.device_name)
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ConnectBody {
+    #[serde(default)]
+    device_name: String,
+}
 async fn pair(
     State(st): State<Arc<ServerState>>,
     Json(body): Json<PairBody>,
 ) -> axum::response::Response {
+    if !st.require_pairing_code {
+        return issue_token(&st, &body.device_name);
+    }
     {
         let mut attempts = st.attempts.lock().unwrap();
         let now = Instant::now();
@@ -124,7 +167,7 @@ async fn pair(
         if attempts.len() >= 10 {
             return (
                 StatusCode::TOO_MANY_REQUESTS,
-                Json(json!({"error":"too many pairing attempts; wait a minute"})),
+                Json(json!({"error":"too many attempts; wait a minute"})),
             )
                 .into_response();
         }
@@ -133,17 +176,7 @@ async fn pair(
     if !ct_eq(&body.code, &st.pairing_code) {
         return unauthorized();
     }
-    let token = uuid::Uuid::new_v4().simple().to_string();
-    {
-        let mut tokens = st.tokens.lock().unwrap();
-        tokens.insert(token.clone());
-        let _ = std::fs::write(
-            &st.tokens_path,
-            serde_json::to_vec_pretty(&*tokens).unwrap_or_default(),
-        );
-    }
-    tracing::info!(device=%body.device_name, "Paired sync client");
-    (StatusCode::OK, Json(json!({"token":token,"serverName":st.name,"deviceId":st.device_id,"protocolVersion":PROTOCOL_VERSION}))).into_response()
+    issue_token(&st, &body.device_name)
 }
 async fn health() -> impl IntoResponse {
     Json(json!({"ok":true,"protocolVersion":PROTOCOL_VERSION}))
@@ -244,6 +277,7 @@ fn router(st: Arc<ServerState>) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/pair", post(pair))
+        .route("/connect", post(connect))
         .route("/manifest", get(manifest))
         .route("/lineups", get(lineups))
         .route("/images/{hash}", get(get_image).put(put_image))
@@ -289,6 +323,7 @@ pub async fn spawn(config: ServerConfig) -> Result<ServerHandle> {
         device_id: device_id.clone(),
         name: config.name.clone(),
         pairing_code: pairing_code.clone(),
+        require_pairing_code: config.require_pairing_code,
         tokens: Mutex::new(tokens),
         tokens_path,
         attempts: Mutex::new(VecDeque::new()),
@@ -334,6 +369,7 @@ pub async fn spawn(config: ServerConfig) -> Result<ServerHandle> {
     Ok(ServerHandle {
         addr,
         pairing_code,
+        require_pairing_code: config.require_pairing_code,
         join,
         shutdown: Some(tx),
         _mdns: mdns,

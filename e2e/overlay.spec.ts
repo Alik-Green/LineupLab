@@ -12,9 +12,10 @@ test.describe('desktop overlay', () => {
     await expect(page.getByTestId('overlay-view')).toHaveAttribute('data-fading', 'true');
     await expect(page.getByTestId('overlay-view')).not.toHaveAttribute('data-fading', 'true', { timeout: 2000 });
     await page.getByRole('button', { name: 'Hide checklist' }).click();
-    await expect(page.getByText('Checklist hidden')).toBeVisible();
+    await expect(page.getByTestId('overlay-checklist-stand1')).toHaveCount(0);
     await page.getByRole('button', { name: 'Show checklist' }).click();
-    await page.getByRole('button', { name: 'Switch to view mode' }).click();
+    await expect(page.getByTestId('overlay-checklist-stand1')).toBeVisible();
+    await page.getByRole('button', { name: 'Switch to learn mode' }).click();
     await page.setViewportSize({ width: 420, height: 360 });
     await expect(page.getByTestId('overlay-content')).toHaveAttribute('data-mode', 'view');
     await expect(page.locator('.ll-ov__nav-label')).toContainText('Aim · 2/3');

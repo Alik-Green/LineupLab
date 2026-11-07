@@ -7,13 +7,13 @@ import type { Lineup, SlotId } from '../types';
 import { SLOT_LABELS, SLOT_ORDER } from '../types';
 
 /** Local reading-comfort prefs for the overlay window (not part of the core settings schema). */
-export interface OverlayViewPrefs { scale: number; hideAnnotations: boolean; fade: boolean }
-export const DEFAULT_VIEW_PREFS: OverlayViewPrefs = { scale: 1, hideAnnotations: false, fade: true };
+export interface OverlayViewPrefs { scale: number; hideAnnotations: boolean; fade: boolean; minimal: boolean; outline: boolean }
+export const DEFAULT_VIEW_PREFS: OverlayViewPrefs = { scale: 1, hideAnnotations: false, fade: true, minimal: false, outline: false };
 export const VIEW_PREFS_KEY = 'lineuplab.overlayView';
 const VIEW_PREFS_EVENT = 'lineuplab:overlay-view-prefs';
 export function clampViewPrefs(p: Partial<OverlayViewPrefs>): OverlayViewPrefs {
   const scale = typeof p.scale === 'number' && Number.isFinite(p.scale) ? Math.min(1.75, Math.max(0.75, p.scale)) : DEFAULT_VIEW_PREFS.scale;
-  return { scale, hideAnnotations: p.hideAnnotations === true, fade: p.fade !== false };
+  return { scale, hideAnnotations: p.hideAnnotations === true, fade: p.fade !== false, minimal: p.minimal === true, outline: p.outline === true };
 }
 export function readViewPrefs(): OverlayViewPrefs { try { return clampViewPrefs(JSON.parse(localStorage.getItem(VIEW_PREFS_KEY) ?? '{}')); } catch { return DEFAULT_VIEW_PREFS; } }
 export function writeViewPrefs(p: OverlayViewPrefs) { const next = clampViewPrefs(p); localStorage.setItem(VIEW_PREFS_KEY, JSON.stringify(next)); window.dispatchEvent(new CustomEvent(VIEW_PREFS_EVENT, { detail: next })); return next; }

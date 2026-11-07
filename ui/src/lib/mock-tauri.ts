@@ -87,6 +87,7 @@ async function invoke(cmd: string, args: Record<string, unknown> = {}): Promise<
       if (params.has('import-error')) throw new Error('Mock legacy pack failure: manifest.json is missing or unreadable.');
       const entries = [{ id: 'p1', title: 'Abyss Sova recon', status: 'new', selected: true, warnings: [] }, { id: 'p2', title: 'Ascent Jett smoke', status: 'identical', selected: false, warnings: [] }, { id: 'p3', title: 'Bind Raze satchel', status: 'newer', selected: true, warnings: ['Newer revision'] }, { id: 'p4', title: 'Broken entry', status: 'error', selected: false, warnings: ['Missing landing image'] }];
       emit('lineuplab://import-progress', { phase: 'reading', message: 'Reading ZIP pack', current: 0, total: 0 });
+      for (let i = 0; i <= 4; i++) { emit('lineuplab://import-progress', { phase: 'decompressing', message: `Reading media/entry-${i}.webp`, current: i * 262144, total: 1048576 }); if (params.has('slow-import')) await new Promise(r => setTimeout(r, 100)); }
       if (params.has('slow-import')) await new Promise(r => setTimeout(r, 450));
       emit('lineuplab://import-progress', { phase: 'validating', message: 'Validating legacy entries and media', current: 0, total: entries.length });
       if (params.has('slow-import')) await new Promise(r => setTimeout(r, 650));
@@ -97,6 +98,7 @@ async function invoke(cmd: string, args: Record<string, unknown> = {}): Promise<
       const selected = Array.isArray(a.selected) ? a.selected as string[] : [];
       const total = Math.max(1, selected.length);
       emit('lineuplab://import-progress', { phase: 'reading', message: 'Reading ZIP pack', current: 0, total: 0 });
+      for (let i = 0; i <= 4; i++) { emit('lineuplab://import-progress', { phase: 'decompressing', message: `Reading media/entry-${i}.webp`, current: i * 262144, total: 1048576 }); if (params.has('slow-import')) await new Promise(r => setTimeout(r, 100)); }
       if (params.has('slow-import')) await new Promise(r => setTimeout(r, 350));
       for (let i = 0; i <= 3; i++) { emit('lineuplab://import-progress', { phase: 'media', message: `Copying pack media (${i}/3)`, current: i, total: 3 }); if (params.has('slow-import')) await new Promise(r => setTimeout(r, 300)); }
       for (let i = 0; i <= total; i++) { emit('lineuplab://import-progress', { phase: 'lineups', message: `Writing lineups (${i}/${total})`, current: i, total }); if (params.has('slow-import')) await new Promise(r => setTimeout(r, 300)); }
@@ -113,12 +115,19 @@ async function invoke(cmd: string, args: Record<string, unknown> = {}): Promise<
     case 'set_capture_settings': localStorage.setItem('mock.capture', JSON.stringify(args.settings)); return null;
     case 'get_overlay_view': { overlayState.settings = { ...overlayState.settings, ...clampOverlay({ ...DEFAULT_OVERLAY, ...JSON.parse(localStorage.getItem('mock.overlay') ?? '{}') }) }; return { state: overlayState, lineup: overlayState.mode === 'create' ? mockDraft : overlayLineup }; }
     case 'overlay_action': { const s = overlayState; switch (a.action) { case 'overlay_toggle': s.visible = !s.visible; break; case 'overlay_controls': s.settings.clickThrough = !s.settings.clickThrough; s.visible = true; break; case 'overlay_mode': s.mode = s.mode === 'create' ? 'view' : 'create'; s.flipped = false; break; case 'view_next': s.viewIndex = (s.viewIndex + 1) % Math.max(1, s.viewSlots.length); break; case 'view_prev': s.viewIndex = (s.viewIndex + s.viewSlots.length - 1) % Math.max(1, s.viewSlots.length); break; case 'view_flip': s.flipped = !s.flipped; break; case 'checklist_toggle': s.showChecklist = !s.showChecklist; break; } emit('lineuplab://overlay-changed', s); return null; }
+    case 'learn_lineup': { overlayLineup = lineups.find(l => l.id === a.id) ?? null; overlayState.mode = 'view'; overlayState.visible = true; if (overlayLineup) { overlayState.viewSlots = SLOT_ORDER.filter(k => overlayLineup!.slots[k].image); overlayState.viewIndex = 0; } emit('lineuplab://overlay-changed', overlayState); return null; }
     case 'set_overlay_lineup': { overlayLineup = lineups.find(l => l.id === a.id) ?? null; if (overlayLineup) { overlayState.viewSlots = SLOT_ORDER.filter(k => overlayLineup!.slots[k].image); overlayState.viewIndex = 0; overlayState.checklist = draftChecklist(overlayLineup, ['stand1', 'aim1', 'landing']); } emit('lineuplab://overlay-changed', overlayState); return null; }
-    case 'start_sync_server': return { running: true, address: '192.168.1.20:8765', pairingCode: '482913' };
+    case 'start_sync_server': return { running: true, address: '192.168.1.20:8765', requiresCode: false };
     case 'stop_sync_server': return null;
     case 'get_sync_server_status': return { running: false };
     case 'pair_sync': return { token: 'mock-token', serverName: 'Desktop library', deviceId: 'desktop', protocolVersion: 1 };
     case 'sync_now': return { pulled: 12, pushed: 0, images: 34, conflicts: 0 };
+    case 'download_library': {
+      const total = lineups.length;
+      for (const phase of ['manifest', 'lineups', 'images', 'saving']) { emit('lineuplab://download-progress', { phase, message: `Downloading ${phase}…`, current: 0, total }); await new Promise(r => setTimeout(r, 120)); }
+      const report = { downloaded: total, existing: 0, images: total * 3, failed: 0, totalLineups: total, totalImages: total * 3, warnings: [], finishedAt: new Date().toISOString() };
+      emit('lineuplab://download-progress', { phase: 'complete', message: 'Download complete', current: total, total }); return report;
+    }
     case 'discover_sync': return [{ name: 'Desktop library', address: '192.168.1.20', port: 8765 }];
     case 'get_sync_settings': return JSON.parse(localStorage.getItem('mock.sync') ?? '{}');
     case 'set_sync_settings': localStorage.setItem('mock.sync', JSON.stringify(args.settings)); return null;

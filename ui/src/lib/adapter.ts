@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
-import type { AbilityMode, AssetDiagnostics, CaptureResult, CaptureSettings, Catalog, DiscoveredServer, HotkeyBinding, HotkeyFeedback, ImportPreview, ImportReport, LibraryAdapter, Lineup, MonitorInfo, OverlaySettings, SlotData, SlotId, SyncPairResponse, SyncReport, SyncServerStatus } from '../types';
+import type { AbilityMode, AssetDiagnostics, CaptureResult, CaptureSettings, Catalog, DiscoveredServer, HotkeyBinding, HotkeyFeedback, ImportPreview, ImportReport, LibraryAdapter, Lineup, MonitorInfo, OverlaySettings, SlotData, SlotId, SyncPairResponse, SyncReport, DownloadReport, SyncServerStatus } from '../types';
 import { DEFAULT_HOTKEYS, rebindLocal } from './hotkeys';
 import { clampOverlay, DEFAULT_OVERLAY } from './overlay';
 import { SLOT_ORDER } from '../types';
@@ -34,7 +34,7 @@ export class BrowserAdapter implements LibraryAdapter {
   async deleteLineup(id: string) { const all = this.load().map(l => l.id === id ? { ...l, deleted: true, updatedAt: new Date().toISOString(), revision: l.revision + 1 } : l); this.persist(all); }
   async duplicateLineup(id: string) { const l = await this.getLineup(id); if (!l) throw new Error('Not found'); const copy = { ...structuredClone(l), id: crypto.randomUUID(), title: `${l.title} (copy)`, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), revision: 1, importBatchId: null }; const all = this.load(); all.push(copy); this.persist(all); return copy; }
   async setFavorite(id: string, value: boolean) { const l = await this.getLineup(id); if (l) await this.saveLineup({ ...l, isFavorite: value }); }
-  async catalog(): Promise<Catalog> { return { version: 'demo', updatedAt: new Date().toISOString(), agents: [{ uuid: 'demo-sova', displayName: 'Sova (demo)', displayIcon: '', role: 'Initiator', abilities: [{ slot: 'Grenade', displayName: 'Recon Bolt', displayIcon: '' }, { slot: 'Ability1', displayName: 'Shock Bolt', displayIcon: '' }] }, { uuid: 'demo-jett', displayName: 'Jett (demo)', displayIcon: '', role: 'Duelist', abilities: [{ slot: 'Grenade', displayName: 'Cloudburst', displayIcon: '' }] }], maps: [{ uuid: 'demo-map', displayName: 'Synthetic map', displayIcon: DEMO_IMAGES['demo-map'], listViewIcon: DEMO_IMAGES['demo-map'] }] }; }
+  async catalog(): Promise<Catalog> { return { version: 'demo', updatedAt: new Date().toISOString(), agents: [{ uuid: 'demo-sova', displayName: 'Sova (demo)', displayIcon: '', role: 'Initiator', abilities: [{ slot: 'Grenade', displayName: 'Recon Bolt', displayIcon: '' }, { slot: 'Ability1', displayName: 'Owl Drone', displayIcon: '' }, { slot: 'Ability2', displayName: 'Shock Bolt', displayIcon: '' }] }, { uuid: 'demo-jett', displayName: 'Jett (demo)', displayIcon: '', role: 'Duelist', abilities: [{ slot: 'Grenade', displayName: 'Cloudburst', displayIcon: '' }] }], maps: [{ uuid: 'demo-map', displayName: 'Synthetic map', displayIcon: DEMO_IMAGES['demo-map'], listViewIcon: DEMO_IMAGES['demo-map'] }] }; }
   async prepareAssets(_force: boolean) { return this.catalog(); }
   async resolveImageUrl(url: string) { return url; }
   async assetDiagnostics(): Promise<AssetDiagnostics> { return { audit: { version: 'demo', cacheBytes: 0, types: {}, errors: [] }, dataDir: 'browser localStorage', cacheDir: 'browser', assetProtocol: { enabled: false, scope: [] }, platform: 'browser' }; }
@@ -52,6 +52,7 @@ export class BrowserAdapter implements LibraryAdapter {
   async rebindHotkey(action: string, keys: string): Promise<HotkeyFeedback> { const { bindings, feedback } = rebindLocal(await this.getHotkeys(), action, keys); if (feedback.kind === 'ok') localStorage.setItem('lineuplab.hotkeys', JSON.stringify(bindings)); return feedback; }
   async getOverlaySettings(): Promise<OverlaySettings> { try { return clampOverlay({ ...DEFAULT_OVERLAY, ...JSON.parse(localStorage.getItem('lineuplab.overlay') ?? '{}') }); } catch { return DEFAULT_OVERLAY; } }
   async setOverlaySettings(settings: OverlaySettings) { localStorage.setItem('lineuplab.overlay', JSON.stringify(clampOverlay(settings))); }
+  async learnLineup(): Promise<void> { throw new Error('The overlay runs in the Windows desktop app.'); }
   async getCaptureSettings(): Promise<CaptureSettings> { try { return { maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150, ...JSON.parse(localStorage.getItem('lineuplab.capture') ?? '{}') }; } catch { return { maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150 }; } }
   async setCaptureSettings(settings: CaptureSettings) { localStorage.setItem('lineuplab.capture', JSON.stringify(settings)); }
   async startSyncServer(): Promise<SyncServerStatus> { throw new Error('Run `cargo run -p lineuplab-core --bin lineuplab-server` or use the desktop app to host sync.'); }
@@ -59,6 +60,7 @@ export class BrowserAdapter implements LibraryAdapter {
   async getSyncServerStatus(): Promise<SyncServerStatus> { return { running: false }; }
   async pairSync(): Promise<SyncPairResponse> { throw new Error('Pairing requires the desktop/mobile core (LAN HTTP is not browser-CORS enabled).'); }
   async syncNow(): Promise<SyncReport> { throw new Error('Sync requires the desktop/mobile core.'); }
+  async downloadLibrary(): Promise<DownloadReport> { throw new Error('Downloading requires the desktop/mobile app.'); }
   async discoverSync(): Promise<DiscoveredServer[]> { return []; }
 }
 export class TauriAdapter implements LibraryAdapter {
@@ -87,6 +89,7 @@ export class TauriAdapter implements LibraryAdapter {
   rebindHotkey(action: string, keys: string) { return invoke<HotkeyFeedback>('rebind_hotkey', { action, keys }); }
   getOverlaySettings() { return invoke<OverlaySettings>('get_overlay_settings'); }
   setOverlaySettings(settings: OverlaySettings) { return invoke<void>('set_overlay_settings', { settings }); }
+  learnLineup(id: string) { return invoke<void>('learn_lineup', { id }); }
   getCaptureSettings() { return invoke<CaptureSettings>('get_capture_settings'); }
   setCaptureSettings(settings: CaptureSettings) { return invoke<void>('set_capture_settings', { settings }); }
   startSyncServer(name?: string) { return invoke<SyncServerStatus>('start_sync_server', { name }); }
@@ -94,6 +97,7 @@ export class TauriAdapter implements LibraryAdapter {
   getSyncServerStatus() { return invoke<SyncServerStatus>('get_sync_server_status'); }
   pairSync(baseUrl: string, code: string, deviceName: string) { return invoke<SyncPairResponse>('pair_sync', { baseUrl, code, deviceName }); }
   syncNow(baseUrl: string, token: string) { return invoke<SyncReport>('sync_now', { baseUrl, token }); }
+  downloadLibrary(baseUrl: string, token: string) { return invoke<DownloadReport>('download_library', { baseUrl, token }); }
   discoverSync() { return invoke<DiscoveredServer[]>('discover_sync'); }
 }
 export function createAdapter(): LibraryAdapter { return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window ? new TauriAdapter() : new BrowserAdapter(); }

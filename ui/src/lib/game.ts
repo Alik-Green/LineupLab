@@ -20,3 +20,9 @@ export const ROLES = ['Duelist', 'Initiator', 'Controller', 'Sentinel'] as const
 export const SITES = ['A', 'B', 'C', 'Mid', 'Other'];
 export const DIFFICULTIES = ['easy', 'medium', 'hard'];
 export function difficultyDots(d: string) { return d === 'easy' ? 1 : d === 'hard' ? 3 : 2; }
+
+/** Standard bomb-defusal maps only; archived/TDM/range entries stay in data for old lineups. */
+export function standardMaps<T extends { displayName: string; uuid?: string }>(maps: T[]): T[] {
+  return maps.filter(m => !/deathmatch|team\s*deathmatch|\btdm\b|the range|basic training|practice/i.test(m.displayName));
+}
+export function sitesForMap(mapName?: string): string[] { return /haven|lotus/i.test(mapName ?? '') ? ['A', 'B', 'C', 'Mid'] : ['A', 'B', 'Mid']; }
