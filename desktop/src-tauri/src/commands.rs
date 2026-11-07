@@ -53,7 +53,7 @@ fn catalog_json(app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantA
         "uuid": a.uuid, "displayName": a.display_name,
         "displayIcon": remote_or_cached(api, a.display_icon.as_deref()),
         "role": a.role.as_ref().map(|r| r.display_name.clone()),
-        "roleIcon": a.role.as_ref().and_then(|r| remote_or_cached(api, r.display_icon.as_deref())),
+        "roleIcon": a.role.as_ref().map(|r| remote_or_cached(api, r.display_icon.as_deref())).unwrap_or(Value::Null),
         "isArchived": a.archived,
         "abilities": a.abilities.iter().map(|b| json!({"slot": b.slot, "displayName": b.display_name, "displayIcon": remote_or_cached(api, b.display_icon.as_deref()), "description": b.description})).collect::<Vec<_>>()
     })).collect();

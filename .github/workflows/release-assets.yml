@@ -71,6 +71,12 @@ jobs:
           unzip -q incoming/android.zip -d extracted/android
           gh run view "$WINDOWS_RUN" --json headSha,url > windows-source.json
           gh run view "$ANDROID_RUN" --json headSha,url > android-source.json
+          RELEASE_SHA=$(gh release view "$TAG" --json targetCommitish --jq .targetCommitish)
+          WINDOWS_SHA=$(jq -er .headSha windows-source.json)
+          ANDROID_SHA=$(jq -er .headSha android-source.json)
+          test "$WINDOWS_SHA" = "$RELEASE_SHA"
+          test "$ANDROID_SHA" = "$RELEASE_SHA"
+          echo "Both platform artifacts match release source $RELEASE_SHA"
       - name: Validate installer and APK signing
         shell: bash
         run: |
