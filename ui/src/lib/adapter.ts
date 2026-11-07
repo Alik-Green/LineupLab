@@ -1,5 +1,5 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
-import type { AbilityMode, AssetDiagnostics, CaptureResult, CaptureSettings, Catalog, DiscoveredServer, HotkeyBinding, HotkeyFeedback, ImportPreview, ImportReport, LibraryAdapter, Lineup, OverlaySettings, SlotData, SlotId, SyncPairResponse, SyncReport, SyncServerStatus } from '../types';
+import type { AbilityMode, AssetDiagnostics, CaptureResult, CaptureSettings, Catalog, DiscoveredServer, HotkeyBinding, HotkeyFeedback, ImportPreview, ImportReport, LibraryAdapter, Lineup, MonitorInfo, OverlaySettings, SlotData, SlotId, SyncPairResponse, SyncReport, SyncServerStatus } from '../types';
 import { DEFAULT_HOTKEYS, rebindLocal } from './hotkeys';
 import { clampOverlay, DEFAULT_OVERLAY } from './overlay';
 import { SLOT_ORDER } from '../types';
@@ -47,6 +47,7 @@ export class BrowserAdapter implements LibraryAdapter {
   async importCommit(): Promise<ImportReport> { throw new Error('Pack import requires the desktop core (or CLI).'); }
   async exportPack(): Promise<Uint8Array> { throw new Error('Pack export requires the desktop core (or CLI).'); }
   async undoImport(): Promise<void> { throw new Error('Undo import requires the desktop core.'); }
+  async listMonitors(): Promise<MonitorInfo[]> { const w = window.screen.width || 1920; const h = window.screen.height || 1080; return [{ index: 0, name: 'Browser display', isPrimary: true, x: 0, y: 0, physicalWidth: w, physicalHeight: h, logicalWidth: w, logicalHeight: h, scaleFactor: 1 }]; }
   async getHotkeys(): Promise<HotkeyBinding[]> { try { return JSON.parse(localStorage.getItem('lineuplab.hotkeys') ?? 'null') ?? DEFAULT_HOTKEYS; } catch { return DEFAULT_HOTKEYS; } }
   async rebindHotkey(action: string, keys: string): Promise<HotkeyFeedback> { const { bindings, feedback } = rebindLocal(await this.getHotkeys(), action, keys); if (feedback.kind === 'ok') localStorage.setItem('lineuplab.hotkeys', JSON.stringify(bindings)); return feedback; }
   async getOverlaySettings(): Promise<OverlaySettings> { try { return clampOverlay({ ...DEFAULT_OVERLAY, ...JSON.parse(localStorage.getItem('lineuplab.overlay') ?? '{}') }); } catch { return DEFAULT_OVERLAY; } }
@@ -81,6 +82,7 @@ export class TauriAdapter implements LibraryAdapter {
   importCommit(bytes: Uint8Array, selected: string[], policy: string) { return invoke<ImportReport>('import_commit', { bytes: Array.from(bytes), selected, policy }); }
   async exportPack(ids: string[] | null, legacyImages: boolean, bake: boolean) { return new Uint8Array(await invoke<number[]>('export_pack', { ids, legacyImages, bake })); }
   undoImport(batchId: string) { return invoke<void>('undo_import', { batchId }); }
+  listMonitors() { return invoke<MonitorInfo[]>('list_monitors'); }
   getHotkeys() { return invoke<HotkeyBinding[]>('get_hotkeys'); }
   rebindHotkey(action: string, keys: string) { return invoke<HotkeyFeedback>('rebind_hotkey', { action, keys }); }
   getOverlaySettings() { return invoke<OverlaySettings>('get_overlay_settings'); }

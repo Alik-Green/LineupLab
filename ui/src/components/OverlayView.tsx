@@ -122,15 +122,15 @@ export function OverlayContent({ data, lineup, checklist, activeSlot, catalog, p
 }
 
 /** Settings → Overlay: monitor placement preview plus the real overlay content at its configured size. */
-export function OverlaySettingsPreview({ adapter, overlay, prefs, pos }: { adapter: LibraryAdapter; overlay: OverlaySettings; prefs: OverlayViewPrefs; pos: { x: number; y: number } }) {
+export function OverlaySettingsPreview({ adapter, overlay, prefs, pos, screen }: { adapter: LibraryAdapter; overlay: OverlaySettings; prefs: OverlayViewPrefs; pos: { x: number; y: number }; screen: { width: number; height: number } }) {
   const { data, error, reload } = useOverlayData(adapter); const [catalog, setCatalog] = useState<Catalog | null>(null);
   const ref = useRef<HTMLDivElement>(null); const [factor, setFactor] = useState(0.3);
   useEffect(() => { void adapter.catalog().then(setCatalog).catch(() => {}); }, [adapter]);
-  useEffect(() => { const el = ref.current; if (!el) return; const ro = new ResizeObserver(entries => { const w = entries[0]?.contentRect.width ?? 0; if (w) setFactor(w / 1920); }); ro.observe(el); return () => ro.disconnect(); }, []);
+  useEffect(() => { const el = ref.current; if (!el) return; const ro = new ResizeObserver(entries => { const w = entries[0]?.contentRect.width ?? 0; if (w) setFactor(w / screen.width); }); ro.observe(el); return () => ro.disconnect(); }, [screen.width]);
   const lineup = data?.lineup ?? null; const checklist = data?.state.checklist.length ? data.state.checklist : lineup ? draftChecklist(lineup, DEFAULT_REQUIRED) : [];
   const content = data ? <OverlayContent data={data} lineup={lineup} checklist={checklist} catalog={catalog} prefs={prefs} preview /> : <div className="ll-ov ll-ov--loading"><Skeleton className="ll-ov__skeleton" />{error ? <button className="ll-btn ll-btn--md" onClick={() => void reload()}>Retry preview</button> : <p className="ll-muted">Loading preview…</p>}</div>;
   return <>
-    <div ref={ref} className="ll-overlay-preview" data-testid="overlay-preview"><div className="ll-overlay-preview__game" /><div className="ll-overlay-preview__win" style={{ left: `${pos.x / 1920 * 100}%`, top: `${pos.y / 1080 * 100}%`, width: `${overlay.width / 1920 * 100}%`, height: `${overlay.height / 1080 * 100}%`, opacity: overlay.opacity }}><div style={{ width: overlay.width, height: overlay.height, transform: `scale(${factor})`, transformOrigin: 'top left' }}>{content}</div></div></div>
+    <div ref={ref} className="ll-overlay-preview" data-testid="overlay-preview" style={{ aspectRatio: `${screen.width} / ${screen.height}` }}><div className="ll-overlay-preview__game" /><div className="ll-overlay-preview__win" style={{ left: `${pos.x / screen.width * 100}%`, top: `${pos.y / screen.height * 100}%`, width: `${overlay.width / screen.width * 100}%`, height: `${overlay.height / screen.height * 100}%`, opacity: overlay.opacity }}><div style={{ width: overlay.width, height: overlay.height, transform: `scale(${factor})`, transformOrigin: 'top left' }}>{content}</div></div></div>
     <div className="ll-overlay-actual"><div className="ll-overlay-actual__label">Content preview · {overlay.width}×{overlay.height} · {Math.round(prefs.scale * 100)}%</div><div className="ll-overlay-actual__frame" style={{ width: overlay.width, height: overlay.height, maxWidth: '100%' }}>{content}</div></div>
   </>;
 }

@@ -79,8 +79,30 @@ async function invoke(cmd: string, args: Record<string, unknown> = {}): Promise<
     case 'media_path': return `/fixture-media/${a.hash}`;
     case 'put_image': return `fx-upload-${Date.now()}`;
     case 'capture_monitor': return { hash: `fx-capture-${Date.now()}`, width: 1600, height: 900, elapsedMs: 42 };
-    case 'import_preview': return { seed: false, warnings: ['Fixture preview: no real pack was supplied.'], entries: [{ id: 'p1', title: 'Abyss Sova recon', status: 'new', selected: true, warnings: [] }, { id: 'p2', title: 'Ascent Jett smoke', status: 'identical', selected: false, warnings: [] }, { id: 'p3', title: 'Bind Raze satchel', status: 'newer', selected: true, warnings: ['Newer revision'] }, { id: 'p4', title: 'Broken entry', status: 'error', selected: false, warnings: ['Missing landing image'] }] };
-    case 'import_commit': return { batchId: 'mock-batch', imported: 2, skipped: 1, copied: 0, errors: [] };
+    case 'list_monitors': return [
+      { index: 0, name: 'Primary 1440p', isPrimary: true, x: 0, y: 0, physicalWidth: 2560, physicalHeight: 1440, logicalWidth: 2560, logicalHeight: 1440, scaleFactor: 1 },
+      { index: 1, name: 'Secondary 1080p', isPrimary: false, x: 2560, y: 0, physicalWidth: 1920, physicalHeight: 1080, logicalWidth: 1920, logicalHeight: 1080, scaleFactor: 1 },
+    ];
+    case 'import_preview': {
+      if (params.has('import-error')) throw new Error('Mock legacy pack failure: manifest.json is missing or unreadable.');
+      const entries = [{ id: 'p1', title: 'Abyss Sova recon', status: 'new', selected: true, warnings: [] }, { id: 'p2', title: 'Ascent Jett smoke', status: 'identical', selected: false, warnings: [] }, { id: 'p3', title: 'Bind Raze satchel', status: 'newer', selected: true, warnings: ['Newer revision'] }, { id: 'p4', title: 'Broken entry', status: 'error', selected: false, warnings: ['Missing landing image'] }];
+      emit('lineuplab://import-progress', { phase: 'reading', message: 'Reading ZIP pack', current: 0, total: 0 });
+      if (params.has('slow-import')) await new Promise(r => setTimeout(r, 450));
+      emit('lineuplab://import-progress', { phase: 'validating', message: 'Validating legacy entries and media', current: 0, total: entries.length });
+      if (params.has('slow-import')) await new Promise(r => setTimeout(r, 650));
+      emit('lineuplab://import-progress', { phase: 'preview', message: 'Preview ready', current: entries.length, total: entries.length });
+      return { seed: false, warnings: ['Fixture preview: no real pack was supplied.'], entries };
+    }
+    case 'import_commit': {
+      const selected = Array.isArray(a.selected) ? a.selected as string[] : [];
+      const total = Math.max(1, selected.length);
+      emit('lineuplab://import-progress', { phase: 'reading', message: 'Reading ZIP pack', current: 0, total: 0 });
+      if (params.has('slow-import')) await new Promise(r => setTimeout(r, 350));
+      for (let i = 0; i <= 3; i++) { emit('lineuplab://import-progress', { phase: 'media', message: `Copying pack media (${i}/3)`, current: i, total: 3 }); if (params.has('slow-import')) await new Promise(r => setTimeout(r, 300)); }
+      for (let i = 0; i <= total; i++) { emit('lineuplab://import-progress', { phase: 'lineups', message: `Writing lineups (${i}/${total})`, current: i, total }); if (params.has('slow-import')) await new Promise(r => setTimeout(r, 300)); }
+      emit('lineuplab://import-progress', { phase: 'done', message: 'Import finished', current: total, total });
+      return { batchId: 'mock-batch', imported: selected.length, skipped: 0, copied: a.policy === 'import-as-copy' ? selected.length : 0, overwritten: 0, errors: 0, warnings: [], importedIds: selected };
+    }
     case 'export_pack': return [80, 75, 3, 4];
     case 'undo_import': return null;
     case 'get_hotkeys': return JSON.parse(localStorage.getItem('mock.hotkeys') ?? 'null') ?? DEFAULT_HOTKEYS;

@@ -73,3 +73,19 @@ test.describe('desktop overlay', () => {
     await overlay.close();
   });
 });
+
+  test('overlay settings use the detected 1440p monitor and logical DPI placement', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/?mock');
+    await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Settings' }).click();
+    await page.getByRole('tab', { name: 'Overlay' }).click();
+    await expect(page.getByTestId('overlay-monitor-summary')).toContainText('2560×1440 physical');
+    await page.getByRole('radio', { name: 'bottom right' }).click();
+    await expect(page.getByTestId('overlay-monitor-summary')).toContainText('position 2116,1096 logical');
+    await page.screenshot({ path: 'docs/screenshots/66-settings-overlay-1440p.png', fullPage: true });
+    await page.getByLabel('Monitor').selectOption('1');
+    await expect(page.getByTestId('overlay-monitor-summary')).toContainText('1920×1080 physical');
+    await expect(page.getByTestId('overlay-monitor-summary')).toContainText('position 1476,736 logical');
+    await page.getByRole('button', { name: 'Reapply placement' }).click();
+    await expect(page.getByText('Overlay placement reapplied to the selected monitor.')).toBeVisible();
+  });

@@ -115,16 +115,30 @@ fn catalog_json(app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantA
     #[cfg(windows)] { let mut provider = crate::capture::system_provider().map_err(err)?; return capture::capture_processed(provider.as_mut(), &state.store, &settings).map_err(err); }
     #[cfg(not(windows))] { Err("Screen capture is implemented by the Windows desktop adapter; Linux uses mocks.".into()) }
 }
-#[tauri::command] pub fn import_preview(state: State<AppState>, bytes: Vec<u8>) -> CmdResult<Value> {
-    let archive = pack::read_archive(&bytes).map_err(err)?; let db = state.db.lock().unwrap(); let p = pack::preview(&archive, &db).map_err(err)?;
-    let entries: Vec<Value> = p.entries.iter().map(|e| json!({"id":e.id,"title":e.title,"status":e.status,"selected":e.selected,"warnings":e.warnings})).collect();
-    Ok(json!({"entries":entries,"warnings":p.warnings,"seed":archive.manifest.is_seed_placeholder}))
+#[tauri::command] pub async fn import_preview(app: tauri::AppHandle, bytes: Vec<u8>) -> CmdResult<Value> {
+    tokio::task::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        let _ = app.emit("lineuplab://import-progress", json!({"phase":"reading","message":"Reading ZIP pack","current":0,"total":0}));
+        let archive = pack::read_archive(&bytes).map_err(err)?;
+        let _ = app.emit("lineuplab://import-progress", json!({"phase":"validating","message":"Validating legacy entries and media","current":0,"total":archive.lineups.len()}));
+        let db = state.db.lock().unwrap(); let p = pack::preview(&archive, &db).map_err(err)?;
+        let entries: Vec<Value> = p.entries.iter().map(|e| json!({"id":e.id,"title":e.title,"status":e.status,"selected":e.selected,"warnings":e.warnings})).collect();
+        let _ = app.emit("lineuplab://import-progress", json!({"phase":"preview","message":"Preview ready","current":entries.len(),"total":entries.len()}));
+        Ok(json!({"entries":entries,"warnings":p.warnings,"seed":archive.manifest.is_seed_placeholder}))
+    }).await.map_err(err)?
 }
-#[tauri::command] pub fn import_commit(state: State<AppState>, bytes: Vec<u8>, selected: Vec<String>, policy: String) -> CmdResult<Value> {
-    let policy = match policy.as_str() { "skip" => ConflictPolicy::Skip, "import-as-copy" => ConflictPolicy::ImportAsCopy, _ => ConflictPolicy::OverwriteIfNewer };
-    let archive = pack::read_archive(&bytes).map_err(err)?; let mut db = state.db.lock().unwrap(); let p = pack::preview(&archive, &db).map_err(err)?;
-    let report = pack::commit(&mut db, &state.store, &archive, &p, &selected.into_iter().collect::<BTreeSet<_>>(), policy).map_err(err)?;
-    Ok(serde_json::to_value(report).map_err(err)?)
+#[tauri::command] pub async fn import_commit(app: tauri::AppHandle, bytes: Vec<u8>, selected: Vec<String>, policy: String) -> CmdResult<Value> {
+    tokio::task::spawn_blocking(move || {
+        let state = app.state::<AppState>();
+        let policy = match policy.as_str() { "skip" => ConflictPolicy::Skip, "import-as-copy" => ConflictPolicy::ImportAsCopy, _ => ConflictPolicy::OverwriteIfNewer };
+        let _ = app.emit("lineuplab://import-progress", json!({"phase":"reading","message":"Reading ZIP pack","current":0,"total":0}));
+        let archive = pack::read_archive(&bytes).map_err(err)?;
+        let _ = app.emit("lineuplab://import-progress", json!({"phase":"validating","message":"Checking conflicts","current":0,"total":archive.lineups.len()}));
+        let mut db = state.db.lock().unwrap(); let p = pack::preview(&archive, &db).map_err(err)?;
+        let emitter = app.clone();
+        let report = pack::commit_with_progress(&mut db, &state.store, &archive, &p, &selected.into_iter().collect::<BTreeSet<_>>(), policy, move |progress| { let _ = emitter.emit("lineuplab://import-progress", progress); }).map_err(err)?;
+        Ok(serde_json::to_value(report).map_err(err)?)
+    }).await.map_err(err)?
 }
 #[tauri::command] pub fn export_pack(state: State<AppState>, ids: Option<Vec<String>>, legacy_images: bool, bake: bool) -> CmdResult<Vec<u8>> {
     let db = state.db.lock().unwrap(); let all = db.all(false).map_err(err)?;
@@ -146,13 +160,40 @@ pub fn register_hotkeys(app: &tauri::AppHandle, cfg: &HotkeyConfig) {
     if feedback.is_ok() { let _ = std::fs::write(state.data_dir.join("hotkeys.json"), serde_json::to_vec_pretty(&*cfg).unwrap()); register_hotkeys(&app, &cfg); let _ = app.emit("lineuplab://hotkeys-changed", &cfg.bindings); }
     Ok(feedback)
 }
-fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
+pub(crate) fn monitor_infos(app: &tauri::AppHandle) -> Vec<Value> {
+    let monitors = app.available_monitors().unwrap_or_default();
+    let primary_name = app.primary_monitor().ok().flatten().and_then(|m| m.name().ok());
+    monitors.iter().enumerate().map(|(index, m)| {
+        let size = m.size(); let pos = m.position(); let scale = m.scale_factor();
+        let name = m.name().ok().unwrap_or_else(|| format!("Monitor {}", index + 1));
+        json!({
+            "index": index, "name": name, "isPrimary": primary_name.as_deref() == Some(name.as_str()),
+            "x": pos.x, "y": pos.y, "physicalWidth": size.width, "physicalHeight": size.height,
+            "logicalWidth": ((size.width as f64) / scale).round() as u32,
+            "logicalHeight": ((size.height as f64) / scale).round() as u32,
+            "scaleFactor": scale
+        })
+    }).collect()
+}
+#[tauri::command] pub fn list_monitors(app: tauri::AppHandle) -> CmdResult<Vec<Value>> { Ok(monitor_infos(&app)) }
+
+pub(crate) fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
     if let Some(w) = app.get_webview_window("overlay") {
         let _ = w.set_ignore_cursor_events(s.settings.click_through);
         let _ = w.set_always_on_top(true);
-        let (x, y) = s.settings.position(1920, 1080);
-        let _ = w.set_position(tauri::PhysicalPosition::new(x, y));
-        let _ = w.set_size(tauri::PhysicalSize::new(s.settings.width, s.settings.height));
+        let monitors = app.available_monitors().unwrap_or_default();
+        let primary_name = app.primary_monitor().ok().flatten().and_then(|m| m.name().ok());
+        let monitor = monitors.get(s.settings.monitor as usize)
+            .or_else(|| monitors.iter().find(|m| m.name().ok().as_deref() == primary_name.as_deref()))
+            .or_else(|| monitors.first());
+        if let Some(m) = monitor {
+            let size = m.size(); let pos = m.position();
+            let ((x, y), (width, height)) = s.settings.physical_rect((pos.x, pos.y), (size.width, size.height), m.scale_factor());
+            let _ = w.set_size(tauri::PhysicalSize::new(width, height));
+            let _ = w.set_position(tauri::PhysicalPosition::new(x, y));
+        } else {
+            tracing::warn!("No monitor reported; leaving overlay at its current native placement");
+        }
         if s.settings.enabled && s.visible { let _ = w.show(); } else { let _ = w.hide(); }
     }
 }

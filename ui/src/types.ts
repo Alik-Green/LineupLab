@@ -40,7 +40,8 @@ export interface ImageSelfTestResult { total: number; ok: number; failed: number
 export interface CaptureResult { hash: string; width: number; height: number; elapsedMs: number }
 export interface ImportPreviewEntry { id: string; title: string; status: string; selected: boolean; warnings: string[] }
 export interface ImportPreview { entries: ImportPreviewEntry[]; warnings: string[]; seed: boolean }
-export interface ImportReport { batchId: string; imported: number; skipped: number; copied: number; errors: string[] }
+export interface ImportReport { batchId: string; imported: number; skipped: number; copied: number; overwritten: number; errors: number; warnings: string[]; importedIds: string[] }
+export interface ImportProgress { phase: 'reading' | 'validating' | 'media' | 'lineups' | 'preview' | 'done' | string; message: string; current: number; total: number }
 export interface LibraryAdapter {
   kind: 'tauri' | 'browser';
   listLineups(): Promise<Lineup[]>;
@@ -62,6 +63,7 @@ export interface LibraryAdapter {
   importCommit(bytes: Uint8Array, selected: string[], policy: string): Promise<ImportReport>;
   exportPack(ids: string[] | null, legacyImages: boolean, bake: boolean): Promise<Uint8Array>;
   undoImport(batchId: string): Promise<void>;
+  listMonitors(): Promise<MonitorInfo[]>;
   getHotkeys(): Promise<HotkeyBinding[]>;
   rebindHotkey(action: string, keys: string): Promise<HotkeyFeedback>;
   getOverlaySettings(): Promise<OverlaySettings>;
@@ -79,6 +81,7 @@ export interface HotkeyBinding { action: string; label: string; keys: string }
 export type HotkeyFeedback = { kind: 'ok'; message: string } | { kind: 'conflict'; message: string; action: string } | { kind: 'invalid'; message: string };
 export type OverlayCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 export interface OverlaySettings { enabled: boolean; clickThrough: boolean; corner: OverlayCorner; monitor: number; marginX: number; marginY: number; width: number; height: number; opacity: number }
+export interface MonitorInfo { index: number; name: string; isPrimary: boolean; x: number; y: number; physicalWidth: number; physicalHeight: number; logicalWidth: number; logicalHeight: number; scaleFactor: number }
 export interface CaptureSettings { maxWidth: number; quality: number; webp: boolean; thumbnail: boolean; targetMs: number }
 export interface SyncServerStatus { running: boolean; address?: string; pairingCode?: string }
 export interface SyncPairResponse { token: string; serverName: string; deviceId: string; protocolVersion: number }

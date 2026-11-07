@@ -59,6 +59,7 @@ pub fn run() {
             let api = ValorantApi::new(data_dir.join("art-cache"));
             app.manage(AppState { db: Mutex::new(db), store, device_id, data_dir: data_dir.clone(), api, hotkeys: Mutex::new(hotkeys.clone()), overlay: Mutex::new(overlay.clone()), overlay_lineup: Mutex::new(None), capture: Mutex::new(capture), capture_blocked: AtomicBool::new(false), sync_server: Mutex::new(None) });
             commands::register_hotkeys(app.handle(), &hotkeys);
+            commands::apply_overlay(app.handle(), &overlay);
             if let Some(w) = app.get_webview_window("overlay") {
                 let _ = w.set_ignore_cursor_events(overlay.settings.click_through);
                 let _ = w.set_always_on_top(true);
@@ -80,7 +81,7 @@ pub fn run() {
             commands::media_path, commands::put_image, commands::capture_monitor,
             commands::import_preview, commands::import_commit, commands::export_pack, commands::undo_import,
             commands::get_hotkeys, commands::rebind_hotkey, commands::get_overlay_settings, commands::set_overlay_settings,
-            commands::get_capture_settings, commands::set_capture_settings, commands::get_overlay_view, commands::set_overlay_lineup,
+            commands::get_capture_settings, commands::set_capture_settings, commands::list_monitors, commands::get_overlay_view, commands::set_overlay_lineup,
             commands::overlay_action,
             commands::start_sync_server, commands::stop_sync_server, commands::get_sync_server_status,
             commands::pair_sync, commands::sync_now, commands::discover_sync

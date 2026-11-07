@@ -34,3 +34,26 @@ test.describe('desktop browse', () => {
     }
   });
 });
+
+  test('map/agent/ability triggers show the current value and open full pickers', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/?mock');
+    await page.getByRole('button', { name: 'Choose map' }).click();
+    const mapDialog = page.getByRole('dialog', { name: 'Choose map' });
+    await expect(mapDialog).toBeVisible();
+    await mapDialog.getByLabel('Search map').fill('Bind');
+    await mapDialog.getByRole('option', { name: /Bind/ }).click();
+    await expect(page.getByRole('button', { name: 'Choose map' })).toContainText('Bind');
+    await page.getByRole('button', { name: 'Choose agent' }).click();
+    const agentDialog = page.getByRole('dialog', { name: 'Choose agent' });
+    await expect(agentDialog.getByRole('option').nth(1)).toBeVisible();
+    await agentDialog.getByLabel('Search agent').fill('Jett');
+    await page.screenshot({ path: 'docs/screenshots/14-browse-agent-picker.png' });
+    await agentDialog.getByRole('option', { name: /Jett/ }).click();
+    await expect(page.getByRole('button', { name: 'Choose agent' })).toContainText('Jett');
+    await page.getByRole('button', { name: 'Choose ability' }).click();
+    const abilityDialog = page.getByRole('dialog', { name: 'Choose ability' });
+    await expect(abilityDialog).toBeVisible();
+    await abilityDialog.getByRole('option').nth(1).click();
+    await expect(page.getByRole('button', { name: 'Choose ability' })).not.toContainText('All abilities');
+  });

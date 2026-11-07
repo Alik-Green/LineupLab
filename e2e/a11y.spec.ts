@@ -5,6 +5,9 @@ test('desktop controls meet 40px targets across screens', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/?mock');
   await auditTargets(page, 40, 'browse');
+  await page.getByRole('button', { name: 'Choose agent' }).click();
+  await auditTargets(page, 40, 'agent picker');
+  await page.getByRole('dialog', { name: 'Choose agent' }).getByRole('button', { name: 'Close' }).click();
   await page.getByRole('button', { name: /^Filters/ }).click();
   await auditTargets(page, 40, 'browse filters');
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Create' }).click();

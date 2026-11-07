@@ -580,3 +580,45 @@ html[data-platform="mobile"] .ll-switch.is-on span { transform: translateX(26px)
 .ll-search input, .ll-agent-search input { min-height: var(--ll-target); }
 
 html[data-platform="mobile"] .ll-search input, html[data-platform="mobile"] .ll-agent-search input { min-height: 48px; }
+
+/* Preview 3: compact Browse value pickers, import progress, monitor-aware overlay preview. */
+.ll-browse__pickers { display: flex; flex-direction: column; gap: 10px; flex: none; }
+.ll-browse-picker { min-width: 0; }
+.ll-browse-picker__trigger { display: flex; align-items: center; gap: 10px; width: 100%; min-height: max(var(--ll-target), 56px); padding: 8px 12px; background: var(--ll-surface); border: 1px solid var(--ll-border); border-radius: var(--ll-radius); color: var(--ll-text); cursor: pointer; text-align: left; transition: border-color 150ms ease, box-shadow 150ms ease; }
+.ll-browse-picker__trigger:hover:not(:disabled) { border-color: #3a4152; }
+.ll-browse-picker__trigger[aria-expanded="true"] { border-color: var(--ll-accent); box-shadow: 0 0 0 1px var(--ll-accent); }
+.ll-browse-picker__trigger:disabled { opacity: .55; cursor: not-allowed; }
+.ll-browse-picker__thumb { flex: none; display: grid; place-items: center; width: 40px; height: 40px; overflow: hidden; border-radius: 2px; background: var(--ll-bg); }
+.ll-browse-picker__img, .ll-browse-picker__thumb .val-image, .ll-browse-picker__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ll-browse-picker__all { font-family: var(--ll-font-display); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ll-muted); }
+.ll-browse-picker__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ll-browse-picker__text small { font-family: var(--ll-font-display); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ll-muted); }
+.ll-browse-picker__text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.ll-browse-picker__dialog { display: flex; flex-direction: column; gap: 12px; }
+.ll-browse-picker__search { width: 100%; }
+.ll-browse-picker__search input { flex: 1; width: auto; min-width: 0; }
+.ll-browse-picker__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; max-height: min(58vh, 520px); overflow: auto; padding: 2px; }
+.ll-browse-picker__grid--lg { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+.ll-browse-picker__cell { display: flex; min-width: 0; }
+.ll-browse-picker__cell .ll-picker-tile { width: 100%; }
+.ll-browse-picker__grid .ll-picker-tile { min-height: var(--ll-target); }
+.ll-browse-picker__grid .ll-picker-tile--all { min-height: 80px; }
+.ll-browse-picker__grid .ll-agent-fav { width: var(--ll-target); height: var(--ll-target); }
+.ll-import-progress { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; padding: 12px; background: var(--ll-bg); border: 1px solid var(--ll-border); border-radius: var(--ll-radius); }
+.ll-import-progress__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.ll-import-progress__head span { color: var(--ll-muted); font-size: 12px; }
+.ll-import-error { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 14px; }
+.ll-feedback--error { border-left-color: var(--ll-accent); color: var(--ll-text); }
+.ll-import-summary { margin: 0 0 10px; font-size: 13px; }
+.ll-dropzone.is-busy { opacity: .65; cursor: progress; }
+.ll-progress.is-indeterminate > div { width: 38%; animation: ll-indeterminate 1.1s ease-in-out infinite; }
+@keyframes ll-indeterminate { 0% { transform: translateX(-110%); } 100% { transform: translateX(300%); } }
+@media (prefers-reduced-motion: reduce) { .ll-progress.is-indeterminate > div { animation: none; width: 100%; opacity: .5; } }
+html[data-motion="reduce"] .ll-progress.is-indeterminate > div { animation: none; width: 100%; opacity: .5; }
+.ll-mbrowse__pickers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.ll-mbrowse__pickers .ll-browse-picker:first-child { grid-column: 1 / -1; }
+.ll-mbrowse__pickers .ll-browse-picker__trigger { min-height: 56px; padding: 6px 8px; gap: 6px; }
+.ll-mbrowse__pickers .ll-browse-picker__thumb { width: 32px; height: 32px; }
+.ll-mbrowse__pickers .ll-browse-picker__text strong { font-size: 13px; }
+.ll-mbrowse__pickers .ll-browse-picker__trigger > svg { display: none; }
+.ll-mbrowse__controls { justify-content: space-between; }

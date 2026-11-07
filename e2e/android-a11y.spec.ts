@@ -4,6 +4,9 @@ import { auditTargets } from './audit';
 test('android controls meet 48px targets', async ({ page }) => {
   await page.goto('/?mock');
   await auditTargets(page, 48, 'browse');
+  await page.getByRole('button', { name: 'Choose agent' }).click();
+  await auditTargets(page, 48, 'agent picker');
+  await page.getByRole('dialog', { name: 'Choose agent' }).getByRole('button', { name: 'Close' }).click();
   await page.getByRole('button', { name: /^Filters/ }).click();
   await auditTargets(page, 48, 'filter drawer');
   await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();

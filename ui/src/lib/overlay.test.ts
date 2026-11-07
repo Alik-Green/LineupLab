@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampViewPrefs, DEFAULT_VIEW_PREFS, draftChecklist } from './overlay';
+import { clampViewPrefs, DEFAULT_OVERLAY, DEFAULT_VIEW_PREFS, draftChecklist, overlayPosition } from './overlay';
 import { newLineup } from './adapter';
 
 describe('overlay view prefs', () => {
@@ -17,5 +17,13 @@ describe('draftChecklist', () => {
     expect(items.find(i => i.slot === 'aim1')).toMatchObject({ required: true, done: true });
     expect(items.find(i => i.slot === 'stand2')).toMatchObject({ required: false, done: true });
     expect(items.find(i => i.slot === 'landing')).toMatchObject({ required: true, done: false, skipped: true });
+  });
+});
+
+describe('overlay placement', () => {
+  it('uses the detected logical monitor size instead of assuming 1080p', () => {
+    expect(overlayPosition({ ...DEFAULT_OVERLAY, corner: 'bottom-right' }, 2560, 1440)).toEqual({ x: 2116, y: 1096 });
+    expect(overlayPosition({ ...DEFAULT_OVERLAY, corner: 'bottom-right' }, 1920, 1080)).toEqual({ x: 1476, y: 736 });
+    expect(overlayPosition({ ...DEFAULT_OVERLAY, corner: 'top-left' }, 2560, 1440)).toEqual({ x: 24, y: 24 });
   });
 });
