@@ -17,3 +17,6 @@ test-results/
 mobile/src-tauri/gen/
 desktop/src-tauri/gen/
 .DS_Store
+
+# External image-search scratch downloads (never bundle Riot art)
+image-search/

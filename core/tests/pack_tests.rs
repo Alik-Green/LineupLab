@@ -485,3 +485,49 @@ fn annotation_sample_is_rendered_from_synthetic_original() {
     std::fs::write(path, &rendered).unwrap();
     assert!(image::load_from_memory(&rendered).unwrap().width() == 640);
 }
+
+#[test]
+fn abyss_mid_bend_to_b_site_uses_verified_identity_calibration() {
+    let calibrations = lineuplab_core::config::calibrations().unwrap();
+    let abyss = calibrations
+        .iter()
+        .find(|c| c.map_id == "224b0a95-48b9-f703-1bd8-67aca101a61f")
+        .unwrap();
+    let start = lineuplab_core::geometry::minimap_transform(
+        Point {
+            x: 0.6919,
+            y: 0.7016,
+        },
+        Some(abyss),
+    );
+    let end = lineuplab_core::geometry::minimap_transform(
+        Point {
+            x: 0.3441,
+            y: 0.8831,
+        },
+        Some(abyss),
+    );
+    assert_eq!(
+        start,
+        Point {
+            x: 0.6919,
+            y: 0.7016
+        }
+    );
+    assert_eq!(
+        end,
+        Point {
+            x: 0.3441,
+            y: 0.8831
+        }
+    );
+    let doc: Value = serde_json::from_slice(
+        &std::fs::read(format!(
+            "{}/../fixtures/samples/custom-abyss-mid-bend-b-site.json",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(doc["mapUuid"], "224b0a95-48b9-f703-1bd8-67aca101a61f");
+}
