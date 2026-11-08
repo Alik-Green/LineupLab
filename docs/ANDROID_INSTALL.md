@@ -1,8 +1,8 @@
-# Android companion installation (Preview 6)
+# Android companion installation (Preview 7)
 
 ## Which APK to install
 
-Install `LineupLab-Companion-0.1.0-preview.6-arm64-v8a.apk` on modern 64-bit Android phones, including Google Pixel 9. Preview 6 continues to ship an **arm64-v8a-only** APK instead of the earlier universal APK. Universal/32-bit packaging produced device-incompatible install reports on some modern 64-bit phones; the release job rejects any APK that contains non-arm64 native libraries.
+Install `LineupLab-Companion-0.1.0-preview.7-arm64-v8a.apk` on modern 64-bit Android phones, including Google Pixel 9. Preview 7 continues to ship an **arm64-v8a-only** APK instead of the earlier universal APK. Universal/32-bit packaging produced device-incompatible install reports on some modern 64-bit phones; the release job rejects any APK that contains non-arm64 native libraries.
 
 Requirements:
 
@@ -15,7 +15,7 @@ Requirements:
 
 1. On the desktop, open Settings → Sharing and start sharing on a trusted LAN.
 2. On the phone, open **Download**, tap **Find desktop** or enter the desktop address, then tap **Connect & download**.
-3. The library is saved for offline browsing and Browse refreshes after completion/relaunch. Stopping desktop sharing removes the live discovery result; a remembered address may remain editable but will fail cleanly if the server is gone.
+3. The library is saved for offline browsing and Browse refreshes after completion/relaunch. Preview 7 also transfers the desktop catalog over the LAN, so map/agent/ability options do not depend on the phone reaching the public catalog API. The Download button no longer waits on catalog art downloads. Stopping desktop sharing removes the live discovery result; a remembered address may remain editable but will fail cleanly if the server is gone.
 
 ## What CI verifies
 

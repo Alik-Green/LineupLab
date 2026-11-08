@@ -25,6 +25,13 @@ The requested no-code flow is for a **trusted LAN only**. It is not risk-free:
 
 Android **Download** connects, reads the full manifest, downloads missing lineups/images, skips duplicates by revision and media hash, and keeps a permanent offline copy. It does **not** push phone edits. Remote deletions/tombstones do not erase previously downloaded phone content. Failed/missing media are reported as warnings; repeating **Connect & download** retries them.
 
+Preview 7 sync fixes:
+
+- **Catalog metadata travels over the LAN.** After lineups/images are saved, the phone fetches authenticated `GET /catalog` from the desktop and writes it to `art-cache/catalog.json`. Map/agent/ability names no longer depend on the phone reaching `valorant-api.com`. The fetch is optional and bounded (8 s); a failure keeps the local catalog and never hides downloaded lineups.
+- **Library refresh is independent.** Browse commits `list_lineups` without waiting for catalog/mode reads. Download completion reloads the library first, then refreshes catalog in the background. A post-download readback reports an error if saved records cannot be displayed.
+- **Phone Browse shows downloaded drafts.** The companion lists all non-deleted downloaded records; desktop Browse still hides drafts. Legacy map/agent IDs are archived into the transferred catalog so old lineups remain filterable.
+- **No arbitrary first-map hiding.** Browse selects the first map that actually has lineups only until the user chooses a map; stale persisted map/agent selections are cleared when the catalog no longer contains them.
+
 Preview 6 lifecycle fixes:
 
 - **Connect & download** is one supported action: connect, fetch, persist, then refresh the visible library. The phone UI reloads Browse through the download callback plus DOM/Tauri `library-changed` events; a regression proves downloaded records survive completion and relaunch.
@@ -40,6 +47,7 @@ Preview 6 lifecycle fixes:
 | `POST /connect {deviceName}` | none (only when no code is configured) | → `{token, serverName, deviceId, protocolVersion}` |
 | `POST /pair {code, deviceName}` | pairing code when configured | legacy/protected connect |
 | `GET /health` | none | liveness + protocol version |
+| `GET /catalog` | token | desktop cached catalog (`Catalog` JSON), with legacy lineup maps/agents archived; older servers return 404 and the phone keeps its local cache |
 | `GET /manifest?since=<rfc3339>` | token | `{protocolVersion, deviceId, cursor, entries:[{id,updatedAt,revision,deviceId,deleted}]}` |
 | `GET /lineups?ids=a,b` | token | complete lineup documents (including tombstones/legacy fields) |
 | `GET /images/{sha256}` | token | original bytes; blank/invalid hashes are rejected client-side |
@@ -52,6 +60,6 @@ Desktop sync remains last-writer-wins with deterministic tie-breaks: **timestamp
 
 ## Tests
 
-`core/tests/sync_server.rs`: protected pairing/auth/rate-limit, incremental manifest, complete-field round-trip, image transfer + hash verification, tombstone propagation, stale-write conflict, open-LAN additive/resumable download that never requests `/images/` for a blank hash, live discovery probing that rejects a stopped server/stale cache candidate, and download persistence visible to both an already-open and a fresh library connection.
+`core/tests/sync_server.rs`: protected pairing/auth/rate-limit, incremental manifest, complete-field round-trip, image transfer + hash verification, tombstone propagation, stale-write conflict, open-LAN additive/resumable download that never requests `/images/` for a blank hash, live discovery probing that rejects a stopped server/stale cache candidate, download persistence visible to both an already-open and a fresh library connection, and authenticated catalog transfer that archives legacy lineup maps.
 
 `e2e/android-browse.spec.ts`: empty-phone download persists and refreshes Browse after relaunch; stopped desktop sharing is not shown as live; compact Android settings tables stay inside the viewport.

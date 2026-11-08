@@ -86,3 +86,11 @@ Eight milestones on `arena/e082cc85-lineuplab`, preserving the core data model, 
 - Browse/overlay: difficulty dots green/orange/red; Map selector uses splash/list artwork; overlay height follows decoded image + measured chrome (Learn 88px, Create 172px), minimal preserves exact aspect, outline default 3px/range 1–12px, combined margin, discreet hotkeys; rapid settings writes merge safely.
 - Android: Connect & download persists and refreshes Browse after completion/relaunch; discovery is live `/health`-verified; stop-sharing/desktop exit unregister mDNS and shut down the server; obsolete access-code desktop connection UI removed (configured core codes still supported).
 - Local verification: typecheck, 39 UI unit tests, 34 Rust core lib/bin/integration tests, desktop/mobile builds, 44 Playwright tests, cargo fmt, YAML lint; CI also ran doctests. Published as [v0.1.0-preview.6](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.6) from `85170a7`; CI 42492405644 + Android 42492405608 green, packaging run 42493554104 published installer/arm64 APK/checksums. See `docs/releases/v0.1.0-preview.6.md`.
+
+## Preview 7 — reported Preview 6 failures (`b5f2d54`)
+- Android Download: independent library/catalog refresh, bounded LAN catalog transfer (`GET /catalog`), cache-first phone catalog, downloaded drafts visible, post-download readback, and no arbitrary first-map filter hiding a fresh library.
+- Minimap: fixed-base rectangular stage geometry; cursor-anchored wheel zoom and scaled-canvas pan clamp that reaches every edge/corner.
+- Browse/Create: square picker label/gradient flush to the full bottom edge; 1920px page cap removed for 2560px screens; annotation workspace fills the viewport and remains usable at 720×450.
+- Annotations: contain-frame SVG/hit layers and pointer math keep circles/lines/lenses aligned across window sizes and overlay aspect ratios.
+- Settings: capture saves use a stale-closure-safe ref and surface failures; click-through default regression added.
+- Automated: Vitest 43, Playwright 51, core 35, typecheck/build/fmt. Physical Pixel 9/gameplay validation still pending.

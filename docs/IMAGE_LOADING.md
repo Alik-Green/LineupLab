@@ -39,3 +39,7 @@ Screenshots: `docs/screenshots/01-first-run-progress.png`, `02-data-diagnostics.
 ## Still requires real Windows/Android verification
 
 The Linux mock cannot prove WebView2/Android WebView asset-protocol behavior, real Riot CDN reachability, or first-run cache population on device. Run Settings → Data → Run image self-test on the installed Windows build and Android companion, then follow `docs/WINDOWS_TEST_PLAN.md`. No Riot assets are bundled in the app; fixture art is dev-only and ignored.
+
+## Preview 7 note
+
+Phone `get_catalog` is now cache-first and does not block Browse on `valorant-api.com`. Download transfers the desktop's cached `catalog.json` over authenticated LAN `GET /catalog`; missing legacy map/agent IDs are archived so old lineups remain selectable. Art bytes still use the existing cache-first resolver (`catalog_image_url` → local cache, then remote fallback); catalog metadata transfer is bounded and optional so it cannot strand the Download button.

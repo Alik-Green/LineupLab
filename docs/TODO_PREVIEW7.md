@@ -30,7 +30,7 @@ Recorded from the latest device/window feedback. Automated browser/core checks a
 
 ## Release gate
 
-- [x] Local automated checks: typecheck, Vitest, Playwright, core tests, formatting, UI builds.
-- [ ] Native Windows CI and Android CI green on the release source commit.
-- [ ] Release packaging workflow green; exe/APK/SHA256SUMS published.
-- [ ] Release notes/install docs updated with unsigned-Windows and ephemeral-APK-key disclosures.
+- [x] Local automated checks: typecheck; Vitest 43/43; Playwright 51/51; core 35/35; `cargo fmt`; desktop/mobile UI builds.
+- [x] Native Windows CI and Android CI green on the release source commit: [42499622966](https://github.com/Alik-Green/LineupLab/actions/runs/42499622966) and [42499623009](https://github.com/Alik-Green/LineupLab/actions/runs/42499623009) on `b5f2d54`.
+- [x] Release packaging workflow green; exe/APK/SHA256SUMS published: [42500733982](https://github.com/Alik-Green/LineupLab/actions/runs/42500733982), [v0.1.0-preview.7](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.7).
+- [x] Release notes/install docs updated with unsigned-Windows and ephemeral-APK-key disclosures.
