@@ -25,6 +25,9 @@ export function SyncSettings({ adapter, host = false, onDownloaded }: { adapter:
       const r = await adapter.downloadLibrary(address.url, t);
       setLast(r); localStorage.setItem('lineuplab.download.last', JSON.stringify(r));
       await onDownloaded?.(); window.dispatchEvent(new Event('lineuplab:library-changed'));
+      const visible = await adapter.listLineups();
+      if (r.downloaded + r.existing > 0 && visible.length === 0) throw new Error('The download finished, but Browse could not read the saved library. Reopen Download and retry; the saved records were not deleted.');
+      setProgress(null);
       setMsgKind(r.failed ? 'warning' : 'ok'); setMsg(`Saved ${r.downloaded} new lineups and ${r.images} new images. ${r.existing} already on this device.${r.failed ? ` ${r.failed} media items need attention.` : ''}`);
       toast.push(r.failed ? 'Download finished with media warnings.' : 'Library downloaded for offline use.', r.failed ? 'warning' : 'success');
     } catch (e) { const text = String(e); if (/Unauthorized|access code|older version/i.test(text)) { setToken(''); localStorage.removeItem('lineuplab.sync.token'); } setFound([]); setError(text); }

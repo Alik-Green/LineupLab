@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { Crosshair, Footprints, Maximize, Minus, Plus, Route, SlidersHorizontal, Target, Type } from 'lucide-react';
 import type { Lineup, MapCallout, Point } from '../types';
@@ -28,6 +28,7 @@ export function Minimap({ src, lineups, selectedId, onSelect, onHover, editableP
   const gesture = useRef<Gesture | null>(null);
   const arrowId = `map-arrow-${useId().replace(/:/g, '')}`;
   const [side, setSide] = useState(0);
+  const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<MapView>(ORIGIN);
   const [hover, setHover] = useState<string | null>(null);
   const [markerSize, setMarkerSize] = useState(1);
@@ -37,16 +38,19 @@ export function Minimap({ src, lineups, selectedId, onSelect, onHover, editableP
   const [labels, setLabels] = useState(false);
   const [nativeSize, setNativeSize] = useState('');
   const clearGesture = useCallback(() => { gesture.current = null; }, []);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = stageRef.current; if (!el) return;
     const measure = () => {
-      const next = Math.max(0, Math.min(el.clientWidth, el.clientHeight));
-      setSide(next); setView(v => constrainMapPan(v, next));
+      const r = el.getBoundingClientRect();
+      const width = Math.max(0, r.width), height = Math.max(0, r.height);
+      const next = Math.max(0, Math.min(width, height));
+      setStageSize({ width, height }); setSide(next); setView(v => constrainMapPan(v, next, width, height));
     };
     const ro = new ResizeObserver(measure); ro.observe(el); measure();
     window.addEventListener('blur', clearGesture);
     return () => { ro.disconnect(); window.removeEventListener('blur', clearGesture); clearGesture(); };
   }, [clearGesture]);
+  const baseLeft = (stageSize.width - side) / 2, baseTop = (stageSize.height - side) / 2;
   useEffect(() => { setNativeSize(''); }, [src]);
   const toMap = useCallback((x: number, y: number): Point => {
     const r = stageRef.current?.getBoundingClientRect();
@@ -55,8 +59,8 @@ export function Minimap({ src, lineups, selectedId, onSelect, onHover, editableP
     return clampPoint({ x: (x - left - view.tx) / (side * view.scale), y: (y - top - view.ty) / (side * view.scale) });
   }, [side, view]);
   const zoom = useCallback((factor: number, px?: number, py?: number) => {
-    setView(v => zoomMapAt(v, factor, px ?? side / 2, py ?? side / 2, side));
-  }, [side]);
+    setView(v => zoomMapAt(v, factor, px ?? side / 2, py ?? side / 2, side, stageSize.width || side, stageSize.height || side));
+  }, [side, stageSize]);
   useEffect(() => {
     const el = stageRef.current; if (!el) return;
     const wheel = (e: WheelEvent) => {
@@ -90,7 +94,7 @@ export function Minimap({ src, lineups, selectedId, onSelect, onHover, editableP
     if (!g.moved) return;
     if (g.kind === 'pin' && g.pin && onPinChange) { onPinChange(g.pin, snapPoint(toMap(e.clientX, e.clientY), false)); return; }
     // g is an immutable local snapshot. No nullable ref access survives into the updater.
-    setView(v => constrainMapPan({ ...v, tx: g.view.tx + dx, ty: g.view.ty + dy }, side));
+    setView(v => constrainMapPan({ ...v, tx: g.view.tx + dx, ty: g.view.ty + dy }, side, stageSize.width || side, stageSize.height || side));
   };
   const up = (e: ReactPointerEvent<HTMLDivElement>) => {
     const g = gesture.current; if (!g || g.id !== e.pointerId) return;
@@ -126,7 +130,7 @@ export function Minimap({ src, lineups, selectedId, onSelect, onHover, editableP
     <div ref={stageRef} className="ll-minimap__stage" tabIndex={-1} data-testid="minimap-stage" style={{ touchAction: 'none', cursor: activePinTool ? 'crosshair' : 'grab' }}
       onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={clearGesture} onLostPointerCapture={clearGesture}
       onSelectCapture={e => e.preventDefault()} onDragStart={e => e.preventDefault()} onContextMenu={e => e.preventDefault()}>
-      <div className="ll-minimap__canvas" data-testid="minimap-canvas" style={{ width: canvasSide, height: canvasSide, transform: `translate(${view.tx}px, ${view.ty}px)` }}>
+      <div className="ll-minimap__canvas" data-testid="minimap-canvas" style={{ left: baseLeft, top: baseTop, width: canvasSide, height: canvasSide, transform: `translate(${view.tx}px, ${view.ty}px)` }}>
         {src ? <ValImage src={src} alt="Minimap" kind="minimap" className="ll-minimap__img" imgClassName="ll-minimap__img" loading="eager" onLoad={img => setNativeSize(`${img.naturalWidth}x${img.naturalHeight}`)} /> : <div className="ll-minimap__placeholder" />}
         <svg className="ll-minimap__svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet" role={onSelect ? 'group' : undefined} aria-label={onSelect ? 'Lineup markers' : undefined} aria-hidden={onSelect ? undefined : true}>
           <defs><marker id={arrowId} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="context-stroke" /></marker></defs>

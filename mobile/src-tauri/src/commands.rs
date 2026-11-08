@@ -1,5 +1,5 @@
 use crate::MobileState;
-use lineuplab_core::{config::ModeConfig, Lineup, SLOT_ORDER};
+use lineuplab_core::{config::ModeConfig, Lineup, LineupFilter, SLOT_ORDER};
 use serde_json::{json, Map, Value};
 use std::collections::BTreeSet;
 use tauri::{Emitter, Manager, State};
@@ -17,7 +17,7 @@ fn to_ui(l: &Lineup) -> Value {
     }
     v
 }
-#[tauri::command] pub fn list_lineups(state: State<MobileState>) -> CmdResult<Vec<Value>> { Ok(state.db.lock().unwrap().all(false).map_err(err)?.iter().map(to_ui).collect()) }
+#[tauri::command] pub fn list_lineups(state: State<MobileState>) -> CmdResult<Vec<Value>> { Ok(state.db.lock().unwrap().filter(&LineupFilter { include_deleted: Some(false), include_drafts: Some(true), ..Default::default() }).map_err(err)?.iter().map(to_ui).collect()) }
 #[tauri::command] pub fn get_lineup(state: State<MobileState>, id: String) -> CmdResult<Option<Value>> { Ok(state.db.lock().unwrap().get(&id).map_err(err)?.as_ref().map(to_ui)) }
 fn remote_url(url: Option<&str>) -> Value { match url { Some(u) => json!(u), None => Value::Null } }
 fn catalog_json(api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::catalog::Catalog, lineups: &[Lineup]) -> Value {
@@ -28,7 +28,7 @@ fn catalog_json(api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::
 }
 #[tauri::command] pub async fn get_catalog(app: tauri::AppHandle) -> CmdResult<Value> {
     let state = app.state::<MobileState>(); let lineups = state.db.lock().unwrap().all(false).map_err(err)?; let api = state.api.clone(); drop(state);
-    let c = match api.cached_catalog().map_err(err)? { Some(c) => c, None => api.refresh(false).await.map_err(err)? };
+    let c = api.cached_catalog().map_err(err)?.unwrap_or_default();
     Ok(catalog_json(&api, &c, &lineups))
 }
 #[tauri::command] pub async fn prepare_assets(app: tauri::AppHandle, force: bool) -> CmdResult<Value> {
@@ -66,7 +66,7 @@ fn catalog_json(api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::
     Ok(serde_json::to_value(report).map_err(err)?)
 }
 #[tauri::command] pub async fn download_library(app: tauri::AppHandle, base_url: String, token: String) -> CmdResult<Value> {
-    let state = app.state::<MobileState>(); let data_dir = state.data_dir.clone(); let store = state.store.clone(); drop(state);
+    let state = app.state::<MobileState>(); let data_dir = state.data_dir.clone(); let store = state.store.clone(); let api = state.api.clone(); drop(state);
     let emitter = app.clone();
     let (tx, rx) = tokio::sync::oneshot::channel();
     std::thread::spawn(move || {
@@ -75,7 +75,15 @@ fn catalog_json(api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::
             rt.block_on(async move {
                 let client = lineuplab_core::sync::SyncClient::new(base_url, token);
                 let mut db = lineuplab_core::db::Database::open(data_dir.join("lineuplab.sqlite3"))?;
-                lineuplab_core::sync::download_library(&client, &mut db, &store, |p| { let _ = emitter.emit("lineuplab://download-progress", p); }).await
+                let report = lineuplab_core::sync::download_library(&client, &mut db, &store, |p| { let _ = emitter.emit("lineuplab://download-progress", p); }).await?;
+                // Names/art URLs must not depend on the phone reaching valorant-api.com.
+                // A failed optional catalog fetch never hides an already saved library.
+                match tokio::time::timeout(std::time::Duration::from_secs(8), client.catalog()).await {
+                    Ok(Ok(mut remote)) => { if let Ok(all) = db.all(false) { remote.archive_missing(&all); } let _ = api.save_catalog(&remote); }
+                    Ok(Err(e)) => tracing::warn!(error=%e, "Desktop catalog unavailable; keeping local catalog"),
+                    Err(_) => tracing::warn!("Desktop catalog timed out; keeping local catalog"),
+                }
+                Ok(report)
             })
         })(); let _ = tx.send(result);
     });

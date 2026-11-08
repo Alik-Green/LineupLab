@@ -113,7 +113,7 @@ export function Editor({ adapter, lineupId, catalog, modes, lineups = [], onSave
   const isShock = agent?.displayName === 'Sova' && l.abilitySlot === 'Ability2';
   const toggleMode = (id: string, enabled: boolean) => { const single = isShock ? 'single' : id === 'placement' ? 'standard' : 'standard'; setSetup({ mode: enabled ? id : single }); };
   const attrLabel = (key: string) => key.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, c => c.toUpperCase());
-  return <div className="ll-wizard" data-testid="editor" data-step={step}>
+  return <div className={clsx('ll-wizard', step === 'capture' && annotate && 'll-wizard--annotating')} data-testid="editor" data-step={step} data-annotating={step === 'capture' && annotate ? 'true' : undefined}>
     {draftFound && <div className="ll-recovery" role="alert"><RefreshCw size={16} /><span>Unsaved draft: {draftFound.title || new Date(draftFound.updatedAt).toLocaleString()}</span><Button size="md" variant="primary" onClick={() => { h.reset(draftFound); setDraftFound(null); setStep('capture'); }}>Restore</Button><Button size="md" variant="ghost" onClick={() => { localStorage.removeItem(draftKey); setDraftFound(null); }}>Ignore</Button></div>}
     <div className="ll-wizard__workspace">
       <main className="ll-wizard__body">

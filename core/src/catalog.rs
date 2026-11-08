@@ -372,6 +372,13 @@ impl ValorantApi {
     pub fn cached_catalog(&self) -> Result<Option<Catalog>> {
         self.read_cache("catalog.json")
     }
+    /// Persist a catalog received from a trusted desktop so the phone can show
+    /// map/agent/ability names without reaching the public API itself.
+    pub fn save_catalog(&self, catalog: &Catalog) -> Result<()> {
+        let mut next = catalog.clone();
+        merge_bundled_callouts(&mut next);
+        self.write_cache("catalog.json", &serde_json::to_vec(&next)?)
+    }
     pub async fn refresh(&self, force: bool) -> Result<Catalog> {
         self.refresh_with_progress(force, |_| {}).await
     }

@@ -112,3 +112,17 @@ test('Android data settings tables stay inside a 360px viewport', async ({ page 
   await expect(page.getByText('Cache by asset type')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(361);
 });
+
+test('download finishes and Browse stays usable when the native catalog is offline', async ({ page }) => {
+  await page.goto('/?mock&platform=android&empty&catalog-error');
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Download' }).click();
+  await expect(page.getByLabel('Access code')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Find desktop' }).click();
+  await page.locator('.ll-discovered button').first().click();
+  await page.getByRole('button', { name: 'Connect & download' }).click();
+  await expect(page.getByText(/Saved 12 new lineups and \d+ new images/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Connect & download' })).toBeEnabled();
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Browse' }).click();
+  await expect(page.getByTestId('lineup-card').first()).toBeVisible();
+  expect(await page.getByTestId('lineup-card').count()).toBeGreaterThan(0);
+});

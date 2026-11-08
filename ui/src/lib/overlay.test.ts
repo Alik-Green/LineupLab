@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { clampViewPrefs, clampOverlay, DEFAULT_OVERLAY, DEFAULT_VIEW_PREFS, draftChecklist, overlayHeight, overlayPosition } from './overlay';
 import { newLineup } from './adapter';
 
+describe('overlay defaults', () => {
+  it('is click-through by default', () => { expect(DEFAULT_OVERLAY.clickThrough).toBe(true); });
+});
 describe('overlay view prefs', () => {
   it('clamps scale and coerces booleans', () => {
     expect(clampViewPrefs({ scale: 9, hideAnnotations: true, fade: false })).toEqual({ scale: 1.75, hideAnnotations: true, fade: false, minimal: false, outline: false, outlineThickness: 3 });

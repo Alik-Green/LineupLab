@@ -2,6 +2,7 @@
 //! Bind only to trusted LAN interfaces, never expose to the Internet. See docs/SYNC.md.
 //! All routes except /pair, /connect and /health require a token.
 use crate::{
+    catalog::ValorantApi,
     db::Database,
     storage::{hash_bytes, MediaStore},
     sync::{self, PushRequest, PushResponse, PROTOCOL_VERSION},
@@ -76,6 +77,7 @@ impl ServerHandle {
 }
 struct ServerState {
     db: Mutex<Database>,
+    api: ValorantApi,
     store: MediaStore,
     device_id: String,
     name: String,
@@ -94,6 +96,19 @@ fn unauthorized() -> axum::response::Response {
 }
 fn ct_eq(a: &str, b: &str) -> bool {
     a.as_bytes().ct_eq(b.as_bytes()).into()
+}
+async fn catalog(State(st): State<Arc<ServerState>>) -> axum::response::Response {
+    let lineups = match st.db.lock().unwrap().all(false) {
+        Ok(v) => v,
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    };
+    let mut c = match st.api.cached_catalog() {
+        Ok(Some(c)) => c,
+        Ok(None) => crate::catalog::Catalog::default(),
+        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+    };
+    c.archive_missing(&lineups);
+    Json(c).into_response()
 }
 async fn auth(
     State(st): State<Arc<ServerState>>,
@@ -287,6 +302,7 @@ fn router(st: Arc<ServerState>) -> Router {
         .route("/pair", post(pair))
         .route("/connect", post(connect))
         .route("/manifest", get(manifest))
+        .route("/catalog", get(catalog))
         .route("/lineups", get(lineups))
         .route("/images/{hash}", get(get_image).put(put_image))
         .route("/push", post(push))
@@ -325,8 +341,10 @@ pub async fn spawn(config: ServerConfig) -> Result<ServerHandle> {
         .ok()
         .and_then(|b| serde_json::from_slice(&b).ok())
         .unwrap_or_default();
+    let api = ValorantApi::new(config.data_dir.join("art-cache"));
     let st = Arc::new(ServerState {
         db: Mutex::new(db),
+        api,
         store,
         device_id: device_id.clone(),
         name: config.name.clone(),

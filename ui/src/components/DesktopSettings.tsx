@@ -28,7 +28,7 @@ export function OverlayPanel({ adapter }: { adapter: LibraryAdapter }) {
   const [aspect, setAspect] = useState(16 / 9); const { data: overlayData } = useOverlayData(adapter);
   const [monitors, setMonitors] = useState<MonitorInfo[]>([]); const [monitorError, setMonitorError] = useState('');
   useEffect(() => { void adapter.getOverlaySettings().then(s => { overlayRef.current = s; setOverlay(s); }); void adapter.listMonitors().then(ms => { setMonitors(ms); setMonitorError(''); }).catch(e => setMonitorError(String(e))); }, [adapter]);
-  const saveOverlay = async (patch: Partial<OverlaySettings>, minimal = prefs.minimal) => { const base = overlayRef.current; const next = clampOverlay({ ...base, ...patch, height: overlayHeight(patch.width ?? base.width, aspect, minimal, overlayData?.state.mode ?? 'view') }); overlayRef.current = next; setOverlay(next); await adapter.setOverlaySettings(next); };
+  const saveOverlay = async (patch: Partial<OverlaySettings>, minimal = prefs.minimal) => { const base = overlayRef.current; const next = clampOverlay({ ...base, ...patch, height: overlayHeight(patch.width ?? base.width, aspect, minimal, overlayData?.state.mode ?? 'view') }); overlayRef.current = next; setOverlay(next); try { await adapter.setOverlaySettings(next); } catch (e) { toast.push(`Overlay settings were not saved: ${String(e)}`, 'error'); } };
   const monitor = monitors.find(m => m.index === overlay.monitor) ?? monitors[0];
   const screen = monitor ? { width: monitor.logicalWidth, height: monitor.logicalHeight } : { width: 1920, height: 1080 };
   const pos = overlayPosition(overlay, screen.width, screen.height);
@@ -50,9 +50,11 @@ export function OverlayPanel({ adapter }: { adapter: LibraryAdapter }) {
 }
 
 export function CapturePanel({ adapter }: { adapter: LibraryAdapter }) {
+  const toast = useToast();
   const [capture, setCapture] = useState<CaptureSettings>({ maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150 });
-  useEffect(() => { void adapter.getCaptureSettings().then(setCapture); }, [adapter]);
-  const save = async (patch: Partial<CaptureSettings>) => { const next = { ...capture, ...patch }; setCapture(next); await adapter.setCaptureSettings(next); };
+  const captureRef = useRef(capture);
+  useEffect(() => { void adapter.getCaptureSettings().then(s => { captureRef.current = s; setCapture(s); }); }, [adapter]);
+  const save = async (patch: Partial<CaptureSettings>) => { const next = { ...captureRef.current, ...patch }; captureRef.current = next; setCapture(next); try { await adapter.setCaptureSettings(next); } catch (e) { toast.push(`Capture settings were not saved: ${String(e)}`, 'error'); } };
   return <Card data-testid="capture-settings"><h2 className="ll-h2 mb-3 flex items-center gap-2"><Camera size={18} /> Fast capture</h2><div className="ll-form-grid">
     <Input label="Max width (px)" type="number" min={320} max={7680} value={capture.maxWidth} onChange={e => save({ maxWidth: Number(e.target.value) })} />
     <Input label="Target time (ms)" type="number" min={16} max={5000} value={capture.targetMs} onChange={e => save({ targetMs: Number(e.target.value) })} />

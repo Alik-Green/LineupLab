@@ -253,3 +253,20 @@ async fn download_persists_lineups_for_open_and_fresh_library_connections() {
     assert_eq!(reopened.get(&l.id).unwrap().unwrap().title, "Downloaded");
     h.shutdown().await.unwrap();
 }
+
+#[tokio::test]
+async fn catalog_route_is_authenticated_and_archives_legacy_lineup_maps() {
+    let (h, dir, client) = server().await;
+    let api = lineuplab_core::catalog::ValorantApi::new(dir.path().join("art-cache"));
+    api.save_catalog(&lineuplab_core::catalog::Catalog::default())
+        .unwrap();
+    let db = Database::open(dir.path().join("lineuplab.sqlite3")).unwrap();
+    let mut l = lineup("legacy", "2026-01-01T00:00:00Z", "desktop", 1);
+    l.map_id = "legacy-map".into();
+    db.save_edited(&mut l, "desktop").unwrap();
+    let anon = SyncClient::new(format!("http://{}", h.addr), "");
+    assert!(matches!(anon.catalog().await, Err(Error::Unauthorized)));
+    let c = client.catalog().await.unwrap();
+    assert!(c.maps.iter().any(|m| m.uuid == "legacy-map" && m.archived));
+    h.shutdown().await.unwrap();
+}

@@ -71,7 +71,7 @@ fn catalog_json(app: &tauri::AppHandle, api: &lineuplab_core::catalog::ValorantA
     let state = app.state::<AppState>();
     let lineups = state.db.lock().unwrap().all(false).map_err(err)?;
     let api = state.api.clone(); drop(state);
-    let c = match api.cached_catalog().map_err(err)? { Some(c) => c, None => api.refresh(false).await.map_err(err)? };
+    let c = api.cached_catalog().map_err(err)?.unwrap_or_default();
     Ok(catalog_json(&app, &api, &c, &lineups))
 }
 #[tauri::command] pub async fn prepare_assets(app: tauri::AppHandle, force: bool) -> CmdResult<Value> {

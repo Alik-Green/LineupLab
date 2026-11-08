@@ -36,7 +36,16 @@ export function Browse({ adapter, lineups, catalog, onEdit, onRefresh, readOnly 
   const [selected, setSelected] = useState<string | null>(null); const [hover, setHover] = useState<string | null>(null); const [detail, setDetail] = useState<Lineup | null>(null); const [showFilters, setShowFilters] = useState(false);
   const container = useRef<HTMLDivElement>(null); const parent = useRef<HTMLDivElement>(null); const [width, setWidth] = useState(900);
   const maps = useMemo(() => standardMaps(catalog?.maps ?? []), [catalog]);
-  useEffect(() => { if (maps.length && !filters.map) setFilters(f => ({ ...f, map: maps[0].uuid })); }, [maps, filters.map, setFilters]);
+  // Do not hide a freshly downloaded library behind an arbitrary first map.
+  // Clear stale persisted selections when the catalog no longer contains them.
+  useEffect(() => { if (!catalog) return; if (filters.map && !catalog.maps.some(m => m.uuid === filters.map)) setFilters(f => ({ ...f, map: '', ability: '' })); if (filters.agent && !catalog.agents.some(a => a.uuid === filters.agent)) setFilters(f => ({ ...f, agent: '', ability: '' })); }, [catalog]); // eslint-disable-line react-hooks/exhaustive-deps
+  const autoMapped = useRef(false);
+  useEffect(() => {
+    if (filters.map) { autoMapped.current = true; return; }
+    if (autoMapped.current) return;
+    const candidate = lineups.find(l => maps.some(m => m.uuid === l.mapUuid))?.mapUuid ?? maps[0]?.uuid;
+    if (candidate) { autoMapped.current = true; setFilters(f => ({ ...f, map: candidate })); }
+  }, [maps, lineups, filters.map, setFilters]);
   useEffect(() => { const el = parent.current; if (!el) return; const ro = new ResizeObserver(() => setWidth(el.clientWidth)); ro.observe(el); setWidth(el.clientWidth); return () => ro.disconnect(); }, []);
   const set = (patch: Partial<Filters>) => setFilters(f => ({ ...f, ...patch }));
   const agent = catalog?.agents.find(a => a.uuid === filters.agent);

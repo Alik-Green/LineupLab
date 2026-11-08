@@ -29,14 +29,24 @@ export function newCircle(x: number, y: number, color: string, lens = false): Fo
 export function newLine(points: Point[], color: string): AnnotationLine { return { id: crypto.randomUUID(), color, width: 0.003, points: points.map(clampPoint), style: 'solid', arrow: 'none', label: null }; }
 
 export interface MapView { scale: number; tx: number; ty: number }
-export function constrainMapPan(v: MapView, side: number): MapView {
-  const min = side * (1 - v.scale);
-  return { ...v, tx: Math.min(0, Math.max(min, v.tx)), ty: Math.min(0, Math.max(min, v.ty)) };
+/** Pan clamp for a square map centered in a possibly rectangular stage.
+ * tx/ty are offsets from the unzoomed centered base; the scaled canvas must be
+ * able to reach every stage edge/corner instead of being clamped by base side. */
+export function constrainMapPan(v: MapView, side: number, width = side, height = side): MapView {
+  if (!(side > 0) || !Number.isFinite(v.tx) || !Number.isFinite(v.ty)) return { scale: 1, tx: 0, ty: 0 };
+  const scale = Number.isFinite(v.scale) ? Math.min(6, Math.max(1, v.scale)) : 1;
+  const scaled = side * scale;
+  const axis = (length: number, t: number) => {
+    const base = (length - side) / 2;
+    const minAbs = Math.min(0, length - scaled), maxAbs = Math.max(0, length - scaled);
+    return Math.min(maxAbs - base, Math.max(minAbs - base, t));
+  };
+  return { scale, tx: axis(width, v.tx), ty: axis(height, v.ty) };
 }
 /** Zoom around a point in the untransformed square canvas; art and SVG share this transform. */
-export function zoomMapAt(v: MapView, factor: number, px: number, py: number, side: number): MapView {
+export function zoomMapAt(v: MapView, factor: number, px: number, py: number, side: number, width = side, height = side): MapView {
   const scale = Math.min(6, Math.max(1, v.scale * factor));
-  return constrainMapPan({ scale, tx: px - (px - v.tx) * scale / v.scale, ty: py - (py - v.ty) * scale / v.scale }, side);
+  return constrainMapPan({ scale, tx: px - (px - v.tx) * scale / v.scale, ty: py - (py - v.ty) * scale / v.scale }, side, width, height);
 }
 
 /** Rectangular image viewer pan clamp (content fills the stage at scale 1). */
@@ -47,4 +57,13 @@ export function clampImagePan(v: MapView, width: number, height: number): MapVie
 export function zoomImageAt(v: MapView, factor: number, px: number, py: number, width: number, height: number): MapView {
   const scale = Math.min(8, Math.max(1, v.scale * factor));
   return clampImagePan({ scale, tx: px - (px - v.tx) * scale / v.scale, ty: py - (py - v.ty) * scale / v.scale }, width, height);
+}
+
+/** Centered contain frame for an image inside an arbitrary box. Annotation SVGs
+ * and pointer math must use this exact frame, not the letterboxed outer box. */
+export function containFrame(boxW: number, boxH: number, imageW: number, imageH: number) {
+  if (!(boxW > 0) || !(boxH > 0) || !(imageW > 0) || !(imageH > 0)) return { left: 0, top: 0, width: 0, height: 0 };
+  const scale = Math.min(boxW / imageW, boxH / imageH);
+  const width = imageW * scale, height = imageH * scale;
+  return { left: (boxW - width) / 2, top: (boxH - height) / 2, width, height };
 }

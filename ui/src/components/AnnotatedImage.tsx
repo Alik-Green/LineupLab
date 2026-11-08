@@ -1,6 +1,6 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import type { AnnotationLine, FocusCircle, Point, SlotData } from '../types';
-import { clampLens, clampPoint, dashArray, lensSource, snapPoint } from '../lib/geometry';
+import { clampLens, clampPoint, containFrame, dashArray, lensSource, snapPoint } from '../lib/geometry';
 import { useCachedImage, ValImage } from '../lib/images';
 
 export type AnnotationTool = 'select' | 'circle' | 'lens' | 'line';
@@ -15,6 +15,7 @@ interface DragState { kind: 'circle' | 'lens' | 'line-point'; id: string; index?
 export function AnnotatedImage({ src, slot, editable = false, tool = 'select', color = 'cyan', snapping = false, selectedId, onSelect, onChange, className = '', alt = '', hideLens = false, onLoad }: AnnotatedImageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 1600, h: 900 });
+  const [box, setBox] = useState({ width: 0, height: 0 });
   const [drag, setDrag] = useState<DragState | null>(null);
   const [pendingLine, setPendingLine] = useState<Point[]>([]);
   const clipId = useId().replace(/:/g, '');
@@ -22,9 +23,17 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
   const imageSrc = cached.src ?? src;
   const circles = slot?.circles ?? []; const lines = slot?.lines ?? [];
   useEffect(() => { if (!imageSrc) return; const img = new Image(); img.onload = () => setSize({ w: img.naturalWidth || 1600, h: img.naturalHeight || 900 }); img.src = imageSrc; }, [imageSrc]);
+  useLayoutEffect(() => {
+    const el = ref.current; if (!el) return;
+    const measure = () => { const r = el.getBoundingClientRect(); setBox({ width: r.width, height: r.height }); };
+    measure(); const ro = new ResizeObserver(measure); ro.observe(el); return () => ro.disconnect();
+  }, []);
+  const frame = containFrame(box.width, box.height, size.w, size.h);
   const pointFromEvent = (e: React.PointerEvent | React.MouseEvent): Point => {
     const r = ref.current!.getBoundingClientRect();
-    return snapPoint({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }, snapping);
+    const width = frame.width || r.width, height = frame.height || r.height;
+    const left = r.left + (frame.width ? frame.left : 0), top = r.top + (frame.height ? frame.top : 0);
+    return snapPoint({ x: (e.clientX - left) / width, y: (e.clientY - top) / height }, snapping);
   };
   const emit = (next: SlotData) => onChange?.({ image: slot?.image ?? null, circles: next.circles, lines: next.lines, ...Object.fromEntries(Object.entries(slot ?? {}).filter(([k]) => !['image', 'circles', 'lines'].includes(k))) });
   const updateCircle = (id: string, patch: Partial<FocusCircle>) => emit({ ...slot!, circles: circles.map(c => c.id === id ? clampLens({ ...c, ...patch }, size.w, size.h) : c), lines });
@@ -49,9 +58,9 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
   };
   const { w, h } = size;
   return (
-    <div ref={ref} className={`ll-annotated relative select-none overflow-hidden ${editable ? 'cursor-crosshair' : ''} ${className}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={() => setDrag(null)} onDoubleClick={finishLine} data-testid="annotated-image">
-      <ValImage src={src} alt={alt} kind="media" className="block w-full" imgClassName="block h-auto w-full" onLoad={img => { setSize({ w: img.naturalWidth || 1600, h: img.naturalHeight || 900 }); onLoad?.(img); }} />
-      <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
+    <div ref={ref} className={`ll-annotated relative select-none overflow-hidden ${editable ? 'cursor-crosshair' : ''} ${className}`} style={{ aspectRatio: `${size.w} / ${size.h}`, '--annotation-aspect': size.w / size.h } as CSSProperties} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={() => setDrag(null)} onDoubleClick={finishLine} data-testid="annotated-image">
+      <ValImage src={src} alt={alt} kind="media" className="ll-annotated__media" imgClassName="ll-annotated__img" onLoad={img => { setSize({ w: img.naturalWidth || 1600, h: img.naturalHeight || 900 }); onLoad?.(img); }} />
+      <svg className="pointer-events-none absolute" style={{ left: frame.left, top: frame.top, width: frame.width || undefined, height: frame.height || undefined }} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" data-testid="annotation-layer">
         <defs>
           {circles.filter(c => c.showZoom && !hideLens).map(c => { const lc = clampLens(c, w, h); return <clipPath key={c.id} id={`${clipId}-${c.id}`}><rect x={lc.zoomX * w} y={lc.zoomY * h} width={lc.zoomSize * w} height={lc.zoomSize * w} /></clipPath>; })}
         </defs>
@@ -74,7 +83,7 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
             <rect x={lx} y={ly} width={ls} height={ls} fill="none" stroke={c.color} strokeWidth={Math.max(2, w * 0.002)} />
           </g>; })}
       </svg>
-      {editable && <svg className="absolute inset-0 h-full w-full" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" onPointerDown={e => { if (tool === 'select') onSelect?.(null); }} style={{ pointerEvents: 'none' }}>
+      {editable && <svg className="absolute" style={{ left: frame.left, top: frame.top, width: frame.width || undefined, height: frame.height || undefined, pointerEvents: 'none' }} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" onPointerDown={e => { if (tool === 'select') onSelect?.(null); }} data-testid="annotation-hit-layer">
         {circles.map(c => <circle key={c.id} cx={c.x * w} cy={c.y * h} r={Math.max(c.radius * w, 40)} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'circle', c.id, { x: c.x, y: c.y })} />)}
         {circles.filter(c => c.showZoom && !hideLens).map(c => { const lc = clampLens(c, w, h); return <rect key={`hit-${c.id}`} x={lc.zoomX * w} y={lc.zoomY * h} width={lc.zoomSize * w} height={lc.zoomSize * w} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'lens', c.id, { x: lc.zoomX, y: lc.zoomY })} />; })}
         {lines.flatMap(l => l.points.map((p, i) => <circle key={`${l.id}-${i}`} cx={p.x * w} cy={p.y * h} r={40} fill="transparent" style={{ pointerEvents: 'all', cursor: 'move' }} onPointerDown={e => startDrag(e, 'line-point', l.id, p, i)} />))}

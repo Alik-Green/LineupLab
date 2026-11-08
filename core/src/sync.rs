@@ -169,6 +169,21 @@ impl SyncClient {
     fn auth(&self, rb: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
         rb.bearer_auth(&self.token)
     }
+    /// Optional catalog metadata from the current desktop. Older servers return
+    /// 404; callers keep their local cache and still show downloaded lineups.
+    pub async fn catalog(&self) -> Result<crate::catalog::Catalog> {
+        let r = self
+            .auth(self.http.get(format!("{}/catalog", self.base_url)))
+            .send()
+            .await?;
+        if r.status() == reqwest::StatusCode::NOT_FOUND {
+            return Err(Error::NotFound("catalog endpoint".into()));
+        }
+        if r.status() == reqwest::StatusCode::UNAUTHORIZED {
+            return Err(Error::Unauthorized);
+        }
+        Ok(r.error_for_status()?.json().await?)
+    }
     pub async fn manifest(&self, since: Option<&str>) -> Result<SyncManifest> {
         let mut url = format!("{}/manifest", self.base_url);
         if let Some(s) = since {

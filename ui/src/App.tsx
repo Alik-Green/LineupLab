@@ -31,13 +31,22 @@ function AppInner({ adapter, platform }: { adapter: LibraryAdapter; platform: 'd
   const [lineups, setLineups] = useState<Lineup[]>([]); const [catalog, setCatalog] = useState<Catalog | null>(null); const [modes, setModes] = useState<AbilityMode[]>([]); const [error, setError] = useState('');
   const [assetProgress, setAssetProgress] = useState<AssetProgress | null>(null);
   const native = adapter.kind === 'tauri' && typeof window !== 'undefined' && !('__LL_MOCK_STATE__' in window);
-  const refresh = useCallback(async () => { try { const [ls, cat, ms] = await Promise.all([adapter.listLineups(), adapter.catalog(), adapter.modes()]); setLineups(ls); setCatalog(cat); setModes(ms); setError(''); } catch (e) { setError(String(e)); } }, [adapter]);
+  const refreshLibrary = useCallback(async () => { const ls = await adapter.listLineups(); setLineups(ls); return ls; }, [adapter]);
+  const refreshCatalog = useCallback(async () => { const cat = await adapter.catalog(); setCatalog(cat); return cat; }, [adapter]);
+  const refresh = useCallback(async () => {
+    // A slow/offline catalog must never hold the library (or the Download button)
+    // hostage. Each pane commits independently as soon as its own read finishes.
+    const results = await Promise.allSettled([refreshLibrary(), refreshCatalog(), adapter.modes().then(ms => { setModes(ms); })]);
+    const failed = results.find(r => r.status === 'rejected');
+    setError(failed?.status === 'rejected' ? String(failed.reason) : '');
+  }, [adapter, refreshLibrary, refreshCatalog]);
+  const afterDownload = useCallback(async () => { await refreshLibrary(); void refreshCatalog().catch(() => {}); }, [refreshLibrary, refreshCatalog]);
   useEffect(() => { document.documentElement.dataset.platform = platform; return () => { delete document.documentElement.dataset.platform; }; }, [platform]);
   useEffect(() => { void refresh(); try { applyMotionPref({ reduceMotion: false, ...JSON.parse(localStorage.getItem('lineuplab.prefs') ?? '{}') }); } catch { /* defaults */ } }, [refresh]);
   useEffect(() => {
     let live = true; let un: (() => void) | undefined;
     if (adapter.kind === 'tauri') void listen<AssetProgress>('lineuplab://assets', e => { if (live) setAssetProgress(e.payload); }).then(f => { un = f; });
-    void adapter.prepareAssets(false).then(cat => { if (live) { setCatalog(cat); setAssetProgress(null); } }).catch(e => { if (live) setError(String(e)); });
+    void adapter.prepareAssets(false).then(cat => { if (live) { setCatalog(cat); setAssetProgress(null); } }).catch(() => { if (live) setAssetProgress(null); });
     return () => { live = false; un?.(); };
   }, [adapter]);
   useEffect(() => { const changed = () => { void refresh(); }; window.addEventListener('lineuplab:library-changed', changed); let un: (() => void) | undefined; let live = true; if (adapter.kind === 'tauri') void listen('lineuplab://library-changed', changed).then(f => { if (live) un = f; else f(); }); return () => { live = false; un?.(); window.removeEventListener('lineuplab:library-changed', changed); }; }, [adapter, refresh]);
@@ -50,9 +59,9 @@ function AppInner({ adapter, platform }: { adapter: LibraryAdapter; platform: 'd
     {page === 'browse' && <Browse adapter={adapter} lineups={lineups} catalog={catalog} readOnly={browseOnly} onEdit={id => browseOnly ? undefined : openEditor(id)} onRefresh={refresh} mobile={browseOnly} />}
     {page === 'editor' && !browseOnly && <Editor adapter={adapter} lineupId={editId} catalog={catalog} modes={modes} lineups={lineups} onSaved={() => { void refresh(); setPage('browse'); }} onCancel={() => setPage('browse')} />}
     {page === 'import' && !browseOnly && <ImportExport adapter={adapter} lineups={lineups} onRefresh={refresh} />}
-    {page === 'sync' && <SyncSettings adapter={adapter} host={false} onDownloaded={refresh} />}
+    {page === 'sync' && <SyncSettings adapter={adapter} host={false} onDownloaded={afterDownload} />}
     {page === 'settings' && <Settings adapter={adapter} catalog={catalog} onRefresh={refresh} browseOnly={browseOnly} />}
-    {assetProgress && assetProgress.phase === 'downloading' && assetProgress.done < assetProgress.total && <FirstRunProgress progress={assetProgress} />}
+    {assetProgress && (!catalog || !catalog.maps.length) && assetProgress.phase === 'downloading' && assetProgress.done < assetProgress.total && <FirstRunProgress progress={assetProgress} />}
   </AppShell>;
 }
 function FirstRunProgress({ progress }: { progress: AssetProgress }) {
