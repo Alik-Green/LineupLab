@@ -10,7 +10,14 @@ import { DEFAULT_OVERLAY, clampOverlay, draftChecklist } from './overlay';
 import abilityModes from '@data/ability_modes.json';
 
 declare global { interface Window { __TAURI_INTERNALS__: { invoke(cmd: string, args?: Record<string, unknown>): Promise<unknown>; convertFileSrc(path: string): string; transformCallback(cb: (e: unknown) => void, once?: boolean): number }; __TAURI_EVENT_PLUGIN_INTERNALS__: { unregisterListener(event: string, id: number): void }; __LL_MOCK_EMIT__(event: string, payload: unknown): void; __LL_MOCK_STATE__: Record<string, unknown> } }
-const catalog = fixtureCatalog as unknown as Catalog;
+const baseCatalog = fixtureCatalog as unknown as Catalog;
+const catalog: Catalog = { ...baseCatalog, maps: [...baseCatalog.maps,
+  { uuid: '690b3ed2-4dff-945b-8223-6da834e30d24', displayName: 'District', displayIcon: '' },
+  { uuid: '12452a9d-48c3-0b02-e7eb-0381c3520404', displayName: 'Kasbah', displayIcon: '' },
+  { uuid: 'de28aa9b-4cbe-1003-320e-6cb3ec309557', displayName: 'Piazza', displayIcon: '' },
+  { uuid: '2c09d728-42d5-30d8-43dc-96a05cc7ee9d', displayName: 'Drift', displayIcon: '' },
+  { uuid: 'd6336a5a-428f-c591-98db-c8a291159134', displayName: 'Glitch', displayIcon: '' },
+] };
 const params = new URLSearchParams(location.search);
 const empty = params.has('empty');
 const now = '2026-11-07T12:00:00Z';
@@ -41,6 +48,13 @@ function fixtureLineups(): Lineup[] {
   });
 }
 let lineups = fixtureLineups();
+if (params.has('malformed') && lineups[0]) {
+  // Simulate an older/downloaded pack that omitted collections. Render code must
+  // normalize this instead of unmounting the whole WebView to a solid colour.
+  const broken = lineups[0] as unknown as Record<string, unknown>;
+  delete broken.bounces; delete broken.tags; delete broken.steps; delete broken.throws;
+  broken.slots = { stand1: { image: 'fx-stand1-0' }, aim1: { image: 'fx-aim1-0' }, landing: { image: 'fx-landing-0' } };
+}
 const mockDraft = lineups[0] ? structuredClone(lineups[0]) : null; if (mockDraft) { mockDraft.slots.landing.image = null; mockDraft.title = 'Mid Bend → B Site (draft)'; }
 let overlayLineup: Lineup | null = lineups[0] ?? null;
 const overlayState = { settings: { ...DEFAULT_OVERLAY, opacity: 0.92 }, visible: true, mode: params.get('overlayMode') === 'view' ? 'view' as const : 'create' as const, showChecklist: true, checklist: mockDraft ? draftChecklist(mockDraft, ['stand1', 'aim1', 'landing']) : [], viewSlots: ['stand1', 'aim1', 'landing'] as SlotId[], viewIndex: 1, flipped: params.has('flipped') };

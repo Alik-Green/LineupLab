@@ -5,6 +5,19 @@ import { clampOverlay, DEFAULT_OVERLAY } from './overlay';
 import { SLOT_ORDER } from '../types';
 
 export const emptySlot = (): SlotData => ({ image: null, circles: [], lines: [] });
+/** Defensive shape repair for legacy/downloaded packs. Missing collections must
+ * never reach render code (a missing `bounces`/`slots` used to blank the WebView). */
+export function normalizeLineup(raw: unknown): Lineup {
+  const base = newLineup();
+  const l = (raw && typeof raw === 'object' ? raw : {}) as Partial<Lineup>;
+  const slots = { ...base.slots };
+  if (l.slots && typeof l.slots === 'object') for (const s of SLOT_ORDER) {
+    const v = (l.slots as Record<string, unknown>)[s];
+    if (v && typeof v === 'object') { const o = v as Record<string, unknown>; slots[s] = { image: typeof o.image === 'string' ? o.image : null, circles: Array.isArray(o.circles) ? o.circles as SlotData['circles'] : [], lines: Array.isArray(o.lines) ? o.lines as SlotData['lines'] : [], ...Object.fromEntries(Object.entries(o).filter(([k]) => !['image','circles','lines'].includes(k))) }; }
+  }
+  const arr = <T,>(v: unknown): T[] => Array.isArray(v) ? v as T[] : [];
+  return { ...base, ...l, tags: arr<string>(l.tags), bounces: arr<Lineup['bounces'][number]>(l.bounces), throws: arr<Lineup['throws'][number]>(l.throws), attributes: l.attributes && typeof l.attributes === 'object' ? l.attributes : {}, steps: arr<Lineup['steps'][number]>(l.steps), slots, legacy: l.legacy && typeof l.legacy === 'object' ? l.legacy : {}, extensions: l.extensions && typeof l.extensions === 'object' ? l.extensions : {} };
+}
 export function newLineup(deviceId = 'browser'): Lineup {
   const now = new Date().toISOString();
   return { id: crypto.randomUUID(), mapUuid: '', agentUuid: '', abilitySlot: 'Grenade', mode: 'standard', side: 'both', site: '', difficulty: 'medium', throwType: 'normal', title: '', notes: '', tags: [], author: '', source: 'local', isFavorite: false, createdAt: now, updatedAt: now, deleted: false, deviceId, revision: 1, importBatchId: null, stand1Pos: null, aim1Pos: null, stand2Pos: null, aim2Pos: null, landPos: null, bounces: [], slots: Object.fromEntries(SLOT_ORDER.map(s => [s, emptySlot()])) as Record<SlotId, SlotData>, throws: [], attributes: {}, steps: [], videoClip: null, videoThumbnail: null, legacy: {}, extensions: {}, draft: false };
@@ -26,7 +39,7 @@ function demoLineups(): Lineup[] {
 }
 export class BrowserAdapter implements LibraryAdapter {
   kind = 'browser' as const; private images = new Map<string, string>(Object.entries(DEMO_IMAGES));
-  private load(): Lineup[] { try { const raw = localStorage.getItem('lineuplab.lineups'); if (raw) return JSON.parse(raw); } catch { /* ignore */ } const d = demoLineups(); localStorage.setItem('lineuplab.lineups', JSON.stringify(d)); return d; }
+  private load(): Lineup[] { try { const raw = localStorage.getItem('lineuplab.lineups'); if (raw) return (JSON.parse(raw) as unknown[]).map(normalizeLineup); } catch { /* ignore */ } const d = demoLineups(); localStorage.setItem('lineuplab.lineups', JSON.stringify(d)); return d; }
   private persist(all: Lineup[]) { localStorage.setItem('lineuplab.lineups', JSON.stringify(all)); }
   async listLineups() { return this.load().filter(l => !l.deleted); }
   async getLineup(id: string) { return this.load().find(l => l.id === id) ?? null; }
@@ -65,8 +78,8 @@ export class BrowserAdapter implements LibraryAdapter {
 }
 export class TauriAdapter implements LibraryAdapter {
   kind = 'tauri' as const;
-  listLineups() { return invoke<Lineup[]>('list_lineups'); }
-  getLineup(id: string) { return invoke<Lineup | null>('get_lineup', { id }); }
+  async listLineups() { return (await invoke<unknown[]>('list_lineups')).map(normalizeLineup); }
+  async getLineup(id: string) { const l = await invoke<unknown>('get_lineup', { id }); return l ? normalizeLineup(l) : null; }
   saveLineup(lineup: Lineup) { return invoke<Lineup>('save_lineup', { lineup }); }
   deleteLineup(id: string) { return invoke<void>('delete_lineup', { id }); }
   duplicateLineup(id: string) { return invoke<Lineup>('duplicate_lineup', { id }); }

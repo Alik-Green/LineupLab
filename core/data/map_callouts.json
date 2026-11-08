@@ -1,0 +1,1608 @@
+{
+  "provenance": {
+    "source": "Valorant client map callouts via valorant-api.com mirrors on GitHub; normalized to minimap UV using each map multiplier/scalar. English labels verbatim.",
+    "sources": [
+      "https://github.com/VincentTRAHIN/valorant_tool/blob/main/data/maps.json",
+      "https://github.com/stateful-ai/esports-tycoon/tree/4e3be637936a231f7c53750e2d4662be81a7347c/assets/maps/references",
+      "https://github.com/XDL0-0/miaozhun-offline/blob/HEAD/docs/minimap-callouts-audit.json"
+    ],
+    "note": "Nearest-callout naming is Euclidean, not path-aware. Maps without normalized coordinates fall back to site labels."
+  },
+  "maps": {
+    "7eaecc1b-4337-bbf6-6ab9-04b8f06b3319": {
+      "displayName": "Ascent",
+      "callouts": [
+        {
+          "name": "A Tree",
+          "x": 0.3982,
+          "y": 0.2946
+        },
+        {
+          "name": "A Lobby",
+          "x": 0.6029,
+          "y": 0.259
+        },
+        {
+          "name": "A Main",
+          "x": 0.4842,
+          "y": 0.2007
+        },
+        {
+          "name": "A Window",
+          "x": 0.2412,
+          "y": 0.2916
+        },
+        {
+          "name": "A Site",
+          "x": 0.3501,
+          "y": 0.1425
+        },
+        {
+          "name": "Spawn",
+          "x": 0.8174,
+          "y": 0.569
+        },
+        {
+          "name": "B Lobby",
+          "x": 0.7166,
+          "y": 0.6776
+        },
+        {
+          "name": "B Main",
+          "x": 0.405,
+          "y": 0.7121
+        },
+        {
+          "name": "B Boat House",
+          "x": 0.2705,
+          "y": 0.8872
+        },
+        {
+          "name": "Mid Bottom",
+          "x": 0.3973,
+          "y": 0.4947
+        },
+        {
+          "name": "B Site",
+          "x": 0.2855,
+          "y": 0.7373
+        },
+        {
+          "name": "Mid Catwalk",
+          "x": 0.525,
+          "y": 0.4111
+        },
+        {
+          "name": "Mid Cubby",
+          "x": 0.4548,
+          "y": 0.3361
+        },
+        {
+          "name": "Spawn",
+          "x": 0.1318,
+          "y": 0.4336
+        },
+        {
+          "name": "A Garden",
+          "x": 0.2853,
+          "y": 0.3091
+        },
+        {
+          "name": "Mid Market",
+          "x": 0.2985,
+          "y": 0.497
+        },
+        {
+          "name": "Mid Courtyard",
+          "x": 0.4928,
+          "y": 0.4877
+        },
+        {
+          "name": "Mid Link",
+          "x": 0.5143,
+          "y": 0.6175
+        },
+        {
+          "name": "Mid Pizza",
+          "x": 0.3055,
+          "y": 0.4471
+        },
+        {
+          "name": "A Rafters",
+          "x": 0.2392,
+          "y": 0.1441
+        },
+        {
+          "name": "Mid Top",
+          "x": 0.6648,
+          "y": 0.3805
+        },
+        {
+          "name": "A Wine",
+          "x": 0.4856,
+          "y": 0.0581
+        }
+      ]
+    },
+    "d960549e-485c-e861-8d71-aa9d1aed12a2": {
+      "displayName": "Split",
+      "callouts": [
+        {
+          "name": "A Back",
+          "x": 0.2293,
+          "y": 0.1247
+        },
+        {
+          "name": "A Lobby",
+          "x": 0.6505,
+          "y": 0.1661
+        },
+        {
+          "name": "A Main",
+          "x": 0.4917,
+          "y": 0.2077
+        },
+        {
+          "name": "A Rafters",
+          "x": 0.354,
+          "y": 0.2737
+        },
+        {
+          "name": "A Ramps",
+          "x": 0.4717,
+          "y": 0.3598
+        },
+        {
+          "name": "A Screens",
+          "x": 0.1504,
+          "y": 0.257
+        },
+        {
+          "name": "A Sewer",
+          "x": 0.6575,
+          "y": 0.3183
+        },
+        {
+          "name": "A Site",
+          "x": 0.3148,
+          "y": 0.1837
+        },
+        {
+          "name": "A Tower",
+          "x": 0.3158,
+          "y": 0.3359
+        },
+        {
+          "name": "Spawn",
+          "x": 0.8468,
+          "y": 0.5492
+        },
+        {
+          "name": "B Alley",
+          "x": 0.213,
+          "y": 0.7879
+        },
+        {
+          "name": "B Back",
+          "x": 0.2636,
+          "y": 0.9399
+        },
+        {
+          "name": "B Link",
+          "x": 0.6573,
+          "y": 0.6997
+        },
+        {
+          "name": "B Garage",
+          "x": 0.542,
+          "y": 0.8685
+        },
+        {
+          "name": "B Rafters",
+          "x": 0.3687,
+          "y": 0.7473
+        },
+        {
+          "name": "B Site",
+          "x": 0.3535,
+          "y": 0.8666
+        },
+        {
+          "name": "B Stairs",
+          "x": 0.3148,
+          "y": 0.6148
+        },
+        {
+          "name": "B Tower",
+          "x": 0.4296,
+          "y": 0.6844
+        },
+        {
+          "name": "B Lobby",
+          "x": 0.6875,
+          "y": 0.7968
+        },
+        {
+          "name": "Spawn",
+          "x": 0.1429,
+          "y": 0.5305
+        },
+        {
+          "name": "Mid Bottom",
+          "x": 0.616,
+          "y": 0.5476
+        },
+        {
+          "name": "Mid Mail",
+          "x": 0.4671,
+          "y": 0.6075
+        },
+        {
+          "name": "Mid Top",
+          "x": 0.4836,
+          "y": 0.5399
+        },
+        {
+          "name": "Mid Vent",
+          "x": 0.4258,
+          "y": 0.4515
+        }
+      ]
+    },
+    "b529448b-4d60-346e-e89e-00a4c527a405": {
+      "displayName": "Fracture",
+      "callouts": [
+        {
+          "name": "Bridge",
+          "x": 0.498,
+          "y": 0.126
+        },
+        {
+          "name": "B Bench",
+          "x": 0.331,
+          "y": 0.261
+        },
+        {
+          "name": "B Arcade",
+          "x": 0.231,
+          "y": 0.3618
+        },
+        {
+          "name": "B Tower",
+          "x": 0.1201,
+          "y": 0.4418
+        },
+        {
+          "name": "B Site",
+          "x": 0.0935,
+          "y": 0.518
+        },
+        {
+          "name": "B Generator",
+          "x": 0.2933,
+          "y": 0.5036
+        },
+        {
+          "name": "B Link",
+          "x": 0.3432,
+          "y": 0.4384
+        },
+        {
+          "name": "B Canteen",
+          "x": 0.3122,
+          "y": 0.6012
+        },
+        {
+          "name": "A Link",
+          "x": 0.6585,
+          "y": 0.4868
+        },
+        {
+          "name": "Spawn",
+          "x": 0.5041,
+          "y": 0.4417
+        },
+        {
+          "name": "B Main",
+          "x": 0.1402,
+          "y": 0.6905
+        },
+        {
+          "name": "B Tree",
+          "x": 0.2364,
+          "y": 0.7686
+        },
+        {
+          "name": "B Tunnel",
+          "x": 0.2404,
+          "y": 0.5785
+        },
+        {
+          "name": "A Hall",
+          "x": 0.7174,
+          "y": 0.7609
+        },
+        {
+          "name": "A Door",
+          "x": 0.7083,
+          "y": 0.7029
+        },
+        {
+          "name": "A Rope",
+          "x": 0.6391,
+          "y": 0.6381
+        },
+        {
+          "name": "A Main",
+          "x": 0.8261,
+          "y": 0.6973
+        },
+        {
+          "name": "A Site",
+          "x": 0.8201,
+          "y": 0.5221
+        },
+        {
+          "name": "A Drop",
+          "x": 0.7774,
+          "y": 0.43
+        },
+        {
+          "name": "A Dish",
+          "x": 0.6655,
+          "y": 0.2747
+        },
+        {
+          "name": "A Gate",
+          "x": 0.679,
+          "y": 0.1448
+        },
+        {
+          "name": "Spawn",
+          "x": 0.483,
+          "y": 0.8169
+        }
+      ]
+    },
+    "2c9d57ec-4431-9c5e-2939-8f9ef6dd5cba": {
+      "displayName": "Bind",
+      "callouts": [
+        {
+          "name": "A Exit",
+          "x": 0.9235,
+          "y": 0.5221
+        },
+        {
+          "name": "A Link",
+          "x": 0.5175,
+          "y": 0.592
+        },
+        {
+          "name": "A Lobby",
+          "x": 0.7633,
+          "y": 0.6069
+        },
+        {
+          "name": "A Short",
+          "x": 0.6244,
+          "y": 0.4965
+        },
+        {
+          "name": "A Site",
+          "x": 0.7341,
+          "y": 0.3334
+        },
+        {
+          "name": "A Teleporter",
+          "x": 0.6058,
+          "y": 0.4111
+        },
+        {
+          "name": "Spawn",
+          "x": 0.5815,
+          "y": 0.958
+        },
+        {
+          "name": "B Exit",
+          "x": 0.4729,
+          "y": 0.4412
+        },
+        {
+          "name": "B Hall",
+          "x": 0.2854,
+          "y": 0.2016
+        },
+        {
+          "name": "B Link",
+          "x": 0.4223,
+          "y": 0.5922
+        },
+        {
+          "name": "B Fountain",
+          "x": 0.2589,
+          "y": 0.6291
+        },
+        {
+          "name": "B Long",
+          "x": 0.1927,
+          "y": 0.5152
+        },
+        {
+          "name": "B Short",
+          "x": 0.3966,
+          "y": 0.5295
+        },
+        {
+          "name": "B Site",
+          "x": 0.2919,
+          "y": 0.3122
+        },
+        {
+          "name": "B Teleporter",
+          "x": 0.1507,
+          "y": 0.4349
+        },
+        {
+          "name": "B Window",
+          "x": 0.3227,
+          "y": 0.4468
+        },
+        {
+          "name": "A Bath",
+          "x": 0.8395,
+          "y": 0.4303
+        },
+        {
+          "name": "Cave",
+          "x": 0.5921,
+          "y": 0.7363
+        },
+        {
+          "name": "A Cubby",
+          "x": 0.5873,
+          "y": 0.4599
+        },
+        {
+          "name": "Spawn",
+          "x": 0.5169,
+          "y": 0.1037
+        },
+        {
+          "name": "B Elbow",
+          "x": 0.1583,
+          "y": 0.306
+        },
+        {
+          "name": "B Garden",
+          "x": 0.2467,
+          "y": 0.4281
+        },
+        {
+          "name": "A Lamps",
+          "x": 0.5817,
+          "y": 0.3392
+        },
+        {
+          "name": "A Tower",
+          "x": 0.7278,
+          "y": 0.2081
+        }
+      ]
+    },
+    "2fb9a4fd-47b8-4e7d-a969-74b4046ebd53": {
+      "displayName": "Breeze",
+      "callouts": [
+        {
+          "name": "A Hall",
+          "x": 0.6436,
+          "y": 0.4953
+        },
+        {
+          "name": "A Bridge",
+          "x": 0.7119,
+          "y": 0.2451
+        },
+        {
+          "name": "Spawn",
+          "x": 0.7119,
+          "y": 0.2101
+        },
+        {
+          "name": "Arches",
+          "x": 0.3741,
+          "y": 0.1751
+        },
+        {
+          "name": "Mid Wood Doors",
+          "x": 0.6436,
+          "y": 0.4953
+        },
+        {
+          "name": "Mid Pillar",
+          "x": 0.4984,
+          "y": 0.5408
+        },
+        {
+          "name": "Mid Top",
+          "x": 0.5019,
+          "y": 0.4008
+        },
+        {
+          "name": "Mid Nest",
+          "x": 0.4844,
+          "y": 0.2276
+        },
+        {
+          "name": "B Window",
+          "x": 0.1729,
+          "y": 0.6773
+        },
+        {
+          "name": "B Main",
+          "x": 0.1536,
+          "y": 0.5846
+        },
+        {
+          "name": "Snake",
+          "x": 0.2936,
+          "y": 0.7946
+        },
+        {
+          "name": "B Elbow",
+          "x": 0.2621,
+          "y": 0.5058
+        },
+        {
+          "name": "B Site",
+          "x": 0.0696,
+          "y": 0.3816
+        },
+        {
+          "name": "B Tunnel",
+          "x": 0.3636,
+          "y": 0.3816
+        },
+        {
+          "name": "Mid Stack",
+          "x": 0.3724,
+          "y": 0.4726
+        },
+        {
+          "name": "A Switch",
+          "x": 0.6786,
+          "y": 0.3833
+        },
+        {
+          "name": "Mid Chute",
+          "x": 0.5911,
+          "y": 0.5618
+        },
+        {
+          "name": "B Back",
+          "x": 0.0679,
+          "y": 0.3046
+        },
+        {
+          "name": "B Wall",
+          "x": 0.2551,
+          "y": 0.2346
+        },
+        {
+          "name": "A Rope",
+          "x": 0.6436,
+          "y": 0.6161
+        },
+        {
+          "name": "Mid Cannon",
+          "x": 0.3356,
+          "y": 0.6301
+        },
+        {
+          "name": "A Metal Doors",
+          "x": 0.6436,
+          "y": 0.3553
+        },
+        {
+          "name": "Mid Bottom",
+          "x": 0.4984,
+          "y": 0.7228
+        },
+        {
+          "name": "A Lobby",
+          "x": 0.7031,
+          "y": 0.9206
+        },
+        {
+          "name": "A Shop",
+          "x": 0.7626,
+          "y": 0.6826
+        },
+        {
+          "name": "A Site",
+          "x": 0.9079,
+          "y": 0.4953
+        },
+        {
+          "name": "A Pyramids",
+          "x": 0.8466,
+          "y": 0.4691
+        },
+        {
+          "name": "Spawn",
+          "x": 0.4336,
+          "y": 0.8733
+        }
+      ]
+    },
+    "2fe4ed3a-450a-948b-6d6b-e89a78e680a9": {
+      "displayName": "Lotus",
+      "callouts": [
+        {
+          "name": "A Top",
+          "x": 0.8181,
+          "y": 0.251
+        },
+        {
+          "name": "A Drop",
+          "x": 0.8935,
+          "y": 0.2326
+        },
+        {
+          "name": "A Site",
+          "x": 0.8549,
+          "y": 0.3608
+        },
+        {
+          "name": "A Hut",
+          "x": 0.8549,
+          "y": 0.3477
+        },
+        {
+          "name": "A Tree",
+          "x": 0.8549,
+          "y": 0.475
+        },
+        {
+          "name": "A Door",
+          "x": 0.8295,
+          "y": 0.5139
+        },
+        {
+          "name": "A Main",
+          "x": 0.7543,
+          "y": 0.537
+        },
+        {
+          "name": "A Rubble",
+          "x": 0.8089,
+          "y": 0.6009
+        },
+        {
+          "name": "A Root",
+          "x": 0.692,
+          "y": 0.6009
+        },
+        {
+          "name": "A Lobby",
+          "x": 0.6655,
+          "y": 0.7244
+        },
+        {
+          "name": "C Lobby",
+          "x": 0.3413,
+          "y": 0.8167
+        },
+        {
+          "name": "B Pillars",
+          "x": 0.5029,
+          "y": 0.661
+        },
+        {
+          "name": "B Main",
+          "x": 0.4513,
+          "y": 0.5666
+        },
+        {
+          "name": "C Door",
+          "x": 0.3286,
+          "y": 0.5708
+        },
+        {
+          "name": "B Site",
+          "x": 0.5029,
+          "y": 0.4593
+        },
+        {
+          "name": "A Link",
+          "x": 0.6051,
+          "y": 0.485
+        },
+        {
+          "name": "B Upper",
+          "x": 0.564,
+          "y": 0.3646
+        },
+        {
+          "name": "C Waterfall",
+          "x": 0.3112,
+          "y": 0.4339
+        },
+        {
+          "name": "C Link",
+          "x": 0.3556,
+          "y": 0.3775
+        },
+        {
+          "name": "A Stairs",
+          "x": 0.7328,
+          "y": 0.3232
+        },
+        {
+          "name": "C Mound",
+          "x": 0.3413,
+          "y": 0.6396
+        },
+        {
+          "name": "C Main",
+          "x": 0.2281,
+          "y": 0.5353
+        },
+        {
+          "name": "C Bend",
+          "x": 0.0745,
+          "y": 0.5104
+        },
+        {
+          "name": "C Site",
+          "x": 0.1476,
+          "y": 0.437
+        },
+        {
+          "name": "C Hall",
+          "x": 0.1476,
+          "y": 0.3488
+        },
+        {
+          "name": "C Gravel",
+          "x": 0.3286,
+          "y": 0.2743
+        },
+        {
+          "name": "Spawn",
+          "x": 0.577,
+          "y": 0.2203
+        },
+        {
+          "name": "Spawn",
+          "x": 0.5108,
+          "y": 0.8169
+        }
+      ]
+    },
+    "fd267378-4d1d-484f-ff52-77821ed10dc2": {
+      "displayName": "Pearl",
+      "callouts": [
+        {
+          "name": "B Hall",
+          "x": 0.094,
+          "y": 0.3314
+        },
+        {
+          "name": "Mid Doors",
+          "x": 0.5271,
+          "y": 0.5493
+        },
+        {
+          "name": "Mid Connector",
+          "x": 0.6209,
+          "y": 0.4443
+        },
+        {
+          "name": "Water",
+          "x": 0.6209,
+          "y": 0.307
+        },
+        {
+          "name": "Spawn",
+          "x": 0.51,
+          "y": 0.0508
+        },
+        {
+          "name": "A Flowers",
+          "x": 0.676,
+          "y": 0.1934
+        },
+        {
+          "name": "A Secret",
+          "x": 0.7793,
+          "y": 0.1003
+        },
+        {
+          "name": "A Dugout",
+          "x": 0.9371,
+          "y": 0.3185
+        },
+        {
+          "name": "A Site",
+          "x": 0.9149,
+          "y": 0.4001
+        },
+        {
+          "name": "Records",
+          "x": 0.3658,
+          "y": 0.2161
+        },
+        {
+          "name": "Mid Top",
+          "x": 0.537,
+          "y": 0.7542
+        },
+        {
+          "name": "B Tunnel",
+          "x": 0.3124,
+          "y": 0.2161
+        },
+        {
+          "name": "B Tower",
+          "x": 0.2581,
+          "y": 0.2504
+        },
+        {
+          "name": "A Main",
+          "x": 0.7788,
+          "y": 0.4193
+        },
+        {
+          "name": "A Restaurant",
+          "x": 0.6999,
+          "y": 0.5704
+        },
+        {
+          "name": "B Link",
+          "x": 0.4343,
+          "y": 0.5648
+        },
+        {
+          "name": "A Art",
+          "x": 0.7462,
+          "y": 0.5602
+        },
+        {
+          "name": "A Link",
+          "x": 0.7755,
+          "y": 0.4437
+        },
+        {
+          "name": "Mid Plaza",
+          "x": 0.4551,
+          "y": 0.7015
+        },
+        {
+          "name": "Mid Shops",
+          "x": 0.3674,
+          "y": 0.8536
+        },
+        {
+          "name": "B Club",
+          "x": 0.3674,
+          "y": 0.8536
+        },
+        {
+          "name": "B Ramp",
+          "x": 0.1841,
+          "y": 0.7795
+        },
+        {
+          "name": "B Main",
+          "x": 0.1392,
+          "y": 0.6001
+        },
+        {
+          "name": "B Site",
+          "x": 0.2582,
+          "y": 0.4636
+        },
+        {
+          "name": "B Screen",
+          "x": 0.0904,
+          "y": 0.4277
+        },
+        {
+          "name": "Spawn",
+          "x": 0.4337,
+          "y": 0.9589
+        }
+      ]
+    },
+    "e2ad5c54-4114-a870-9641-8ea21279579a": {
+      "displayName": "Icebox",
+      "callouts": [
+        {
+          "name": "B Garage",
+          "x": 0.3576,
+          "y": 0.3947
+        },
+        {
+          "name": "A Belt",
+          "x": 0.399,
+          "y": 0.8231
+        },
+        {
+          "name": "A Nest",
+          "x": 0.525,
+          "y": 0.7835
+        },
+        {
+          "name": "A Pipes",
+          "x": 0.4926,
+          "y": 0.7475
+        },
+        {
+          "name": "A Rafters",
+          "x": 0.7662,
+          "y": 0.7691
+        },
+        {
+          "name": "A Screen",
+          "x": 0.6996,
+          "y": 0.6719
+        },
+        {
+          "name": "A Site",
+          "x": 0.6906,
+          "y": 0.7655
+        },
+        {
+          "name": "Spawn",
+          "x": 0.1398,
+          "y": 0.5873
+        },
+        {
+          "name": "B Yellow",
+          "x": 0.4584,
+          "y": 0.1571
+        },
+        {
+          "name": "B Back",
+          "x": 0.7676,
+          "y": 0.2866
+        },
+        {
+          "name": "B Fence",
+          "x": 0.6932,
+          "y": 0.2866
+        },
+        {
+          "name": "B Cubby",
+          "x": 0.39,
+          "y": 0.2291
+        },
+        {
+          "name": "B Green",
+          "x": 0.4098,
+          "y": 0.3371
+        },
+        {
+          "name": "B Hall",
+          "x": 0.6798,
+          "y": 0.2831
+        },
+        {
+          "name": "B Hut",
+          "x": 0.777,
+          "y": 0.4073
+        },
+        {
+          "name": "B Kitchen",
+          "x": 0.7053,
+          "y": 0.4646
+        },
+        {
+          "name": "B Orange",
+          "x": 0.5826,
+          "y": 0.3502
+        },
+        {
+          "name": "B Site",
+          "x": 0.6456,
+          "y": 0.1805
+        },
+        {
+          "name": "B Snowman",
+          "x": 0.7454,
+          "y": 0.1427
+        },
+        {
+          "name": "B Snow Pile",
+          "x": 0.6402,
+          "y": 0.4325
+        },
+        {
+          "name": "B Tube",
+          "x": 0.552,
+          "y": 0.4703
+        },
+        {
+          "name": "Spawn",
+          "x": 0.9696,
+          "y": 0.5747
+        },
+        {
+          "name": "Mid Blue",
+          "x": 0.5304,
+          "y": 0.5081
+        },
+        {
+          "name": "Mid Boiler",
+          "x": 0.6708,
+          "y": 0.5477
+        },
+        {
+          "name": "Mid Pallet",
+          "x": 0.588,
+          "y": 0.6251
+        },
+        {
+          "name": "B Fence",
+          "x": 0.7191,
+          "y": 0.2786
+        }
+      ]
+    },
+    "2bee0dc9-4ffe-519b-1cbd-7fbe763a6047": {
+      "displayName": "Haven",
+      "callouts": [
+        {
+          "name": "A Garden",
+          "x": 0.7422,
+          "y": 0.4102
+        },
+        {
+          "name": "A Link",
+          "x": 0.2898,
+          "y": 0.3244
+        },
+        {
+          "name": "A Lobby",
+          "x": 0.6239,
+          "y": 0.3848
+        },
+        {
+          "name": "A Long",
+          "x": 0.5759,
+          "y": 0.177
+        },
+        {
+          "name": "A Sewer",
+          "x": 0.4998,
+          "y": 0.3838
+        },
+        {
+          "name": "A Site",
+          "x": 0.4015,
+          "y": 0.1695
+        },
+        {
+          "name": "Spawn",
+          "x": 0.8952,
+          "y": 0.5121
+        },
+        {
+          "name": "B Back",
+          "x": 0.2936,
+          "y": 0.4953
+        },
+        {
+          "name": "B Site",
+          "x": 0.4011,
+          "y": 0.5014
+        },
+        {
+          "name": "C Link",
+          "x": 0.3431,
+          "y": 0.6493
+        },
+        {
+          "name": "C Lobby",
+          "x": 0.6644,
+          "y": 0.7659
+        },
+        {
+          "name": "C Long",
+          "x": 0.6441,
+          "y": 0.8945
+        },
+        {
+          "name": "C Garage",
+          "x": 0.4935,
+          "y": 0.6292
+        },
+        {
+          "name": "C Window",
+          "x": 0.419,
+          "y": 0.6435
+        },
+        {
+          "name": "C Site",
+          "x": 0.4177,
+          "y": 0.8211
+        },
+        {
+          "name": "C Cubby",
+          "x": 0.6013,
+          "y": 0.8017
+        },
+        {
+          "name": "Spawn",
+          "x": 0.1398,
+          "y": 0.4218
+        },
+        {
+          "name": "Mid Doors",
+          "x": 0.6237,
+          "y": 0.6314
+        },
+        {
+          "name": "Mid Courtyard",
+          "x": 0.59,
+          "y": 0.5061
+        },
+        {
+          "name": "Mid Window",
+          "x": 0.6759,
+          "y": 0.4965
+        },
+        {
+          "name": "A Tower",
+          "x": 0.308,
+          "y": 0.1386
+        }
+      ]
+    },
+    "224b0a95-48b9-f703-1bd8-67aca101a61f": {
+      "displayName": "Abyss",
+      "callouts": [
+        {
+          "name": "A Bridge",
+          "x": 0.4696,
+          "y": 0.0383
+        },
+        {
+          "name": "A Link",
+          "x": 0.3015,
+          "y": 0.2732
+        },
+        {
+          "name": "A Lobby",
+          "x": 0.7754,
+          "y": 0.2367
+        },
+        {
+          "name": "A Main",
+          "x": 0.6337,
+          "y": 0.1922
+        },
+        {
+          "name": "A Site",
+          "x": 0.4838,
+          "y": 0.1517
+        },
+        {
+          "name": "Spawn",
+          "x": 0.901,
+          "y": 0.423
+        },
+        {
+          "name": "A Tower",
+          "x": 0.4899,
+          "y": 0.255
+        },
+        {
+          "name": "Mid Bend",
+          "x": 0.5871,
+          "y": 0.6377
+        },
+        {
+          "name": "B Link",
+          "x": 0.3096,
+          "y": 0.662
+        },
+        {
+          "name": "B Lobby",
+          "x": 0.826,
+          "y": 0.7956
+        },
+        {
+          "name": "B Main",
+          "x": 0.6235,
+          "y": 0.8604
+        },
+        {
+          "name": "B Nest",
+          "x": 0.6742,
+          "y": 0.903
+        },
+        {
+          "name": "Mid Bottom",
+          "x": 0.5466,
+          "y": 0.5324
+        },
+        {
+          "name": "B Site",
+          "x": 0.4048,
+          "y": 0.8584
+        },
+        {
+          "name": "Mid Catwalk",
+          "x": 0.5425,
+          "y": 0.4514
+        },
+        {
+          "name": "B Danger",
+          "x": 0.5567,
+          "y": 0.9739
+        },
+        {
+          "name": "Spawn",
+          "x": 0.0727,
+          "y": 0.423
+        },
+        {
+          "name": "Mid Library",
+          "x": 0.4514,
+          "y": 0.5263
+        },
+        {
+          "name": "A Secret",
+          "x": 0.1881,
+          "y": 0.1942
+        },
+        {
+          "name": "A Security",
+          "x": 0.259,
+          "y": 0.1031
+        },
+        {
+          "name": "Mid Top",
+          "x": 0.3076,
+          "y": 0.4372
+        },
+        {
+          "name": "B Tower",
+          "x": 0.2975,
+          "y": 0.8179
+        },
+        {
+          "name": "A Vent",
+          "x": 0.4737,
+          "y": 0.3623
+        }
+      ]
+    },
+    "1c18ab1f-420d-0d8b-71d0-77ad3c439115": {
+      "displayName": "Corrode",
+      "callouts": [
+        {
+          "name": "A Crane",
+          "x": 0.2462,
+          "y": 0.1879
+        },
+        {
+          "name": "A Elbow",
+          "x": 0.3809,
+          "y": 0.1092
+        },
+        {
+          "name": "A Link",
+          "x": 0.4527,
+          "y": 0.3752
+        },
+        {
+          "name": "A Lobby",
+          "x": 0.7082,
+          "y": 0.1967
+        },
+        {
+          "name": "A Main",
+          "x": 0.6119,
+          "y": 0.0847
+        },
+        {
+          "name": "A Pocket",
+          "x": 0.4702,
+          "y": 0.1092
+        },
+        {
+          "name": "A Site",
+          "x": 0.3984,
+          "y": 0.2579
+        },
+        {
+          "name": "Spawn",
+          "x": 0.9234,
+          "y": 0.5018
+        },
+        {
+          "name": "A Yard",
+          "x": 0.4702,
+          "y": 0.1967
+        },
+        {
+          "name": "B Arch",
+          "x": 0.2182,
+          "y": 0.7252
+        },
+        {
+          "name": "B Elbow",
+          "x": 0.3214,
+          "y": 0.8914
+        },
+        {
+          "name": "B Link",
+          "x": 0.3984,
+          "y": 0.5904
+        },
+        {
+          "name": "B Lobby",
+          "x": 0.7204,
+          "y": 0.6167
+        },
+        {
+          "name": "B Main",
+          "x": 0.5787,
+          "y": 0.6902
+        },
+        {
+          "name": "Mid Bottom",
+          "x": 0.5384,
+          "y": 0.4907
+        },
+        {
+          "name": "B Site",
+          "x": 0.4439,
+          "y": 0.6902
+        },
+        {
+          "name": "B Tower",
+          "x": 0.3214,
+          "y": 0.7462
+        },
+        {
+          "name": "Spawn",
+          "x": 0.1237,
+          "y": 0.4994
+        },
+        {
+          "name": "Mid Stairs",
+          "x": 0.4229,
+          "y": 0.4907
+        },
+        {
+          "name": "Mid Window",
+          "x": 0.3092,
+          "y": 0.4907
+        },
+        {
+          "name": "Mid Top",
+          "x": 0.3984,
+          "y": 0.4907
+        }
+      ]
+    },
+    "92584fbe-486a-b1b2-9faa-39b0f486b498": {
+      "displayName": "Sunset",
+      "callouts": [
+        {
+          "name": "B Boba",
+          "x": 0.1256,
+          "y": 0.344
+        },
+        {
+          "name": "Mid Tiles",
+          "x": 0.5312,
+          "y": 0.656
+        },
+        {
+          "name": "B Market",
+          "x": 0.2348,
+          "y": 0.5312
+        },
+        {
+          "name": "B Site",
+          "x": 0.0437,
+          "y": 0.5624
+        },
+        {
+          "name": "B Main",
+          "x": 0.0593,
+          "y": 0.6716
+        },
+        {
+          "name": "B Lobby",
+          "x": 0.2972,
+          "y": 0.7808
+        },
+        {
+          "name": "Mid Bottom",
+          "x": 0.342,
+          "y": 0.656
+        },
+        {
+          "name": "Mid Courtyard",
+          "x": 0.4064,
+          "y": 0.5624
+        },
+        {
+          "name": "A Lobby",
+          "x": 0.656,
+          "y": 0.656
+        },
+        {
+          "name": "A Main",
+          "x": 0.6716,
+          "y": 0.5468
+        },
+        {
+          "name": "A Link",
+          "x": 0.734,
+          "y": 0.344
+        },
+        {
+          "name": "A Site",
+          "x": 0.7496,
+          "y": 0.4376
+        },
+        {
+          "name": "A Elbow",
+          "x": 0.8276,
+          "y": 0.5
+        },
+        {
+          "name": "A Alley",
+          "x": 0.7808,
+          "y": 0.2504
+        },
+        {
+          "name": "Spawn",
+          "x": 0.3449,
+          "y": 0.2188
+        },
+        {
+          "name": "Mid Top",
+          "x": 0.344,
+          "y": 0.3596
+        },
+        {
+          "name": "Spawn",
+          "x": 0.4688,
+          "y": 0.9856
+        }
+      ]
+    },
+    "756da597-416b-c0f2-f47b-afbdf28670bc": {
+      "displayName": "Summit",
+      "callouts": [
+        {
+          "name": "Mid Bottom",
+          "x": 0.4843,
+          "y": 0.4164
+        },
+        {
+          "name": "Mid Top",
+          "x": 0.5368,
+          "y": 0.677
+        },
+        {
+          "name": "A Lobby",
+          "x": 0.6943,
+          "y": 0.7408
+        },
+        {
+          "name": "A Main",
+          "x": 0.6943,
+          "y": 0.5664
+        },
+        {
+          "name": "A Garden",
+          "x": 0.7918,
+          "y": 0.4033
+        },
+        {
+          "name": "A Site",
+          "x": 0.9174,
+          "y": 0.4033
+        },
+        {
+          "name": "A Art",
+          "x": 0.7918,
+          "y": 0.2645
+        },
+        {
+          "name": "A Cave",
+          "x": 0.9568,
+          "y": 0.2645
+        },
+        {
+          "name": "A Hall",
+          "x": 0.6924,
+          "y": 0.2645
+        },
+        {
+          "name": "A Link",
+          "x": 0.6512,
+          "y": 0.3601
+        },
+        {
+          "name": "B Lobby",
+          "x": 0.2893,
+          "y": 0.5945
+        },
+        {
+          "name": "Defender Side Spawn",
+          "x": 0.5105,
+          "y": 0.0733
+        },
+        {
+          "name": "Mid Window",
+          "x": 0.4843,
+          "y": 0.3264
+        },
+        {
+          "name": "B Gym",
+          "x": 0.2799,
+          "y": 0.1895
+        },
+        {
+          "name": "B Trophy",
+          "x": 0.323,
+          "y": 0.2983
+        },
+        {
+          "name": "B Tower",
+          "x": 0.1562,
+          "y": 0.2158
+        },
+        {
+          "name": "B Drop",
+          "x": 0.053,
+          "y": 0.2401
+        },
+        {
+          "name": "B Site",
+          "x": 0.1505,
+          "y": 0.3376
+        },
+        {
+          "name": "B Link",
+          "x": 0.3305,
+          "y": 0.4164
+        },
+        {
+          "name": "Mid Fountain",
+          "x": 0.5105,
+          "y": 0.5533
+        },
+        {
+          "name": "Mid Bend",
+          "x": 0.6362,
+          "y": 0.4933
+        },
+        {
+          "name": "Mid Tiles",
+          "x": 0.3649,
+          "y": 0.6068
+        },
+        {
+          "name": "B Main",
+          "x": 0.1862,
+          "y": 0.4914
+        },
+        {
+          "name": "Attacker Side Spawn",
+          "x": 0.0399,
+          "y": 0.8964
+        }
+      ]
+    }
+  }
+}

@@ -20,11 +20,11 @@ describe('wizard mode rules (mirror core config)', () => {
     expect(modeAttributes(m)).toEqual({ chargeLevel: 1, chargeStage: 0, chargeBars: 1, bounces: 0 });
     expect(modeAttributes({ id: 'x', label: 'x', requiredSlots: [], attributes: { chargeStage: { type: 'number', default: 1 } } })).toEqual({ chargeStage: 1 });
   });
-  it('shows stand2 only when a second aim exists (core visible_slots)', () => {
+  it('hides second captures in single-throw modes even with legacy images', () => {
     const s = slots();
     expect(visibleSlots(['stand1', 'aim1', 'landing'], s)).toEqual(['stand1', 'aim1', 'landing']);
     s.aim2.image = 'h';
-    expect(visibleSlots(['stand1', 'aim1', 'landing'], s)).toEqual(['stand1', 'aim1', 'stand2', 'landing']);
+    expect(visibleSlots(['stand1', 'aim1', 'landing'], s)).toEqual(['stand1', 'aim1', 'landing']);
     expect(visibleSlots(['stand1', 'aim1', 'aim2', 'landing'], s)).toContain('aim2');
   });
 });
@@ -55,5 +55,33 @@ describe('location-aware naming', () => {
     const catalog = { agents: [{ uuid: 'a', displayName: 'Sova', displayIcon: '', abilities: [{ slot: 'Grenade', displayName: 'Recon Bolt' }] }], maps: [{ uuid: 'm', displayName: 'Abyss', displayIcon: '', callouts: [{ name: 'Mid Bend', x: 0.1, y: 0.1 }, { name: 'B Site', x: 0.9, y: 0.9 }] }], version: 'v', updatedAt: '' } as Catalog;
     const l = { ...newLineup(), mapUuid: 'm', agentUuid: 'a', abilitySlot: 'Grenade', site: 'B', side: 'attack' as const, stand1Pos: { x: 0.1, y: 0.1 }, landPos: { x: 0.9, y: 0.9 } };
     expect(autoTitle(l, catalog)).toBe('Sova Recon Bolt · Abyss Mid Bend → B Site (Attack)');
+  });
+});
+
+import { standardMaps } from './game';
+import { normalizeLineup } from './adapter';
+import { calloutsForMap } from './modes';
+describe('Preview 5 regressions', () => {
+  it('excludes every TDM map by identity and name, including District', () => {
+    const maps = [
+      { uuid: '690b3ed2-4dff-945b-8223-6da834e30d24', displayName: 'District' },
+      { uuid: '12452a9d-48c3-0b02-e7eb-0381c3520404', displayName: 'Kasbah' },
+      { uuid: 'de28aa9b-4cbe-1003-320e-6cb3ec309557', displayName: 'Piazza' },
+      { uuid: '2c09d728-42d5-30d8-43dc-96a05cc7ee9d', displayName: 'Drift' },
+      { uuid: 'd6336a5a-428f-c591-98db-c8a291159134', displayName: 'Glitch' },
+      { uuid: 'x', displayName: 'Custom TDM Arena' },
+      { uuid: '224b0a95-48b9-f703-1bd8-67aca101a61f', displayName: 'Abyss' },
+    ];
+    expect(standardMaps(maps).map(m => m.displayName)).toEqual(['Abyss']);
+  });
+  it('normalizes legacy lineups missing render-critical collections', () => {
+    const l = normalizeLineup({ id: 'x', slots: { aim1: { image: 'h' } } });
+    expect(l.bounces).toEqual([]); expect(l.tags).toEqual([]); expect(l.steps).toEqual([]); expect(l.throws).toEqual([]);
+    expect(l.slots.aim1.image).toBe('h'); expect(l.slots.stand2.circles).toEqual([]);
+  });
+  it('bundles normalized callouts for standard maps', () => {
+    const cs = calloutsForMap({ uuid: '224b0a95-48b9-f703-1bd8-67aca101a61f', displayName: 'Abyss' });
+    expect(cs.length).toBeGreaterThan(10);
+    expect(cs.every(c => c.x >= 0 && c.x <= 1 && c.y >= 0 && c.y <= 1)).toBe(true);
   });
 });

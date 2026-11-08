@@ -57,6 +57,13 @@ export function Drawer({ open, onClose, title, children, footer }: { open: boole
   if (!open) return null;
   return createPortal(<div className="ll-overlay ll-overlay--drawer" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><div ref={ref} role="dialog" aria-modal="true" aria-labelledby={id} className="ll-drawer"><header className="ll-modal__head"><h2 id={id} className="ll-h2">{title}</h2><IconButton label="Close" onClick={onClose}><X size={18} /></IconButton></header><div className="ll-drawer__body">{children}</div>{footer && <footer className="ll-modal__foot">{footer}</footer>}</div></div>, document.body);
 }
+export function Popup({ open, onClose, title, children, footer }: { open: boolean; onClose(): void; title: string; children: ReactNode; footer?: ReactNode }) {
+  const closeRef = useRef(onClose); closeRef.current = onClose;
+  const ref = useDialog(open, onClose); const id = useId();
+  useEffect(() => { if (!open) return; const onPop = () => closeRef.current(); window.addEventListener('popstate', onPop); window.history.pushState({ llPopup: true }, ''); return () => { window.removeEventListener('popstate', onPop); }; }, [open]);
+  if (!open) return null;
+  return createPortal(<div className="ll-overlay ll-overlay--popup" onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}><div ref={ref} role="dialog" aria-modal="true" aria-labelledby={id} className="ll-popup" data-testid="lineup-popup"><header className="ll-modal__head"><h2 id={id} className="ll-h2">{title}</h2><IconButton label="Close" onClick={onClose}><X size={18} /></IconButton></header><div className="ll-popup__body">{children}</div>{footer && <footer className="ll-modal__foot">{footer}</footer>}</div></div>, document.body);
+}
 /* Toasts */
 interface Toast { id: number; message: string; tone: 'info' | 'success' | 'warning' | 'error' }
 const ToastContext = createContext<{ push(message: string, tone?: Toast['tone']): void }>({ push: () => {} });
@@ -67,7 +74,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 }
 export function useToast() { return useContext(ToastContext); }
 /* Tooltip */
-export function Tooltip({ label, children }: { label: string; children: ReactNode }) { return <span className="ll-tooltip-wrap">{children}<span role="tooltip" className="ll-tooltip">{label}</span></span>; }
+export function Tooltip({ label, children }: { label: string; children: ReactNode }) {
+  const ref = useRef<HTMLSpanElement>(null); const [pos, setPos] = useState<{ x: number; y: number; below: boolean } | null>(null);
+  const show = () => { const r = ref.current?.getBoundingClientRect(); if (!r) return; const w = Math.min(240, window.innerWidth - 16); const x = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8); const below = r.top < 44; setPos({ x, y: below ? r.bottom + 8 : r.top - 8, below }); };
+  const hide = () => setPos(null);
+  return <span ref={ref} className="ll-tooltip-wrap" onMouseEnter={show} onMouseLeave={hide} onFocus={show} onBlur={hide}>{children}{pos && createPortal(<span role="tooltip" className="ll-tooltip" style={{ left: pos.x, top: pos.y, transform: pos.below ? 'none' : 'translateY(-100%)' }}>{label}</span>, document.body)}</span>;
+}
 /* Tabs / stepper */
 export function Tabs<T extends string>({ tabs, value, onChange, ariaLabel }: { tabs: { value: T; label: string; icon?: ReactNode }[]; value: T; onChange(v: T): void; ariaLabel: string }) {
   return <div role="tablist" aria-label={ariaLabel} className="ll-tabs">{tabs.map(t => <button key={t.value} role="tab" aria-selected={value === t.value} className={clsx('ll-tab', value === t.value && 'is-active')} onClick={() => onChange(t.value)}>{t.icon}{t.label}</button>)}</div>;

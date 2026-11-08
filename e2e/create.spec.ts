@@ -20,8 +20,7 @@ async function setupSova(page: Page) {
   await setup.getByRole('button', { name: 'Choose ability' }).click();
   await page.getByRole('dialog', { name: 'Choose ability' }).getByRole('option', { name: /Recon Bolt/ }).click();
   await setup.getByRole('radio', { name: 'Recon Dart' }).click();
-  await setup.getByRole('radio', { name: 'Full', exact: true }).click();
-  await setup.getByRole('radio', { name: '1', exact: true }).click();
+
 }
 
 test.describe('desktop create wizard', () => {
@@ -40,6 +39,8 @@ test.describe('desktop create wizard', () => {
     await expect(page.getByTestId('slot-aim1')).toHaveClass(/is-active/);
     await hotkey(page, 'capture');
     await hotkey(page, 'crosshair_circle');
+    await page.getByTestId('wizard-capture').getByRole('radio', { name: 'Full', exact: true }).click();
+    await page.getByTestId('wizard-capture').getByRole('radio', { name: '1', exact: true }).click();
     await expect(page.getByTestId('slot-aim1')).toHaveClass(/is-active/);
     await hotkey(page, 'slot_landing');
     await hotkey(page, 'capture');
@@ -57,8 +58,8 @@ test.describe('desktop create wizard', () => {
     await stage.click({ position: { x: box.width * 0.3, y: box.height * 0.6 } });
     await page.getByRole('radio', { name: 'Land *' }).click();
     await stage.click({ position: { x: box.width * 0.6, y: box.height * 0.3 } });
-    await page.getByRole('radio', { name: 'Bounce', exact: true }).click();
-    await stage.click({ position: { x: box.width * 0.45, y: box.height * 0.45 } });
+    await expect(page.getByRole('radio', { name: 'Bounce', exact: true })).toHaveCount(0);
+    await expect(page.getByText('Pan / zoom')).toHaveCount(0);
     await expect(page.locator('.ll-pin-list code').first()).toHaveText(/^0\.\d+, 0\.\d+$/);
     await expect(page.locator('.ll-pins__map img')).toHaveAttribute('src', /fixture-art\/minimap\//);
     await page.waitForTimeout(300);

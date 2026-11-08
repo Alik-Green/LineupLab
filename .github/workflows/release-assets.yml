@@ -92,11 +92,9 @@ jobs:
           printf 'Windows candidates: %s\n' "${EXES[@]}" | while IFS= read -r line; do echo "::notice title=Release inventory::$line"; done
           printf 'APK candidates: %s\n' "${APKS[@]}" | while IFS= read -r line; do echo "::notice title=Release inventory::$line"; done
           if [ "${#EXES[@]}" -ne 1 ]; then echo "::error::Expected one Windows installer, found ${#EXES[@]}"; exit 1; fi
-          if [ "${#APKS[@]}" -eq 1 ]; then APK="${APKS[0]}"; else
-            mapfile -t UNIVERSAL < <(printf '%s\n' "${APKS[@]}" | grep -E 'universal.*release.*\.apk$' || true)
-            if [ "${#UNIVERSAL[@]}" -ne 1 ]; then echo "::error::Expected one universal release APK, found ${#UNIVERSAL[@]} of ${#APKS[@]} APKs"; exit 1; fi
-            APK="${UNIVERSAL[0]}"
-          fi
+          mapfile -t ARM64 < <(printf '%s\n' "${APKS[@]}" | grep -Ei '(arm64|aarch64).*release.*\.apk$' || true)
+          if [ "${#ARM64[@]}" -ne 1 ]; then echo "::error::Expected one arm64-v8a release APK, found ${#ARM64[@]} of ${#APKS[@]} APKs"; exit 1; fi
+          APK="${ARM64[0]}"
           python3 - "${EXES[0]}" "$APK" <<'PY'
           import pathlib, struct, sys, zipfile
           exe, apk = map(pathlib.Path, sys.argv[1:])
@@ -112,25 +110,26 @@ jobs:
           with zipfile.ZipFile(apk) as z:
               names = set(z.namelist())
               assert {'AndroidManifest.xml', 'classes.dex'} <= names, 'Missing Android package entries'
-              assert any(n.startswith('lib/') and n.endswith('.so') for n in names), 'Missing native libraries'
+              libs = [n for n in names if n.startswith('lib/') and n.endswith('.so')]
+              assert libs, 'Missing native libraries'
+              assert all(n.startswith('lib/arm64-v8a/') for n in libs), f'APK must be arm64-only for modern 64-bit phones: {libs}'
               assert z.testzip() is None, 'APK CRC failure'
           print(f'Validated x64 NSIS installer ({len(data):,} bytes) and APK ({apk.stat().st_size:,} bytes)')
           PY
           stage tools-discovery
-          APKSIGNER=$({ find /usr/local/lib/android/sdk/build-tools -type f -name apksigner 2>/dev/null || true; } | sort -V | tail -1)
-          AAPT=$({ find /usr/local/lib/android/sdk/build-tools -type f -name aapt 2>/dev/null || true; } | sort -V | tail -1)
-          if [ -z "$APKSIGNER" ] || [ -z "$AAPT" ]; then
-            SDKMANAGER=$(find /usr/local/lib/android/sdk/cmdline-tools -type f -name sdkmanager | sort -V | tail -1)
-            test -n "$SDKMANAGER"
-            "$SDKMANAGER" 'build-tools;34.0.0' >/dev/null
-            APKSIGNER=/usr/local/lib/android/sdk/build-tools/34.0.0/apksigner
-            AAPT=/usr/local/lib/android/sdk/build-tools/34.0.0/aapt
-          fi
+          SDKMANAGER=$(find /usr/local/lib/android/sdk/cmdline-tools -type f -name sdkmanager | sort -V | tail -1)
+          test -n "$SDKMANAGER"
+          "$SDKMANAGER" 'build-tools;36.0.0' >/dev/null
+          APKSIGNER=/usr/local/lib/android/sdk/build-tools/36.0.0/apksigner
+          AAPT=/usr/local/lib/android/sdk/build-tools/36.0.0/aapt
           stage inspect-package
           "$AAPT" dump badging "$APK" > apk-badging.txt
           grep -E "^package:|^sdkVersion:|^targetSdkVersion:|^native-code:" apk-badging.txt
           grep -q "package: name='app.lineuplab.companion'" apk-badging.txt
           grep -q "sdkVersion:'26'" apk-badging.txt
+          grep -q "targetSdkVersion:'36'" apk-badging.txt
+          grep -q "native-code: 'arm64-v8a'" apk-badging.txt
+          "$APKSIGNER" verify --verbose --print-certs "$APK" || true
           echo ci-provided > apk-signing-mode.txt
           if [[ "$APK" == *unsigned* ]]; then
             # This preview has no production keystore. Create an ephemeral signing
@@ -141,7 +140,7 @@ jobs:
             keytool -genkeypair -keystore preview-keystore.p12 -storetype PKCS12               -storepass "$STOREPASS" -keypass "$STOREPASS" -alias lineuplab-preview               -keyalg RSA -keysize 2048 -validity 365               -dname 'CN=LineupLab Preview (ephemeral CI key), O=LineupLab, C=GB'
             stage zipalign
             ZIPALIGN=$(dirname "$AAPT")/zipalign
-            "$ZIPALIGN" -f -p 4 "$APK" aligned-preview.apk
+            "$ZIPALIGN" -f -P 16 4 "$APK" aligned-preview.apk
             stage sign-preview
             "$APKSIGNER" sign --ks preview-keystore.p12 --ks-type PKCS12               --ks-pass "pass:$STOREPASS" --key-pass "pass:$STOREPASS"               --ks-key-alias lineuplab-preview --out signed-preview.apk aligned-preview.apk
             rm -f preview-keystore.p12
@@ -153,11 +152,13 @@ jobs:
           cat apk-signature.txt
           stage signature-ok
           "$AAPT" dump badging "$APK" > apk-badging.txt
+          ZIPALIGN=$(dirname "$AAPT")/zipalign
+          "$ZIPALIGN" -c -P 16 4 "$APK"
           stage signed-package-inspected
           VERSION=$(jq -er '.tagName | ltrimstr("v")' <(gh release view "$TAG" --json tagName))
           stage copy-assets
           cp "${EXES[0]}" "release-assets/LineupLab-${VERSION}-x64-setup.exe"
-          cp "$APK" "release-assets/LineupLab-Companion-${VERSION}.apk"
+          cp "$APK" "release-assets/LineupLab-Companion-${VERSION}-arm64-v8a.apk"
           stage validation-complete
       - name: Generate checksums and attach to draft
         shell: bash
@@ -206,7 +207,7 @@ jobs:
           for f in m['files']:
               body += f"| `{f['name']}` | {f['bytes']:,} bytes | `{f['sha256']}` |\n"
           a = m['android']
-          body += f"\nAndroid package: `{a['package']}`, version `{a['versionName']}`, minimum API {a['minSdk']}.\n"
+          body += f"\nAndroid package: `{a['package']}`, version `{a['versionName']}`, minimum API {a['minSdk']}, target API 36, ABI arm64-v8a (Pixel 9 and modern 64-bit Android phones).\n"
           body += "APK signature verification passed. SHA-256 certificate fingerprint: see below.\n\n"
           if a.get('signingMode') == 'ephemeral-preview':
               body += "**Preview signing:** The CI APK was unsigned. The release job aligned and signed it with an ephemeral, self-signed preview certificate (not a production identity). The private key was discarded. A future preview signed with a different key may require uninstalling this preview first; re-pair and sync afterward.\n\n"

@@ -209,6 +209,66 @@ pub struct AssetAudit {
     pub types: std::collections::BTreeMap<String, AssetTypeReport>,
     pub errors: Vec<String>,
 }
+
+/// Explicit TDM/practice identities; name-only filtering missed District.
+pub fn is_standard_map(m: &GameMap) -> bool {
+    const NON_STANDARD: &[&str] = &[
+        "690b3ed2-4dff-945b-8223-6da834e30d24", // District
+        "12452a9d-48c3-0b02-e7eb-0381c3520404", // Kasbah
+        "de28aa9b-4cbe-1003-320e-6cb3ec309557", // Piazza
+        "2c09d728-42d5-30d8-43dc-96a05cc7ee9d", // Drift
+        "d6336a5a-428f-c591-98db-c8a291159134", // Glitch
+        "ee613ee9-28b7-4beb-9666-08db13bb2244", // The Range
+        "5914d1e0-40c4-cfdd-6b88-eba06347686c", // The Range (alt)
+        "1f10dab3-4294-3827-fa35-c2aa00213cf3", // Basic Training
+    ];
+    if NON_STANDARD.contains(&m.uuid.to_lowercase().as_str()) {
+        return false;
+    }
+    let n = m.display_name.to_lowercase();
+    !matches!(
+        n.as_str(),
+        "district"
+            | "kasbah"
+            | "piazza"
+            | "drift"
+            | "glitch"
+            | "the range"
+            | "basic training"
+            | "the practice range"
+            | "practice range"
+    ) && !n.contains("deathmatch")
+        && !n.contains("tdm")
+}
+
+/// Bundled, normalized English callouts for location-aware titles. Upstream
+/// callout locations are world coordinates; the bundled dataset is already
+/// minimap-normalized. Existing normalized upstream callouts win.
+pub fn bundled_callouts() -> std::collections::BTreeMap<String, Vec<MapCallout>> {
+    #[derive(Deserialize)]
+    struct Entry {
+        callouts: Vec<MapCallout>,
+    }
+    #[derive(Deserialize)]
+    struct File {
+        maps: std::collections::BTreeMap<String, Entry>,
+    }
+    let raw = include_str!("../data/map_callouts.json");
+    serde_json::from_str::<File>(raw)
+        .map(|f| f.maps.into_iter().map(|(k, v)| (k, v.callouts)).collect())
+        .unwrap_or_default()
+}
+pub fn merge_bundled_callouts(c: &mut Catalog) {
+    let bundled = bundled_callouts();
+    for m in &mut c.maps {
+        if m.callouts.is_empty() {
+            if let Some(cs) = bundled.get(&m.uuid) {
+                m.callouts = cs.clone();
+            }
+        }
+    }
+}
+
 pub fn asset_urls(c: &Catalog) -> Vec<(String, String)> {
     let mut out = Vec::new();
     for a in &c.agents {
@@ -326,8 +386,9 @@ impl ValorantApi {
             let mut next = if force || version != previous.version || previous.agents.is_empty() {
                 let agents: Envelope<Vec<Agent>> = serde_json::from_slice(&self.fetch("agents?isPlayableCharacter=true").await?)?;
                 let maps: Envelope<Vec<GameMap>> = serde_json::from_slice(&self.fetch("maps").await?)?;
-                Catalog { version: version.clone(), last_updated: Some(crate::now()), agents: agents.data.into_iter().filter(|a| a.is_playable_character).collect(), maps: maps.data.into_iter().filter(|m| m.display_icon.is_some() && !matches!(m.display_name.to_lowercase().as_str(), "the range" | "basic training" | "the practice range")).collect(), offline: false, warning: None }
+                Catalog { version: version.clone(), last_updated: Some(crate::now()), agents: agents.data.into_iter().filter(|a| a.is_playable_character).collect(), maps: maps.data.into_iter().filter(|m| m.display_icon.is_some() && is_standard_map(m)).collect(), offline: false, warning: None }
             } else { previous.clone() };
+            merge_bundled_callouts(&mut next);
             let assets = asset_urls(&next);
             let total = assets.len();
             let mut done = 0; let mut failed = 0;
@@ -364,6 +425,7 @@ impl ValorantApi {
                 tracing::warn!(error=%e, "Catalog refresh failed");
                 if !previous.agents.is_empty() {
                     let mut c = previous;
+                    merge_bundled_callouts(&mut c);
                     c.offline = true;
                     c.warning = Some(format!("Using cached data: {e}"));
                     progress(AssetProgress {

@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+          targets: aarch64-linux-android,x86_64-linux-android
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17 }
       - uses: actions/setup-node@v4
@@ -30,11 +30,11 @@ jobs:
           mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
           echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
-          echo "NDK_HOME=$ANDROID_HOME/ndk/27.0.12077973" >> "$GITHUB_ENV"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
           echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
           echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;27.0.12077973"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;28.2.13676358"
           code=$?
           if [ $code -ne 0 ]; then tail -n 40 android-sdk.log | while IFS= read -r line; do echo "::error::DIAG $line"; done; exit $code; fi
       - run: npm ci
@@ -45,11 +45,26 @@ jobs:
           set +e
           npm run tauri --workspace mobile -- android init > android-init.log 2>&1
           printf '\nandroid.newDsl=false\nandroid.sync.suppressAgpWarnings=DEPRECATED_DSL\n' >> mobile/src-tauri/gen/android/gradle.properties
-          npm run tauri --workspace mobile -- android build --apk > android-build.log 2>&1
+          node scripts/configure-android.mjs
+          npm run tauri --workspace mobile -- android build --apk --split-per-abi --target aarch64 x86_64 > android-build.log 2>&1
           code=$?
           tail -n 40 android-init.log; tail -n 60 android-build.log
           if [ $code -ne 0 ]; then grep -E 'FAILURE|What went wrong|Execution failed|error:|Caused by' android-build.log | head -25 | while IFS= read -r line; do echo "::error::DIAG $line"; done; sed 's/\x1b\[[0-9;]*m//g' android-build.log | tail -n 25 | while IFS= read -r line; do echo "::error::DIAG $line"; done; exit $code; fi
+      - name: Inspect APK compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAPT="$HOME/android-sdk/build-tools/36.0.0/aapt"
+          for apk in $(find mobile/src-tauri/gen/android/app/build/outputs/apk -name '*.apk'); do
+            name=$(basename "$apk" .apk)
+            "$AAPT" dump badging "$apk" > "apk-badging-$name.txt"
+            grep -E "^package:|^sdkVersion:|^targetSdkVersion:|^native-code:" "apk-badging-$name.txt"
+            grep -q "sdkVersion:'26'" "apk-badging-$name.txt"
+            grep -q "targetSdkVersion:'36'" "apk-badging-$name.txt"
+          done
       - uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: mobile/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          path: |
+            mobile/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+            apk-badging-*.txt

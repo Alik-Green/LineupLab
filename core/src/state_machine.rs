@@ -124,8 +124,9 @@ impl DraftState {
         let required = self
             .required()
             .unwrap_or_else(|_| vec![Slot::Stand1, Slot::Aim1, Slot::Landing]);
-        let has_aim2 =
-            required.contains(&Slot::Aim2) || self.lineup.slot(Slot::Aim2).image.is_some();
+        // Single-throw modes must not expose optional second captures just
+        // because a legacy draft still stores an unused image.
+        let has_aim2 = required.contains(&Slot::Aim2) || required.contains(&Slot::Stand2);
         SLOT_ORDER
             .into_iter()
             .filter(|s| {

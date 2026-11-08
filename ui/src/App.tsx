@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Component, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AbilityMode, AssetProgress, Catalog, ImportPreview, ImportReport, LibraryAdapter, Lineup } from './types';
 import { listen } from '@tauri-apps/api/event';
 import { createAdapter } from './lib/adapter';
@@ -13,9 +13,18 @@ import { AppShell, type Page } from './components/AppShell';
 import { Button, Card, ProgressBar, ToastProvider } from './components/ui';
 import { applyMotionPref } from './components/Settings';
 
+class RenderBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  state = { error: null as string | null };
+  static getDerivedStateFromError(e: unknown) { return { error: String(e) }; }
+  componentDidCatch(e: unknown) { console.error('[LineupLab render]', e); }
+  render() {
+    if (this.state.error) return <div className="ll-render-error" role="alert" data-testid="render-error"><h1 className="ll-h1">Something went wrong</h1><p className="ll-muted">The screen could not be drawn. Your library is still on disk.</p><pre>{this.state.error}</pre><Button variant="primary" onClick={() => this.setState({ error: null })}>Try again</Button><Button onClick={() => location.reload()}>Reload</Button></div>;
+    return this.props.children;
+  }
+}
 export function App({ platform }: { platform: 'desktop' | 'mobile' }) {
   const adapter = useMemo<LibraryAdapter>(() => createAdapter(), []);
-  return <ToastProvider><ImageProvider adapter={adapter}><AppInner adapter={adapter} platform={platform} /></ImageProvider></ToastProvider>;
+  return <ToastProvider><ImageProvider adapter={adapter}><RenderBoundary><AppInner adapter={adapter} platform={platform} /></RenderBoundary></ImageProvider></ToastProvider>;
 }
 function AppInner({ adapter, platform }: { adapter: LibraryAdapter; platform: 'desktop' | 'mobile' }) {
   const [page, setPage] = useState<Page>('browse'); const [editId, setEditId] = useState<string | null>(null);

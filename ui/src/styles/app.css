@@ -669,3 +669,44 @@ html[data-platform="mobile"] .ll-modal { max-height: calc(100dvh - env(safe-area
 .ll-ov__checklist--compact { flex: none; max-height: 92px; overflow: auto; }
 .ll-ov__checklist--compact .ll-ov__thumb { width: 30px; height: 22px; }
 .ll-ov__checklist--compact .ll-ov__item { padding: 2px 4px; }
+
+/* Preview 5 — calmer surfaces, full-screen viewer, unified Create nav. */
+.ll-render-error { max-width: 640px; margin: 10vh auto; padding: 24px; display: flex; flex-direction: column; gap: 12px; background: var(--ll-surface); border: 1px solid var(--ll-border); border-radius: var(--ll-radius); }
+.ll-render-error pre { white-space: pre-wrap; color: var(--ll-muted); font-size: 12px; }
+.ll-tooltip { position: fixed; bottom: auto; left: auto; z-index: 200; max-width: 240px; white-space: normal; opacity: 1; transform: none; }
+.ll-tooltip-wrap:hover .ll-tooltip, .ll-tooltip-wrap:focus-within .ll-tooltip { opacity: 1; }
+.ll-overlay--popup { padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+.ll-popup { width: 100%; height: 100%; max-height: calc(100dvh - 24px); display: flex; flex-direction: column; background: var(--ll-surface); border: 1px solid var(--ll-border); border-radius: var(--ll-radius); box-shadow: 0 24px 64px rgb(0 0 0 / .5); overflow: hidden; }
+.ll-popup__body { flex: 1; min-height: 0; overflow: auto; padding: 12px; }
+.ll-detail--popup { height: 100%; grid-template-columns: minmax(0, 1fr) 280px; gap: 12px; }
+.ll-detail--popup .ll-detail__viewer { display: flex; flex-direction: column; min-height: 0; }
+.ll-detail--popup .ll-detail__stage { flex: 1; min-height: 320px; padding: 0; display: block; }
+.ll-detail__transform { width: 100%; height: 100%; transform-origin: 0 0; display: grid; place-items: center; will-change: transform; }
+.ll-detail__transform > * { max-width: 100%; max-height: 100%; }
+.ll-detail--popup .ll-detail__meta { overflow: auto; gap: 8px; }
+.ll-detail--popup .ll-detail__map { height: 200px; }
+.ll-detail__info { display: flex; flex-direction: column; gap: 8px; }
+.ll-title-hint { font-size: 12px; margin-top: -6px; }
+.ll-wizard__top { position: sticky; top: 0; z-index: 30; background: var(--ll-bg); padding-top: 4px; }
+.ll-wizard__nav { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.ll-wizard__top .ll-autosave { flex-basis: 100%; font-size: 12px; color: var(--ll-muted); }
+.ll-wizard__foot { display: none; }
+.ll-browse-picker--square .ll-browse-picker__trigger { position: relative; aspect-ratio: 1; min-height: 0; padding: 0; overflow: hidden; justify-content: flex-end; }
+.ll-browse-picker--square .ll-browse-picker__thumb { position: absolute; inset: 6px 6px 26px; width: auto; height: auto; display: grid; place-items: center; }
+.ll-browse-picker--square .ll-browse-picker__img { width: 100%; height: 100%; object-fit: contain; }
+.ll-browse-picker--square .ll-browse-picker__text { position: relative; z-index: 1; width: 100%; padding: 14px 6px 5px; background: linear-gradient(transparent, rgb(14 16 21 / .92) 45%); }
+.ll-browse-picker--square .ll-browse-picker__text small { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.ll-browse-picker--square .ll-browse-picker__text strong { font-size: 11px; line-height: 1.1; max-height: 2.2em; overflow: hidden; }
+.ll-browse-picker--square .ll-browse-picker__trigger > svg { z-index: 2; top: 4px; right: 4px; }
+.ll-mbrowse__pickers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ll-mbrowse__pickers .ll-browse-picker:first-child { grid-column: auto; }
+.ll-mbrowse__pickers .ll-browse-picker__trigger { min-height: 0; padding: 0; }
+.ll-mbrowse__mapwrap { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+.ll-minimap__canvas img.ll-minimap__img { image-rendering: auto; }
+@media (max-width: 900px) {
+  .ll-detail--popup { grid-template-columns: 1fr; height: auto; }
+  .ll-detail--popup .ll-detail__stage { min-height: 52dvh; }
+  .ll-popup__body { overflow: auto; }
+  .ll-wizard__top .ll-stepper { order: 2; flex-basis: 100%; overflow-x: auto; }
+  .ll-wizard__nav { order: 1; margin-left: auto; }
+}

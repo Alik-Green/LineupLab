@@ -38,3 +38,13 @@ export function zoomMapAt(v: MapView, factor: number, px: number, py: number, si
   const scale = Math.min(6, Math.max(1, v.scale * factor));
   return constrainMapPan({ scale, tx: px - (px - v.tx) * scale / v.scale, ty: py - (py - v.ty) * scale / v.scale }, side);
 }
+
+/** Rectangular image viewer pan clamp (content fills the stage at scale 1). */
+export function clampImagePan(v: MapView, width: number, height: number): MapView {
+  const minX = width * (1 - v.scale), minY = height * (1 - v.scale);
+  return { ...v, tx: Math.min(0, Math.max(minX, v.tx)), ty: Math.min(0, Math.max(minY, v.ty)) };
+}
+export function zoomImageAt(v: MapView, factor: number, px: number, py: number, width: number, height: number): MapView {
+  const scale = Math.min(8, Math.max(1, v.scale * factor));
+  return clampImagePan({ scale, tx: px - (px - v.tx) * scale / v.scale, ty: py - (py - v.ty) * scale / v.scale }, width, height);
+}
