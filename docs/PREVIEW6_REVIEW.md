@@ -37,7 +37,8 @@ The tactical minimap uses the catalog `displayIcon` source. Fixture art mirrors 
 | Vitest | 39/39 across 8 files |
 | Playwright desktop + Android | 44/44 |
 | Rust core lib/bin/integration tests | 34/34 |
-| Rust doctests | pending CI locally: sandbox toolchain has no `rustdoc`; CI runs `cargo test --workspace --doc` |
+| Rust doctests | CI pass (`cargo test --workspace --doc`); local sandbox toolchain lacks `rustdoc` |
+| Native Windows CI / Android APK CI | pass on release source `85170a7` |
 | `cargo fmt --all -- --check` | pass |
 | Desktop/mobile production builds | pass |
 | Workflow YAML lint | pass |
@@ -45,10 +46,10 @@ The tactical minimap uses the catalog `displayIcon` source. Fixture art mirrors 
 
 Regression coverage includes the exact pan/cancel/resize/unmount crash, selection suppression, callouts and short-window map settings, Create navigation/final stage/pins/sites/modes/annotations, image-proportioned overlays, outline thickness, difficulty colours, real map-selector artwork, Android download persistence/refresh after relaunch, stopped-sharing discovery, and open/fresh SQLite connection visibility after download.
 
-## Still pending for release
+## Release evidence
 
-- Same-SHA native Windows CI and Android APK packaging/signing/alignment checks.
-- Draft prerelease, publish-marker packaging run, asset download/checksum verification.
-- Final release/install notes and checklist item 23.
+- Same-SHA native Windows CI [42492405644](https://github.com/Alik-Green/LineupLab/actions/runs/42492405644) and Android APK [42492405608](https://github.com/Alik-Green/LineupLab/actions/runs/42492405608) succeeded on `85170a7b7056b1acd348a175f565f4c02d067547`.
+- Packaging/verification run [42493554104](https://github.com/Alik-Green/LineupLab/actions/runs/42493554104) verified source equality, artifact digests, NSIS/APK structure, arm64-only badging, 16 KB alignment, ephemeral APK signing and uploaded-asset checksums, then published [v0.1.0-preview.6](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.6).
+- Checklist item 23 is closed in `docs/TODO_PREVIEW6.md`; release/install notes are in `docs/releases/v0.1.0-preview.6.md`, `docs/BUILD.md` and `docs/ANDROID_INSTALL.md`.
 
-Unsigned Windows and ephemeral Android signing disclosures remain required. Physical installation and gameplay validation remain user-side.
+Unsigned Windows and ephemeral Android signing disclosures remain in force. Physical installation and gameplay validation remain user-side.

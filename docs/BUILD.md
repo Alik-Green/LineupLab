@@ -2,7 +2,7 @@
 
 ## Prebuilt releases
 
-Current prerelease: [v0.1.0-preview.5](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.5) — Windows x64 NSIS installer, **arm64-v8a-only** Android companion APK and `SHA256SUMS.txt`. See `docs/releases/v0.1.0-preview.5.md` and `docs/ANDROID_INSTALL.md` for install/upgrade steps and checksums. Windows is unsigned; Android uses an ephemeral preview key, so upgrading from Preview 1–4 requires uninstall/reinstall and re-connecting. Back up first. CI builds are not physical-device/gameplay validation.
+Current prerelease: [v0.1.0-preview.6](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.6) — Windows x64 NSIS installer, **arm64-v8a-only** Android companion APK and `SHA256SUMS.txt`. See `docs/releases/v0.1.0-preview.6.md` and `docs/ANDROID_INSTALL.md` for install/upgrade steps and checksums. Windows is unsigned; Android uses an ephemeral preview key, so upgrading from an older preview with a different signing identity requires uninstall/reinstall and re-connecting. Back up first. CI builds are not physical-device/gameplay validation.
 
 ## Portable core (Linux/macOS/Windows)
 
