@@ -40,6 +40,7 @@ function AppInner({ adapter, platform }: { adapter: LibraryAdapter; platform: 'd
     void adapter.prepareAssets(false).then(cat => { if (live) { setCatalog(cat); setAssetProgress(null); } }).catch(e => { if (live) setError(String(e)); });
     return () => { live = false; un?.(); };
   }, [adapter]);
+  useEffect(() => { const changed = () => { void refresh(); }; window.addEventListener('lineuplab:library-changed', changed); let un: (() => void) | undefined; let live = true; if (adapter.kind === 'tauri') void listen('lineuplab://library-changed', changed).then(f => { if (live) un = f; else f(); }); return () => { live = false; un?.(); window.removeEventListener('lineuplab:library-changed', changed); }; }, [adapter, refresh]);
   const browseOnly = platform === 'mobile';
   if (typeof window !== 'undefined' && (window.location.hash === '#overlay' || new URLSearchParams(window.location.search).has('overlay'))) return <OverlayView adapter={adapter} />;
   const openEditor = (id?: string | null) => { setEditId(id ?? null); setPage('editor'); };
@@ -49,7 +50,7 @@ function AppInner({ adapter, platform }: { adapter: LibraryAdapter; platform: 'd
     {page === 'browse' && <Browse adapter={adapter} lineups={lineups} catalog={catalog} readOnly={browseOnly} onEdit={id => browseOnly ? undefined : openEditor(id)} onRefresh={refresh} mobile={browseOnly} />}
     {page === 'editor' && !browseOnly && <Editor adapter={adapter} lineupId={editId} catalog={catalog} modes={modes} lineups={lineups} onSaved={() => { void refresh(); setPage('browse'); }} onCancel={() => setPage('browse')} />}
     {page === 'import' && !browseOnly && <ImportExport adapter={adapter} lineups={lineups} onRefresh={refresh} />}
-    {page === 'sync' && <SyncSettings adapter={adapter} host={false} />}
+    {page === 'sync' && <SyncSettings adapter={adapter} host={false} onDownloaded={refresh} />}
     {page === 'settings' && <Settings adapter={adapter} catalog={catalog} onRefresh={refresh} browseOnly={browseOnly} />}
     {assetProgress && assetProgress.phase === 'downloading' && assetProgress.done < assetProgress.total && <FirstRunProgress progress={assetProgress} />}
   </AppShell>;

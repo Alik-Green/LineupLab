@@ -81,12 +81,19 @@ pub fn run() {
             commands::duplicate_lineup, commands::set_favorite, commands::get_catalog, commands::prepare_assets, commands::catalog_image_url, commands::asset_diagnostics, commands::log_image_error, commands::get_modes,
             commands::media_path, commands::put_image, commands::capture_monitor,
             commands::import_preview, commands::import_commit, commands::export_pack, commands::undo_import,
-            commands::get_hotkeys, commands::rebind_hotkey, commands::get_overlay_settings, commands::set_overlay_settings,
+            commands::get_hotkeys, commands::rebind_hotkey, commands::get_overlay_settings, commands::set_overlay_settings, commands::resize_overlay,
             commands::get_capture_settings, commands::set_capture_settings, commands::list_monitors, commands::get_overlay_view, commands::set_overlay_lineup,
             commands::overlay_action, commands::learn_lineup,
             commands::start_sync_server, commands::stop_sync_server, commands::get_sync_server_status,
             commands::pair_sync, commands::sync_now, commands::download_library, commands::discover_sync
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running LineupLab");
+        .build(tauri::generate_context!())
+        .expect("error while building LineupLab")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                let state = app.state::<AppState>();
+                let handle = state.sync_server.lock().unwrap().take();
+                if let Some(handle) = handle { let _ = tauri::async_runtime::block_on(handle.shutdown()); }
+            }
+        });
 }

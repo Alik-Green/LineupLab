@@ -29,8 +29,9 @@ test.describe('desktop browse', () => {
       await page.goto('/?mock');
       await expect(page.getByTestId('lineup-card').first()).toBeVisible();
       await page.waitForTimeout(400);
-      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-      expect(overflow).toBeLessThanOrEqual(1);
+      const overflow = await page.evaluate(() => ({ x: document.documentElement.scrollWidth - window.innerWidth, y: document.documentElement.scrollHeight - window.innerHeight }));
+      expect(overflow.x).toBeLessThanOrEqual(1);
+      expect(overflow.y).toBeLessThanOrEqual(1);
     }
   });
 });

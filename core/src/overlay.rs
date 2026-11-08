@@ -59,7 +59,7 @@ impl OverlaySettings {
     pub fn clamp(&mut self) {
         self.opacity = self.opacity.clamp(0.2, 1.0);
         self.width = self.width.clamp(200, 1600);
-        self.height = self.height.clamp(160, 1400);
+        self.height = self.height.clamp(64, 2400);
     }
     /// Logical position within a monitor, honoring margins. Settings width/height/margins
     /// are CSS/logical pixels; native shells convert the result with the monitor scale factor.

@@ -6,7 +6,7 @@ import fixtureCatalog from '../fixtures/catalog.json';
 import type { Catalog, Lineup, SlotId } from '../types';
 import { SLOT_ORDER } from '../types';
 import { DEFAULT_HOTKEYS, rebindLocal } from './hotkeys';
-import { DEFAULT_OVERLAY, clampOverlay, draftChecklist } from './overlay';
+import { DEFAULT_OVERLAY, clampOverlay, overlayHeight, draftChecklist } from './overlay';
 import abilityModes from '@data/ability_modes.json';
 
 declare global { interface Window { __TAURI_INTERNALS__: { invoke(cmd: string, args?: Record<string, unknown>): Promise<unknown>; convertFileSrc(path: string): string; transformCallback(cb: (e: unknown) => void, once?: boolean): number }; __TAURI_EVENT_PLUGIN_INTERNALS__: { unregisterListener(event: string, id: number): void }; __LL_MOCK_EMIT__(event: string, payload: unknown): void; __LL_MOCK_STATE__: Record<string, unknown> } }
@@ -22,8 +22,8 @@ const params = new URLSearchParams(location.search);
 const empty = params.has('empty');
 const now = '2026-11-07T12:00:00Z';
 function slot(image: string | null) { return { image, circles: [], lines: [] }; }
-function fixtureLineups(): Lineup[] {
-  if (empty) return [];
+function fixtureLineups(remote = false): Lineup[] {
+  if (empty && !remote) return [];
   const specs = [
     ['Abyss', 'sova', 'Grenade', 'recon', 'B', 'attack', 'Mid Bend → B Site', true, 0.6919, 0.7016, 0.3441, 0.8831],
     ['Abyss', 'sova', 'Ability1', 'double', 'A', 'attack', 'A Main double shock', true, 0.22, 0.62, 0.28, 0.24],
@@ -48,6 +48,10 @@ function fixtureLineups(): Lineup[] {
   });
 }
 let lineups = fixtureLineups();
+const desktopLineups = fixtureLineups(true);
+let sharing = !params.has('offline');
+try { const saved = JSON.parse(localStorage.getItem('lineuplab.mock.library') ?? 'null') as Lineup[] | null; if (saved) lineups = saved; } catch { /* fresh fixture */ }
+function persistMockLibrary() { localStorage.setItem('lineuplab.mock.library', JSON.stringify(lineups)); window.__LL_MOCK_STATE__.lineups = lineups; }
 if (params.has('malformed') && lineups[0]) {
   // Simulate an older/downloaded pack that omitted collections. Render code must
   // normalize this instead of unmounting the whole WebView to a solid colour.
@@ -68,10 +72,11 @@ function emit(event: string, payload: unknown) { emitLocal(event, payload); try 
 if (mockBus) mockBus.onmessage = e => { const { event, payload } = e.data ?? {}; if (typeof event === 'string') emitLocal(event, payload); };
 window.__LL_MOCK_EMIT__ = emit;
 window.__LL_MOCK_STATE__ = { lineups, catalog };
-function artPath(url: string) {
+export function artPath(url: string) {
   try { const u = new URL(url); const parts = u.pathname.split('/').filter(Boolean); const kind = parts[0]; const slug = parts[1] ?? 'unknown'; const file = parts[2] ?? '';
     const mapped = kind === 'maps' ? (file.startsWith('displayicon') ? 'minimap' : file.startsWith('listview') ? 'map' : 'mapSplash') : kind === 'agents' ? 'agent' : kind === 'abilities' ? 'ability' : 'role';
-    return `/fixture-art/${mapped}/${slug}`;
+    const name = kind === 'maps' && mapped === 'mapSplash' ? `splash-${slug}` : kind === 'maps' && mapped === 'map' ? `list-${slug}` : slug;
+    return `/fixture-art/${mapped}/${name}`;
   } catch { return url; }
 }
 function allModes() { const cfg = abilityModes as unknown as { defaults: Record<string, unknown>[]; rules: { modes: Record<string, unknown>[] }[] }; const seen = new Set<string>(); const out: unknown[] = []; for (const m of [...cfg.defaults, ...cfg.rules.flatMap(r => r.modes)]) if (!seen.has(m.id as string)) { seen.add(m.id as string); out.push(m); } return out; }
@@ -80,7 +85,7 @@ async function invoke(cmd: string, args: Record<string, unknown> = {}): Promise<
   switch (cmd) {
     case 'list_lineups': return lineups.filter(l => !l.deleted);
     case 'get_lineup': return lineups.find(l => l.id === a.id) ?? null;
-    case 'save_lineup': { const l = args.lineup as Lineup; const next = { ...l, updatedAt: new Date().toISOString(), revision: l.revision + 1, draft: false }; const i = lineups.findIndex(x => x.id === l.id); if (i >= 0) lineups[i] = next; else lineups.push(next); return next; }
+    case 'save_lineup': { const l = args.lineup as Lineup; const next = { ...l, updatedAt: new Date().toISOString(), revision: l.revision + 1, draft: false }; const i = lineups.findIndex(x => x.id === l.id); if (i >= 0) lineups[i] = next; else lineups.push(next); persistMockLibrary(); return next; }
     case 'delete_lineup': lineups = lineups.map(l => l.id === a.id ? { ...l, deleted: true } : l); return null;
     case 'duplicate_lineup': { const l = lineups.find(x => x.id === a.id); if (!l) throw new Error('Not found'); const copy = { ...structuredClone(l), id: crypto.randomUUID(), title: `${l.title} (copy)` }; lineups.push(copy); return copy; }
     case 'set_favorite': lineups = lineups.map(l => l.id === a.id ? { ...l, isFavorite: a.value } : l); return null;
@@ -128,21 +133,27 @@ async function invoke(cmd: string, args: Record<string, unknown> = {}): Promise<
     case 'get_capture_settings': return { maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150, ...JSON.parse(localStorage.getItem('mock.capture') ?? '{}') };
     case 'set_capture_settings': localStorage.setItem('mock.capture', JSON.stringify(args.settings)); return null;
     case 'get_overlay_view': { overlayState.settings = { ...overlayState.settings, ...clampOverlay({ ...DEFAULT_OVERLAY, ...JSON.parse(localStorage.getItem('mock.overlay') ?? '{}') }) }; return { state: overlayState, lineup: overlayState.mode === 'create' ? mockDraft : overlayLineup }; }
+    case 'resize_overlay': { overlayState.settings.height = overlayHeight(overlayState.settings.width, Number(a.aspectRatio), Boolean(a.minimal), a.mode === 'create' ? 'create' : 'view'); return null; }
     case 'overlay_action': { const s = overlayState; switch (a.action) { case 'overlay_toggle': s.visible = !s.visible; break; case 'overlay_controls': s.settings.clickThrough = !s.settings.clickThrough; s.visible = true; break; case 'overlay_mode': s.mode = s.mode === 'create' ? 'view' : 'create'; s.flipped = false; break; case 'view_next': s.viewIndex = (s.viewIndex + 1) % Math.max(1, s.viewSlots.length); break; case 'view_prev': s.viewIndex = (s.viewIndex + s.viewSlots.length - 1) % Math.max(1, s.viewSlots.length); break; case 'view_flip': s.flipped = !s.flipped; break; case 'checklist_toggle': s.showChecklist = !s.showChecklist; break; } emit('lineuplab://overlay-changed', s); return null; }
     case 'learn_lineup': { overlayLineup = lineups.find(l => l.id === a.id) ?? null; overlayState.mode = 'view'; overlayState.visible = true; if (overlayLineup) { overlayState.viewSlots = SLOT_ORDER.filter(k => overlayLineup!.slots[k].image); overlayState.viewIndex = 0; } emit('lineuplab://overlay-changed', overlayState); return null; }
     case 'set_overlay_lineup': { overlayLineup = lineups.find(l => l.id === a.id) ?? null; if (overlayLineup) { overlayState.viewSlots = SLOT_ORDER.filter(k => overlayLineup!.slots[k].image); overlayState.viewIndex = 0; overlayState.checklist = draftChecklist(overlayLineup, ['stand1', 'aim1', 'landing']); } emit('lineuplab://overlay-changed', overlayState); return null; }
-    case 'start_sync_server': return { running: true, address: '192.168.1.20:8765', requiresCode: false };
-    case 'stop_sync_server': return null;
-    case 'get_sync_server_status': return { running: false };
-    case 'pair_sync': return { token: 'mock-token', serverName: 'Desktop library', deviceId: 'desktop', protocolVersion: 1 };
+    case 'start_sync_server': sharing = true; return { running: true, address: '192.168.1.20:8765', requiresCode: false };
+    case 'stop_sync_server': sharing = false; return null;
+    case 'get_sync_server_status': return sharing ? { running: true, address: '192.168.1.20:8765', requiresCode: false } : { running: false };
+    case 'pair_sync': if (!sharing) throw new Error('Desktop is not sharing. Start sharing on the desktop and try again.'); return { token: 'mock-token', serverName: 'Desktop library', deviceId: 'desktop', protocolVersion: 1 };
     case 'sync_now': return { pulled: 12, pushed: 0, images: 34, conflicts: 0 };
     case 'download_library': {
-      const total = lineups.length;
-      for (const phase of ['manifest', 'lineups', 'images', 'saving']) { emit('lineuplab://download-progress', { phase, message: `Downloading ${phase}…`, current: 0, total }); await new Promise(r => setTimeout(r, 120)); }
-      const report = { downloaded: total, existing: 0, images: total * 3, failed: 0, totalLineups: total, totalImages: total * 3, warnings: [], finishedAt: new Date().toISOString() };
-      emit('lineuplab://download-progress', { phase: 'complete', message: 'Download complete', current: total, total }); return report;
+      if (!sharing) throw new Error('Desktop is not sharing. Start sharing on the desktop and try again.');
+      const total = desktopLineups.length;
+      for (const phase of ['manifest', 'lineups', 'images', 'saving']) { emit('lineuplab://download-progress', { phase, message: `Downloading ${phase}…`, current: 0, total }); await new Promise(r => setTimeout(r, 80)); }
+      let downloaded = 0, existing = 0;
+      for (const remote of desktopLineups) { const i = lineups.findIndex(l => l.id === remote.id); if (i < 0) { lineups.push(structuredClone(remote)); downloaded++; } else existing++; }
+      persistMockLibrary();
+      const report = { downloaded, existing, images: downloaded * 3, failed: 0, totalLineups: total, totalImages: total * 3, warnings: [], finishedAt: new Date().toISOString() };
+      emit('lineuplab://download-progress', { phase: 'complete', message: 'Download complete', current: total, total });
+      emit('lineuplab://library-changed', report); return report;
     }
-    case 'discover_sync': return [{ name: 'Desktop library', address: '192.168.1.20', port: 8765 }];
+    case 'discover_sync': await new Promise(r => setTimeout(r, 100)); return sharing ? [{ name: 'Desktop library', address: '192.168.1.20', port: 8765 }] : [];
     case 'get_sync_settings': return JSON.parse(localStorage.getItem('mock.sync') ?? '{}');
     case 'set_sync_settings': localStorage.setItem('mock.sync', JSON.stringify(args.settings)); return null;
     case 'plugin:event|listen': { const id = eventId++; const set = listeners.get(a.event) ?? new Set(); set.add(a.handler); listeners.set(a.event, set); return id; }

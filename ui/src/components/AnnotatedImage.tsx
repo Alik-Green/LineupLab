@@ -7,12 +7,12 @@ export type AnnotationTool = 'select' | 'circle' | 'lens' | 'line';
 export interface AnnotatedImageProps {
   src: string; slot?: SlotData; editable?: boolean; tool?: AnnotationTool; color?: string; snapping?: boolean;
   selectedId?: string | null; onSelect?(id: string | null): void;
-  onChange?(slot: SlotData): void; className?: string; alt?: string; hideLens?: boolean;
+  onChange?(slot: SlotData): void; className?: string; alt?: string; hideLens?: boolean; onLoad?(image: HTMLImageElement): void;
 }
 interface DragState { kind: 'circle' | 'lens' | 'line-point'; id: string; index?: number; start: Point; origin: Point }
 
 /** Non-destructive annotation renderer shared by browse, editor and overlay. */
-export function AnnotatedImage({ src, slot, editable = false, tool = 'select', color = 'cyan', snapping = false, selectedId, onSelect, onChange, className = '', alt = '', hideLens = false }: AnnotatedImageProps) {
+export function AnnotatedImage({ src, slot, editable = false, tool = 'select', color = 'cyan', snapping = false, selectedId, onSelect, onChange, className = '', alt = '', hideLens = false, onLoad }: AnnotatedImageProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 1600, h: 900 });
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -50,7 +50,7 @@ export function AnnotatedImage({ src, slot, editable = false, tool = 'select', c
   const { w, h } = size;
   return (
     <div ref={ref} className={`ll-annotated relative select-none overflow-hidden ${editable ? 'cursor-crosshair' : ''} ${className}`} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={() => setDrag(null)} onDoubleClick={finishLine} data-testid="annotated-image">
-      <ValImage src={src} alt={alt} kind="media" className="block w-full" imgClassName="block h-auto w-full" onLoad={img => setSize({ w: img.naturalWidth || 1600, h: img.naturalHeight || 900 })} />
+      <ValImage src={src} alt={alt} kind="media" className="block w-full" imgClassName="block h-auto w-full" onLoad={img => { setSize({ w: img.naturalWidth || 1600, h: img.naturalHeight || 900 }); onLoad?.(img); }} />
       <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
         <defs>
           {circles.filter(c => c.showZoom && !hideLens).map(c => { const lc = clampLens(c, w, h); return <clipPath key={c.id} id={`${clipId}-${c.id}`}><rect x={lc.zoomX * w} y={lc.zoomY * h} width={lc.zoomSize * w} height={lc.zoomSize * w} /></clipPath>; })}

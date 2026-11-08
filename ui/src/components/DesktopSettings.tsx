@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Keyboard, MonitorPlay, Camera } from 'lucide-react';
 import type { CaptureSettings, HotkeyBinding, HotkeyFeedback, LibraryAdapter, MonitorInfo, OverlaySettings } from '../types';
 import { eventToHotkey, hotkeyConflict } from '../lib/hotkeys';
-import { clampOverlay, DEFAULT_OVERLAY, overlayPosition, useOverlayViewPrefs, type OverlayViewPrefs } from '../lib/overlay';
-import { OverlaySettingsPreview } from './OverlayView';
+import { clampOverlay, DEFAULT_OVERLAY, overlayHeight, overlayPosition, useOverlayViewPrefs, type OverlayViewPrefs } from '../lib/overlay';
+import { OverlaySettingsPreview, useOverlayData } from './OverlayView';
 export type { OverlayViewPrefs } from '../lib/overlay';
 export { DEFAULT_VIEW_PREFS, readViewPrefs } from '../lib/overlay';
 import { Button, Card, Input, NumberInput, Kbd, Select, Slider, StatusDot, Toggle, useToast } from './ui';
@@ -24,10 +24,11 @@ export function HotkeysPanel({ adapter }: { adapter: LibraryAdapter }) {
 
 export function OverlayPanel({ adapter }: { adapter: LibraryAdapter }) {
   const toast = useToast();
-  const [overlay, setOverlay] = useState<OverlaySettings>(DEFAULT_OVERLAY); const [prefs, setPrefs] = useOverlayViewPrefs();
+  const [overlay, setOverlay] = useState<OverlaySettings>(DEFAULT_OVERLAY); const overlayRef = useRef(overlay); const [prefs, setPrefs] = useOverlayViewPrefs();
+  const [aspect, setAspect] = useState(16 / 9); const { data: overlayData } = useOverlayData(adapter);
   const [monitors, setMonitors] = useState<MonitorInfo[]>([]); const [monitorError, setMonitorError] = useState('');
-  useEffect(() => { void adapter.getOverlaySettings().then(setOverlay); void adapter.listMonitors().then(ms => { setMonitors(ms); setMonitorError(''); }).catch(e => setMonitorError(String(e))); }, [adapter]);
-  const saveOverlay = async (patch: Partial<OverlaySettings>) => { const next = clampOverlay({ ...overlay, ...patch }); setOverlay(next); await adapter.setOverlaySettings(next); };
+  useEffect(() => { void adapter.getOverlaySettings().then(s => { overlayRef.current = s; setOverlay(s); }); void adapter.listMonitors().then(ms => { setMonitors(ms); setMonitorError(''); }).catch(e => setMonitorError(String(e))); }, [adapter]);
+  const saveOverlay = async (patch: Partial<OverlaySettings>, minimal = prefs.minimal) => { const base = overlayRef.current; const next = clampOverlay({ ...base, ...patch, height: overlayHeight(patch.width ?? base.width, aspect, minimal, overlayData?.state.mode ?? 'view') }); overlayRef.current = next; setOverlay(next); await adapter.setOverlaySettings(next); };
   const monitor = monitors.find(m => m.index === overlay.monitor) ?? monitors[0];
   const screen = monitor ? { width: monitor.logicalWidth, height: monitor.logicalHeight } : { width: 1920, height: 1080 };
   const pos = overlayPosition(overlay, screen.width, screen.height);
@@ -36,15 +37,14 @@ export function OverlayPanel({ adapter }: { adapter: LibraryAdapter }) {
       <div className="ll-form-grid"><Toggle label="Enabled" checked={overlay.enabled} onChange={v => saveOverlay({ enabled: v })} /><Toggle label="Click-through" checked={overlay.clickThrough} onChange={v => saveOverlay({ clickThrough: v })} description="Alt+O temporarily enables the controls." />
         <div className="ll-field"><span className="ll-label">Corner</span><div className="ll-corner-grid" role="radiogroup" aria-label="Corner">{(['top-left', 'top-right', 'bottom-left', 'bottom-right'] as const).map(c => <button key={c} role="radio" aria-checked={overlay.corner === c} className={overlay.corner === c ? 'is-selected' : ''} onClick={() => saveOverlay({ corner: c })} aria-label={c.replace('-', ' ')}><span /></button>)}</div></div>
         <div className="ll-field"><span className="ll-label">Monitor</span><Select aria-label="Monitor" value={overlay.monitor} onChange={e => saveOverlay({ monitor: Number(e.target.value) })}>{monitors.length === 0 && <option value={overlay.monitor}>Detecting…</option>}{monitors.map(m => <option key={m.index} value={m.index}>{m.name} — {m.physicalWidth}×{m.physicalHeight}{m.isPrimary ? ' (primary)' : ''}</option>)}</Select></div>
-        <NumberInput label="Margin X" min={0} value={overlay.marginX} onCommit={n => saveOverlay({ marginX: n })} /><NumberInput label="Margin Y" min={0} value={overlay.marginY} onCommit={n => saveOverlay({ marginY: n })} />
-        <NumberInput label="Width" min={200} max={1600} value={overlay.width} onCommit={n => saveOverlay({ width: n })} /><NumberInput label="Height" min={160} max={1400} value={overlay.height} onCommit={n => saveOverlay({ height: n })} />
-      </div><div className="ll-btn-row mt-3"><Button onClick={async () => { await adapter.setOverlaySettings(overlay); toast.push('Overlay placement reapplied to the selected monitor.', 'success'); }}>Reapply placement</Button></div><Slider label="Window opacity" min={0.2} max={1} step={0.05} value={overlay.opacity} onChange={v => saveOverlay({ opacity: v })} format={v => `${Math.round(v * 100)}%`} />
-      <h3 className="ll-h3 mt-4 mb-2">Reading comfort</h3><Slider label="Content scale" min={0.75} max={1.75} step={0.05} value={prefs.scale} onChange={v => setPrefs({ scale: v })} format={v => `${Math.round(v * 100)}%`} /><Toggle label="Hide annotations in overlay" checked={prefs.hideAnnotations} onChange={v => setPrefs({ hideAnnotations: v })} description="Show the raw screenshot without circles, lenses and lines." /><Toggle label="Fade while capturing" checked={prefs.fade} onChange={v => setPrefs({ fade: v })} description="Dim the overlay briefly after each capture hotkey." /><Toggle label="Minimal mode" checked={prefs.minimal} onChange={v => setPrefs({ minimal: v })} description="Image only — no title, controls or hotkey hints. Alt+I toggles it in the overlay." /><Toggle label="Outline in minimal mode" checked={prefs.outline} onChange={v => setPrefs({ outline: v })} description="Optional thin border around the image when minimal mode is on." />
+        <NumberInput label="Size" min={200} max={1600} value={overlay.width} onCommit={n => saveOverlay({ width: n })} /><NumberInput label="Margin" min={0} value={overlay.marginX} onCommit={n => saveOverlay({ marginX: n, marginY: n })} />
+      </div><div className="ll-btn-row mt-3"><Button onClick={async () => { await adapter.setOverlaySettings(overlayRef.current); toast.push('Overlay placement reapplied to the selected monitor.', 'success'); }}>Reapply placement</Button></div>
+      <div className="ll-overlay-display"><Toggle label="Minimal mode" checked={prefs.minimal} onChange={v => { setPrefs({ minimal: v }); void saveOverlay({}, v); }} /><Toggle label="Outline" checked={prefs.outline} onChange={v => setPrefs({ outline: v })} />{prefs.outline && <Slider label="Outline thickness" min={1} max={12} step={1} value={prefs.outlineThickness} onChange={v => setPrefs({ outlineThickness: v })} format={v => `${v}px`} />}</div>
       <p className="ll-muted mt-3" style={{ fontSize: 12 }}>Separate transparent, frameless, non-focusable, always-on-top window. Click-through is on by default. Excluded from capture via WDA_EXCLUDEFROMCAPTURE (Windows 10 2004+). Borderless/Windowed Valorant only.</p>
     </Card>
     <Card className="ll-overlay-preview-card"><h2 className="ll-h2 mb-2">Live preview</h2><p className="ll-muted mb-3" data-testid="overlay-monitor-summary">{monitor ? `${monitor.physicalWidth}×${monitor.physicalHeight} physical · ${monitor.logicalWidth}×${monitor.logicalHeight} logical · ${Math.round(monitor.scaleFactor * 100)}% scaling · position ${pos.x},${pos.y} logical` : 'Detecting monitor…'}</p>{monitorError && <p className="ll-feedback ll-feedback--conflict">{monitorError}</p>}
-      <OverlaySettingsPreview adapter={adapter} overlay={overlay} prefs={prefs} pos={pos} screen={screen} />
-      <p className="ll-muted mt-2" style={{ fontSize: 12 }}>Margins and window size are logical pixels. The native shell converts them with the selected monitor’s scale factor and origin, so 1440p and mixed-DPI setups place the overlay at the chosen corner. Reading-comfort changes apply immediately.</p>
+      <OverlaySettingsPreview adapter={adapter} overlay={overlay} prefs={prefs} pos={pos} screen={screen} onAspect={setAspect} />
+      <p className="ll-muted mt-2" style={{ fontSize: 12 }}>Height follows the image aspect ratio. Minimal mode matches it exactly; normal mode adds compact controls.</p>
     </Card>
   </div>;
 }

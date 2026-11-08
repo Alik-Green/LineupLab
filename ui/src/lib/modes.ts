@@ -35,8 +35,8 @@ export function visibleSlots(required: SlotId[], _slots: Record<SlotId, SlotData
   const second = required.includes('aim2') || required.includes('stand2');
   return SLOT_ORDER.filter(s => required.includes(s) || s === 'aim1' || (s === 'stand2' && second));
 }
-export type WizardStep = 'setup' | 'capture' | 'pins' | 'details' | 'review';
-export const WIZARD_STEPS: { id: WizardStep; label: string }[] = [{ id: 'setup', label: 'Setup' }, { id: 'capture', label: 'Capture' }, { id: 'pins', label: 'Pins' }, { id: 'details', label: 'Details' }, { id: 'review', label: 'Review' }];
+export type WizardStep = 'setup' | 'capture' | 'pins' | 'details';
+export const WIZARD_STEPS: { id: WizardStep; label: string }[] = [{ id: 'setup', label: 'Setup' }, { id: 'capture', label: 'Capture' }, { id: 'pins', label: 'Pins' }, { id: 'details', label: 'Finish' }];
 export interface ValidationIssue { step: WizardStep; field: string; message: string; slot?: SlotId }
 /** Mirrors core `DraftState::validate_save(false)` plus the UI's title/map/agent requirements. */
 export function validateLineup(l: Lineup, required: SlotId[]): ValidationIssue[] {
@@ -46,8 +46,8 @@ export function validateLineup(l: Lineup, required: SlotId[]): ValidationIssue[]
   if (!l.abilitySlot) issues.push({ step: 'setup', field: 'ability', message: 'Choose the ability.' });
   for (const s of required) if (!l.slots[s].image) issues.push({ step: 'capture', field: s, slot: s, message: `Capture the ${SLOT_LABELS[s].toLowerCase()} image.` });
   if (l.slots.aim2.image && !l.slots.aim1.image) issues.push({ step: 'capture', field: 'aim1', slot: 'aim1', message: 'A second aim image needs a first aim image.' });
-  if (!l.stand1Pos) issues.push({ step: 'pins', field: 'stand1Pos', message: 'Place the stand pin on the minimap.' });
-  if (!l.landPos) issues.push({ step: 'pins', field: 'landPos', message: 'Place the landing pin on the minimap.' });
+  if (!l.stand1Pos) issues.push({ step: 'pins', field: 'stand1Pos', message: 'Place the start pin on the minimap.' });
+  if (!l.landPos) issues.push({ step: 'pins', field: 'landPos', message: 'Place the end pin on the minimap.' });
   if (!l.title.trim()) issues.push({ step: 'details', field: 'title', message: 'Give the lineup a title (or use the suggested one).' });
   return issues;
 }

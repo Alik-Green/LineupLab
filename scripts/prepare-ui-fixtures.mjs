@@ -26,9 +26,15 @@ try {
 } catch (e) { console.warn('Ability fixture download failed; synthetic fallbacks will be used:', e.message); }
 try {
   await extract('hahhen/hackathonvalorant', 'master', 'hackathonvalorant.tar.gz', async dir => {
-    const p = new URL('public/assets/minimaps/abyss.png', dir);
-    if (await exists(p)) await copyFile(p, new URL('abyss.png', art));
+    const { readdir } = await import('node:fs/promises');
+    const names = ['abyss','ascent','bind','breeze','corrode','fracture','haven','icebox','lotus','pearl','split','sunset'];
+    for (const name of names) {
+      const mini = new URL(`public/assets/minimaps/${name}.png`, dir);
+      if (await exists(mini)) await copyFile(mini, new URL(`${name}.png`, art));
+      const splash = new URL(`public/assets/maps/${name}.png`, dir);
+      if (await exists(splash)) await copyFile(splash, new URL(`splash-${name}.png`, art));
+    }
   });
-} catch (e) { console.warn('Minimap fixture download failed; synthetic fallback will be used:', e.message); }
+} catch (e) { console.warn('Map fixture download failed; synthetic fallbacks will be used:', e.message); }
 await writeFile(new URL('README.txt', root), 'Ignored dev verification art. Not part of the app bundle.\n');
 console.log('UI fixtures ready at', root.pathname);

@@ -12,6 +12,7 @@ test.describe('feedback batch regressions', () => {
     expect(after).not.toBe(before);
     await expect(canvas.locator('img.ll-minimap__img')).toBeVisible();
     await expect(canvas.locator('svg.ll-minimap__svg')).toBeVisible();
+    await page.getByLabel('Map display settings').first().click();
     await page.getByRole('button', { name: 'Toggle stand positions' }).first().click();
     await expect(page.getByTestId('stand-marker')).toHaveCount(0);
     await page.getByRole('button', { name: 'Toggle stand positions' }).first().click();
@@ -34,7 +35,7 @@ test.describe('feedback batch regressions', () => {
     await page.goto('/?mock');
     await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Settings' }).click();
     await page.getByRole('tab', { name: 'Overlay' }).click();
-    const width = page.getByLabel('Width', { exact: true });
+    const width = page.getByLabel('Size', { exact: true });
     await width.focus(); await width.fill('');
     await expect(width).toHaveValue('');
     await width.fill('1200');
@@ -46,7 +47,7 @@ test.describe('feedback batch regressions', () => {
   });
 
   test('minimal overlay shows only the image with optional outline', async ({ page }) => {
-    await page.setViewportSize({ width: 420, height: 320 });
+    await page.setViewportSize({ width: 420, height: 236 });
     await page.goto('/?mock&overlayMode=view#overlay');
     await page.evaluate(() => localStorage.setItem('lineuplab.overlayView', JSON.stringify({ scale: 1, hideAnnotations: false, fade: true, minimal: true, outline: true })));
     await page.reload();

@@ -1,6 +1,6 @@
-//! Opt-in LAN sync server. Plain HTTP + six-digit pairing + bearer tokens is the documented
-//! alternative to pinned HTTPS: bind only to trusted LAN interfaces, never expose to the Internet.
-//! See docs/SYNC.md for the threat model. All routes except /pair and /health require a token.
+//! Opt-in trusted-LAN sharing. Plain HTTP + bearer tokens; no pairing code by default.
+//! Bind only to trusted LAN interfaces, never expose to the Internet. See docs/SYNC.md.
+//! All routes except /pair, /connect and /health require a token.
 use crate::{
     db::Database,
     storage::{hash_bytes, MediaStore},
@@ -56,12 +56,20 @@ pub struct ServerHandle {
     pub require_pairing_code: bool,
     pub join: JoinHandle<Result<()>>,
     shutdown: Option<oneshot::Sender<()>>,
-    _mdns: Option<mdns_sd::ServiceDaemon>,
+    mdns: Option<(mdns_sd::ServiceDaemon, String)>,
 }
 impl ServerHandle {
     pub async fn shutdown(mut self) -> Result<()> {
         if let Some(tx) = self.shutdown.take() {
             let _ = tx.send(());
+        }
+        if let Some((daemon, fullname)) = &self.mdns {
+            if let Ok(rx) = daemon.unregister(fullname) {
+                let _ = rx.recv_timeout(Duration::from_secs(1));
+            }
+            if let Ok(rx) = daemon.shutdown() {
+                let _ = rx.recv_timeout(Duration::from_secs(1));
+            }
         }
         self.join.await.map_err(|e| Error::Invalid(e.to_string()))?
     }
@@ -343,8 +351,9 @@ pub async fn spawn(config: ServerConfig) -> Result<ServerHandle> {
             [("protocol".to_string(), PROTOCOL_VERSION.to_string())].as_slice(),
         ) {
             Ok(info) => {
+                let fullname = info.get_fullname().to_string();
                 let _ = daemon.register(info);
-                Some(daemon)
+                Some((daemon, fullname))
             }
             Err(e) => {
                 tracing::warn!(error=%e, "mDNS registration failed");
@@ -372,6 +381,6 @@ pub async fn spawn(config: ServerConfig) -> Result<ServerHandle> {
         require_pairing_code: config.require_pairing_code,
         join,
         shutdown: Some(tx),
-        _mdns: mdns,
+        mdns,
     })
 }

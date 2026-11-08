@@ -203,6 +203,20 @@ pub(crate) fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
 #[tauri::command] pub fn set_overlay_settings(app: tauri::AppHandle, state: State<AppState>, settings: OverlaySettings) -> CmdResult<()> {
     let mut s = state.overlay.lock().unwrap(); s.settings = settings; s.settings.clamp(); let _ = std::fs::write(state.data_dir.join("overlay.json"), serde_json::to_vec_pretty(&*s).unwrap()); apply_overlay(&app, &s); let _ = app.emit("lineuplab://overlay-changed", &*s); Ok(())
 }
+/// Resize the native overlay from the actual decoded image dimensions. Minimal
+/// mode has no chrome, so its outer window is exactly the image aspect ratio.
+#[tauri::command] pub fn resize_overlay(app: tauri::AppHandle, state: State<AppState>, aspect_ratio: f64, minimal: bool, mode: String) -> CmdResult<()> {
+    if !aspect_ratio.is_finite() || aspect_ratio <= 0.0 { return Err("Invalid image aspect ratio".into()); }
+    let mut s = state.overlay.lock().unwrap();
+    let chrome = if minimal { 0.0 } else if mode == "create" { 164.0 } else { 80.0 };
+    let height = ((s.settings.width as f64 / aspect_ratio + chrome).round() as u32).clamp(64, 2400);
+    if s.settings.height != height {
+        s.settings.height = height;
+        let _ = std::fs::write(state.data_dir.join("overlay.json"), serde_json::to_vec_pretty(&*s).unwrap());
+        apply_overlay(&app, &s);
+    }
+    Ok(())
+}
 #[tauri::command] pub fn get_capture_settings(state: State<AppState>) -> CmdResult<capture::CaptureSettings> { Ok(state.capture.lock().unwrap().clone()) }
 #[tauri::command] pub fn set_capture_settings(state: State<AppState>, settings: capture::CaptureSettings) -> CmdResult<()> { let mut c = state.capture.lock().unwrap(); *c = settings; let _ = std::fs::write(state.data_dir.join("capture.json"), serde_json::to_vec_pretty(&*c).unwrap()); Ok(()) }
 #[tauri::command] pub fn get_overlay_view(state: State<AppState>) -> CmdResult<Value> {
@@ -283,4 +297,4 @@ pub(crate) fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
     let report = rx.await.map_err(|e| e.to_string())?.map_err(err)?;
     Ok(serde_json::to_value(report).map_err(err)?)
 }
-#[tauri::command] pub fn discover_sync() -> CmdResult<Vec<lineuplab_core::sync::DiscoveredServer>> { lineuplab_core::sync::discover(std::time::Duration::from_millis(1500)).map_err(err) }
+#[tauri::command] pub async fn discover_sync() -> CmdResult<Vec<lineuplab_core::sync::DiscoveredServer>> { lineuplab_core::sync::discover(std::time::Duration::from_millis(1500)).await.map_err(err) }

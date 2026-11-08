@@ -29,6 +29,13 @@ Playwright `e2e/images.spec.ts` verifies:
 
 Screenshots: `docs/screenshots/01-first-run-progress.png`, `02-data-diagnostics.png`, `03-browse-images.png`.
 
+## Preview 6 map-art and zoom review
+
+- The **Map selector** uses loading-screen/list artwork (`splash`, then `listViewIcon`) rather than the tactical minimap. The navigable minimap remains the catalog `displayIcon` tactical map.
+- Minimap zoom lays the bitmap out again at the current native CSS side/zoom instead of scaling a small cached compositor raster. Markers, throw paths and callout labels are SVG/vector text, so they remain sharp while panning/zooming.
+- Source-resolution limit: upstream tactical minimaps are not uniformly high-resolution. The dev fixture set mirrors available sources (including 1024×1024 and 2048×2048 maps). Rendering cannot invent detail beyond the cached source; unavailable artwork keeps the same layout box and explicit fallback state.
+- Visual evidence: `docs/screenshots/preview6/README.md`; review notes: `docs/PREVIEW6_REVIEW.md`.
+
 ## Still requires real Windows/Android verification
 
 The Linux mock cannot prove WebView2/Android WebView asset-protocol behavior, real Riot CDN reachability, or first-run cache population on device. Run Settings → Data → Run image self-test on the installed Windows build and Android companion, then follow `docs/WINDOWS_TEST_PLAN.md`. No Riot assets are bundled in the app; fixture art is dev-only and ignored.

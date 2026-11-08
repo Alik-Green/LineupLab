@@ -5,7 +5,7 @@ import { BookOpen, Check, ChevronLeft, ChevronRight, Circle, EyeOff, Image as Im
 import clsx from 'clsx';
 import type { Catalog, LibraryAdapter, Lineup, OverlaySettings, SlotId } from '../types';
 import { SLOT_LABELS, SLOT_ORDER } from '../types';
-import { DEFAULT_OVERLAY, draftChecklist, useOverlayViewPrefs, writeViewPrefs, readViewPrefs, type OverlayChecklistItem, type OverlayViewPrefs } from '../lib/overlay';
+import { DEFAULT_OVERLAY, overlayHeight, draftChecklist, useOverlayViewPrefs, writeViewPrefs, readViewPrefs, type OverlayChecklistItem, type OverlayViewPrefs } from '../lib/overlay';
 import { ValImage } from '../lib/images';
 import { AnnotatedImage } from './AnnotatedImage';
 import { Minimap } from './Minimap';
@@ -68,19 +68,20 @@ export function OverlayView({ adapter }: { adapter: LibraryAdapter }) {
     void emit('lineuplab://overlay-draft-request').catch(() => {});
     return () => { live = false; uns.forEach(f => f()); window.clearTimeout(fadeTimer.current); };
   }, [adapter, act, prefs.fade]);
+  const fitWindow = useCallback((ratio: number, minimal: boolean, mode: string) => { if (adapter.kind === 'tauri') void invoke('resize_overlay', { aspectRatio: ratio, minimal, mode }).catch(() => {}); }, [adapter]);
   const lineup = data?.state.mode === 'create' && draft?.lineup ? draft.lineup : data?.lineup ?? null;
   const checklist = data?.state.mode === 'create' && draft?.lineup ? draftChecklist(draft.lineup, draft.requiredSlots ?? DEFAULT_REQUIRED) : data?.state.checklist ?? [];
   const opacity = (data?.state.settings.opacity ?? DEFAULT_OVERLAY.opacity) * (fading ? 0.3 : 1);
   return <div className="ll-ov-root" data-testid="overlay-view" data-fading={fading || undefined} style={{ opacity }}>
     {!data && !error && <div className="ll-ov ll-ov--loading"><Skeleton className="ll-ov__skeleton" /><p className="ll-muted">Connecting to the desktop core…</p></div>}
     {error && !data && <div className="ll-ov"><EmptyState title="Overlay unavailable" description={error} action={<Button icon={<RefreshCw size={16} />} onClick={() => void reload()}>Retry</Button>} /></div>}
-    {data && <OverlayContent data={data} lineup={lineup} checklist={checklist} activeSlot={draft?.activeSlot} catalog={catalog} prefs={prefs} keys={keys} onAction={act} error={error || actionError} onRetry={() => void reload()} />}
+    {data && <OverlayContent data={data} lineup={lineup} checklist={checklist} activeSlot={draft?.activeSlot} catalog={catalog} prefs={prefs} keys={keys} onAction={act} error={error || actionError} onRetry={() => void reload()} onAspect={fitWindow} />}
   </div>;
 }
 
-interface ContentProps { data: OverlayViewData; lineup: Lineup | null; checklist: OverlayChecklistItem[]; activeSlot?: SlotId; catalog: Catalog | null; prefs: OverlayViewPrefs; keys?: Record<string, string>; onAction?(action: string): void; error?: string; onRetry?(): void; preview?: boolean }
+interface ContentProps { data: OverlayViewData; lineup: Lineup | null; checklist: OverlayChecklistItem[]; activeSlot?: SlotId; catalog: Catalog | null; prefs: OverlayViewPrefs; keys?: Record<string, string>; onAction?(action: string): void; error?: string; onRetry?(): void; preview?: boolean; onAspect?(ratio: number, minimal: boolean, mode: string): void }
 /** Presentational overlay used by the real window and the Settings live preview. All text is ≥13px at 100% scale. */
-export function OverlayContent({ data, lineup, checklist, activeSlot, catalog, prefs, keys = {}, onAction, error, onRetry, preview }: ContentProps) {
+export function OverlayContent({ data, lineup, checklist, activeSlot, catalog, prefs, keys = {}, onAction, error, onRetry, preview, onAspect }: ContentProps) {
   const s = data.state; const view = s.mode === 'view';
   const viewSlots = s.viewSlots.length ? s.viewSlots : lineup ? SLOT_ORDER.filter(k => lineup.slots[k].image) : [];
   const index = Math.min(Math.max(0, s.viewIndex), Math.max(0, viewSlots.length - 1)); const slot = viewSlots[index];
@@ -94,11 +95,12 @@ export function OverlayContent({ data, lineup, checklist, activeSlot, catalog, p
   const disabled = !onAction;
   const createSlot: SlotId = activeSlot && lineup?.slots[activeSlot]?.image ? activeSlot : [...checklist].reverse().find(c => c.done && lineup?.slots[c.slot]?.image)?.slot ?? activeSlot ?? 'stand1';
   const createImage = !view && lineup?.slots[createSlot]?.image ? lineup.slots[createSlot].image! : null;
+  const reportAspect = (img: HTMLImageElement) => { if (img.naturalWidth && img.naturalHeight) onAspect?.(img.naturalWidth / img.naturalHeight, prefs.minimal, s.mode); };
   if (prefs.minimal) {
     const src = view ? slotData?.image : createImage;
     const minSlot = view ? slotData : lineup?.slots[createSlot];
-    return <div className={clsx('ll-ov ll-ov--minimal', prefs.outline && 'has-outline', preview && 'll-ov--preview')} data-mode={s.mode} data-testid={preview ? 'overlay-content-preview' : 'overlay-content'} style={{ '--ov-scale': prefs.scale } as React.CSSProperties}>
-      {src && minSlot ? <AnnotatedImage src={src} slot={prefs.hideAnnotations ? { ...minSlot, circles: [], lines: [] } : minSlot} alt={view && slot ? SLOT_LABELS[slot] : SLOT_LABELS[createSlot]} className="ll-ov__minimal-img" /> : <div className="ll-ov__minimal-empty" aria-label="No image yet" />}
+    return <div className={clsx('ll-ov ll-ov--minimal', prefs.outline && 'has-outline', preview && 'll-ov--preview')} data-mode={s.mode} data-testid={preview ? 'overlay-content-preview' : 'overlay-content'} style={{ '--ov-scale': prefs.scale, '--ov-outline': `${prefs.outlineThickness}px` } as React.CSSProperties}>
+      {src && minSlot ? <AnnotatedImage src={src} slot={prefs.hideAnnotations ? { ...minSlot, circles: [], lines: [] } : minSlot} alt={view && slot ? SLOT_LABELS[slot] : SLOT_LABELS[createSlot]} className="ll-ov__minimal-img" onLoad={reportAspect} /> : <div className="ll-ov__minimal-empty" aria-label="No image yet" />}
     </div>;
   }
   return <div className={clsx('ll-ov', preview && 'll-ov--preview')} data-mode={s.mode} data-testid={preview ? 'overlay-content-preview' : 'overlay-content'} style={{ '--ov-scale': prefs.scale } as React.CSSProperties}>
@@ -111,30 +113,32 @@ export function OverlayContent({ data, lineup, checklist, activeSlot, catalog, p
     {!view && <>
       <div className="ll-ov__summary"><span>{done}/{required.length} required captured</span><ProgressBar value={done} max={required.length || 1} label="Required captures" /><span className="ll-ov__current-slot">{SLOT_LABELS[createSlot]}</span></div>
       <div className={clsx('ll-ov__body', createImage && 'll-ov__body--create')}>
-        {createImage && <AnnotatedImage src={createImage} slot={prefs.hideAnnotations ? { ...lineup!.slots[createSlot], circles: [], lines: [] } : lineup!.slots[createSlot]} alt={SLOT_LABELS[createSlot]} className="ll-ov__image ll-ov__image--create" />}
+        {createImage && <AnnotatedImage src={createImage} slot={prefs.hideAnnotations ? { ...lineup!.slots[createSlot], circles: [], lines: [] } : lineup!.slots[createSlot]} alt={SLOT_LABELS[createSlot]} className="ll-ov__image ll-ov__image--create" onLoad={reportAspect} />}
         {!s.showChecklist ? (createImage ? null : <EmptyState title="Checklist hidden" description={`Press ${key('checklist_toggle', 'Alt+H')} to show it again.`} />) : checklist.length === 0 && !createImage ? <EmptyState title="No draft yet" description="Open Create in the main window; captures appear here as you take them." /> : <ul className={clsx('ll-ov__checklist', createImage && 'll-ov__checklist--compact')} aria-label="Capture checklist">{checklist.map(c => { const image = lineup?.slots[c.slot]?.image; const active = activeSlot === c.slot; return <li key={c.slot} className={clsx('ll-ov__item', c.done && 'is-done', c.skipped && 'is-skipped', active && 'is-active')} data-testid={`overlay-checklist-${c.slot}`} aria-current={active ? 'step' : undefined}><span className="ll-ov__status" aria-hidden>{c.done ? <Check size={16} /> : c.skipped ? <Minus size={16} /> : <Circle size={16} />}</span><span className="ll-ov__thumb">{image ? <ValImage src={image} alt={`${c.label} capture`} kind="media" loading="eager" /> : <ImageIcon size={16} aria-hidden />}</span><span className="ll-ov__item-text"><span className="ll-ov__item-label">{c.label}{c.required && <span className="ll-ov__req" title="Required">*</span>}</span><small>{c.done ? 'Captured' : c.skipped ? 'Skipped' : active ? 'Current slot' : c.required ? 'Required' : 'Optional'}</small></span>{active && <span className="ll-ov__active-dot" aria-hidden />}</li>; })}</ul>}
       </div>
       <footer className="ll-ov__foot"><span><Kbd>{key('capture', 'Alt+C')}</Kbd> capture</span><span><Kbd>{key('next_slot', 'Alt+N')}</Kbd>/<Kbd>{key('prev_slot', 'Alt+P')}</Kbd> slot</span><span><Kbd>{key('save', 'Alt+S')}</Kbd> save</span><IconButton label={s.showChecklist ? 'Hide checklist' : 'Show checklist'} tooltip={`Checklist (${key('checklist_toggle', 'Alt+H')})`} disabled={disabled} onClick={() => onAction?.('checklist_toggle')} className={s.showChecklist ? 'is-active' : ''}><ListChecks size={16} /></IconButton></footer>
     </>}
     {view && (!lineup || !slot || !slotData?.image ? <div className="ll-ov__body"><EmptyState title="No lineup to show" description="Pick a lineup in Browse and send it to the overlay, or switch to Create." /></div> : <>
-      <div className="ll-ov__meta"><span>{map?.displayName ?? 'Unknown map'}</span><span>{agent?.displayName ?? '—'} · {ability?.displayName ?? lineup.abilitySlot}</span><span className={clsx('ll-ov__side', `ll-ov__side--${lineup.side}`)}>{lineup.side}{lineup.site ? ` · ${lineup.site}` : ''}</span></div>
-      {!s.flipped ? <div className="ll-ov__body ll-ov__body--image"><AnnotatedImage src={slotData.image} slot={shownSlot} alt={SLOT_LABELS[slot]} className="ll-ov__image" />{step && <p className="ll-ov__step">{step.order}. {step.text}</p>}</div>
+      {!s.flipped ? <div className="ll-ov__body ll-ov__body--image"><AnnotatedImage src={slotData.image} slot={shownSlot} alt={SLOT_LABELS[slot]} className="ll-ov__image" onLoad={reportAspect} />{step && <p className="ll-ov__step">{step.order}. {step.text}</p>}</div>
         : <div className="ll-ov__body ll-ov__body--notes"><Minimap src={map?.displayIcon} lineups={[lineup]} selectedId={lineup.id} showToolbar={false} className="ll-ov__map" emptyMessage={null} /><div className="ll-ov__notes">{lineup.steps.length > 0 && <ol>{lineup.steps.map(x => <li key={x.order}><span>{x.order}.</span> {x.text}</li>)}</ol>}{lineup.notes && <p>{lineup.notes}</p>}{lineup.steps.length === 0 && !lineup.notes && <p className="ll-muted">No steps or notes for this lineup.</p>}</div></div>}
-      <footer className="ll-ov__nav"><IconButton label="Previous image" tooltip={`Previous (${key('view_prev', 'Alt+Left')})`} disabled={disabled || viewSlots.length < 2} onClick={() => onAction?.('view_prev')}><ChevronLeft size={18} /></IconButton><span className="ll-ov__nav-label">{SLOT_LABELS[slot]} · {index + 1}/{viewSlots.length}</span><IconButton label={s.flipped ? 'Show image' : 'Show steps and map'} tooltip={`Flip (${key('view_flip', 'Alt+F')})`} disabled={disabled} onClick={() => onAction?.('view_flip')} className={s.flipped ? 'is-active' : ''}>{s.flipped ? <ImageIcon size={16} /> : <BookOpen size={16} />}</IconButton><IconButton label="Next image" tooltip={`Next (${key('view_next', 'Alt+Right')})`} disabled={disabled || viewSlots.length < 2} onClick={() => onAction?.('view_next')}><ChevronRight size={18} /></IconButton></footer>
+      <footer className="ll-ov__nav"><IconButton label="Previous image" tooltip={`Previous (${key('view_prev', 'Alt+Left')})`} disabled={disabled || viewSlots.length < 2} onClick={() => onAction?.('view_prev')}><ChevronLeft size={18} /></IconButton><span className="ll-ov__nav-label">{SLOT_LABELS[slot]} · {index + 1}/{viewSlots.length}<small data-testid="overlay-hotkey-hints"><Kbd>{key('view_prev', 'Alt+Left')}</Kbd><Kbd>{key('view_next', 'Alt+Right')}</Kbd> image <Kbd>{key('view_flip', 'Alt+F')}</Kbd> flip <Kbd>{key('overlay_minimal', 'Alt+I')}</Kbd> minimal</small></span><IconButton label={s.flipped ? 'Show image' : 'Show steps and map'} tooltip={`Flip (${key('view_flip', 'Alt+F')})`} disabled={disabled} onClick={() => onAction?.('view_flip')} className={s.flipped ? 'is-active' : ''}>{s.flipped ? <ImageIcon size={16} /> : <BookOpen size={16} />}</IconButton><IconButton label="Next image" tooltip={`Next (${key('view_next', 'Alt+Right')})`} disabled={disabled || viewSlots.length < 2} onClick={() => onAction?.('view_next')}><ChevronRight size={18} /></IconButton></footer>
     </>)}
   </div>;
 }
 
 /** Settings → Overlay: monitor placement preview plus the real overlay content at its configured size. */
-export function OverlaySettingsPreview({ adapter, overlay, prefs, pos, screen }: { adapter: LibraryAdapter; overlay: OverlaySettings; prefs: OverlayViewPrefs; pos: { x: number; y: number }; screen: { width: number; height: number } }) {
+export function OverlaySettingsPreview({ adapter, overlay, prefs, pos, screen, onAspect }: { adapter: LibraryAdapter; overlay: OverlaySettings; prefs: OverlayViewPrefs; pos: { x: number; y: number }; screen: { width: number; height: number }; onAspect?(ratio: number): void }) {
+  const [imageAspect, setImageAspect] = useState(16 / 9);
   const { data, error, reload } = useOverlayData(adapter); const [catalog, setCatalog] = useState<Catalog | null>(null);
   const ref = useRef<HTMLDivElement>(null); const [factor, setFactor] = useState(0.3);
   useEffect(() => { void adapter.catalog().then(setCatalog).catch(() => {}); }, [adapter]);
   useEffect(() => { const el = ref.current; if (!el) return; const ro = new ResizeObserver(entries => { const w = entries[0]?.contentRect.width ?? 0; if (w) setFactor(w / screen.width); }); ro.observe(el); return () => ro.disconnect(); }, [screen.width]);
+  const height = overlayHeight(overlay.width, imageAspect, prefs.minimal, data?.state.mode ?? 'view');
+  const report = (ratio: number) => { setImageAspect(ratio); onAspect?.(ratio); };
   const lineup = data?.lineup ?? null; const checklist = data?.state.checklist.length ? data.state.checklist : lineup ? draftChecklist(lineup, DEFAULT_REQUIRED) : [];
-  const content = data ? <OverlayContent data={data} lineup={lineup} checklist={checklist} catalog={catalog} prefs={prefs} preview /> : <div className="ll-ov ll-ov--loading"><Skeleton className="ll-ov__skeleton" />{error ? <button className="ll-btn ll-btn--md" onClick={() => void reload()}>Retry preview</button> : <p className="ll-muted">Loading preview…</p>}</div>;
+  const content = data ? <OverlayContent data={data} lineup={lineup} checklist={checklist} catalog={catalog} prefs={prefs} preview onAspect={report} /> : <div className="ll-ov ll-ov--loading"><Skeleton className="ll-ov__skeleton" />{error ? <button className="ll-btn ll-btn--md" onClick={() => void reload()}>Retry preview</button> : <p className="ll-muted">Loading preview…</p>}</div>;
   return <>
-    <div ref={ref} className="ll-overlay-preview" data-testid="overlay-preview" style={{ aspectRatio: `${screen.width} / ${screen.height}` }}><div className="ll-overlay-preview__game" /><div className="ll-overlay-preview__win" style={{ left: `${pos.x / screen.width * 100}%`, top: `${pos.y / screen.height * 100}%`, width: `${overlay.width / screen.width * 100}%`, height: `${overlay.height / screen.height * 100}%`, opacity: overlay.opacity }}><div style={{ width: overlay.width, height: overlay.height, transform: `scale(${factor})`, transformOrigin: 'top left' }}>{content}</div></div></div>
-    <div className="ll-overlay-actual"><div className="ll-overlay-actual__label">Content preview · {overlay.width}×{overlay.height} · {Math.round(prefs.scale * 100)}%</div><div className="ll-overlay-actual__frame" style={{ width: overlay.width, height: overlay.height, maxWidth: '100%' }}>{content}</div></div>
+    <div ref={ref} className="ll-overlay-preview" data-testid="overlay-preview" style={{ aspectRatio: `${screen.width} / ${screen.height}` }}><div className="ll-overlay-preview__game" /><div className="ll-overlay-preview__win" style={{ left: `${pos.x / screen.width * 100}%`, top: `${pos.y / screen.height * 100}%`, width: `${overlay.width / screen.width * 100}%`, height: `${height / screen.height * 100}%`, opacity: overlay.opacity }}><div style={{ width: overlay.width, height: height, transform: `scale(${factor})`, transformOrigin: 'top left' }}>{content}</div></div></div>
+    <div className="ll-overlay-actual"><div className="ll-overlay-actual__label">Content preview · {overlay.width}×{height} · {Math.round(prefs.scale * 100)}%</div><div className="ll-overlay-actual__frame" style={{ width: overlay.width, height: height, maxWidth: '100%' }}>{content}</div></div>
   </>;
 }

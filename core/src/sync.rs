@@ -146,7 +146,7 @@ impl SyncClient {
         if resp.status() == reqwest::StatusCode::NOT_FOUND
             || resp.status() == reqwest::StatusCode::UNAUTHORIZED
         {
-            return Err(Error::Invalid("This desktop uses an access code, or is running an older version. Update LineupLab on the desktop, or enter its access code under Advanced.".into()));
+            return Err(Error::Invalid("This desktop is not running the current no-code sharing server. Update LineupLab on the desktop and start sharing again.".into()));
         }
         Ok(resp.error_for_status()?.json().await?)
     }
@@ -335,8 +335,34 @@ pub struct DiscoveredServer {
     pub address: String,
     pub port: u16,
 }
-/// Browse mDNS for `_lineuplab._tcp.local.` for a short window. Manual address entry remains available.
-pub fn discover(timeout: std::time::Duration) -> Result<Vec<DiscoveredServer>> {
+/// Probe the actual opt-in sharing endpoint. mDNS caches can outlive the desktop
+/// process, so a resolved advertisement alone is never evidence of a live server.
+pub async fn probe_server(base_url: &str) -> bool {
+    let Ok(client) = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_millis(900))
+        .connect_timeout(std::time::Duration::from_millis(600))
+        .build()
+    else {
+        return false;
+    };
+    let Ok(response) = client
+        .get(format!("{}/health", base_url.trim_end_matches('/')))
+        .send()
+        .await
+    else {
+        return false;
+    };
+    if !response.status().is_success() {
+        return false;
+    }
+    response.json::<serde_json::Value>().await.is_ok_and(|v| {
+        v.get("ok").and_then(serde_json::Value::as_bool) == Some(true)
+            && v.get("protocolVersion").and_then(serde_json::Value::as_u64)
+                == Some(PROTOCOL_VERSION as u64)
+    })
+}
+/// Browse mDNS briefly, then verify every candidate against /health.
+pub async fn discover(timeout: std::time::Duration) -> Result<Vec<DiscoveredServer>> {
     let daemon = mdns_sd::ServiceDaemon::new().map_err(|e| crate::Error::Invalid(e.to_string()))?;
     let rx = daemon
         .browse("_lineuplab._tcp.local.")
@@ -369,7 +395,22 @@ pub fn discover(timeout: std::time::Duration) -> Result<Vec<DiscoveredServer>> {
         }
     }
     let _ = daemon.shutdown();
-    Ok(out.into_values().collect())
+    let mut live = tokio::task::JoinSet::new();
+    for server in out.into_values() {
+        live.spawn(async move {
+            probe_server(&format!("http://{}:{}", server.address, server.port))
+                .await
+                .then_some(server)
+        });
+    }
+    let mut verified = vec![];
+    while let Some(result) = live.join_next().await {
+        if let Ok(Some(server)) = result {
+            verified.push(server);
+        }
+    }
+    verified.sort_by(|a, b| (&a.address, a.port).cmp(&(&b.address, b.port)));
+    Ok(verified)
 }
 
 /// Phone downloads are additive: remote tombstones never erase an offline copy.

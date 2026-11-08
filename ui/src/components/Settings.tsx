@@ -23,7 +23,7 @@ export function Settings({ adapter, catalog, onRefresh, browseOnly = false }: { 
     {tab === 'hotkeys' && !browseOnly && <HotkeysPanel adapter={adapter} />}
     {tab === 'overlay' && !browseOnly && <OverlayPanel adapter={adapter} />}
     {tab === 'capture' && !browseOnly && <CapturePanel adapter={adapter} />}
-    {tab === 'sync' && <SyncSettings adapter={adapter} host={!browseOnly} />}
+    {tab === 'sync' && <SyncSettings adapter={adapter} host={!browseOnly} onDownloaded={onRefresh} />}
     {tab === 'data' && <DataPanel adapter={adapter} onRefresh={onRefresh} />}
     {tab === 'diagnostics' && <DiagnosticsPanel adapter={adapter} />}
     {tab === 'about' && <About adapter={adapter} browseOnly={browseOnly} />}

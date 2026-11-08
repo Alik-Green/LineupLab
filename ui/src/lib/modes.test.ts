@@ -33,7 +33,7 @@ describe('wizard validation (mirror core validate_save)', () => {
     const l = newLineup();
     const issues = validateLineup(l, ['stand1', 'aim1', 'landing']);
     expect(issues.map(i => i.step)).toEqual(['setup', 'setup', 'capture', 'capture', 'capture', 'pins', 'pins', 'details']);
-    expect(issues.find(i => i.field === 'landPos')?.message).toMatch(/landing pin/i);
+    expect(issues.find(i => i.field === 'landPos')?.message).toMatch(/end pin/i);
   });
   it('passes a complete lineup and rejects aim2 without aim1', () => {
     const l = { ...newLineup(), mapUuid: 'm', agentUuid: 'a', abilitySlot: 'Grenade', title: 'T', stand1Pos: { x: 0.1, y: 0.2 }, landPos: { x: 0.3, y: 0.4 } };

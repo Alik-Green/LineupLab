@@ -23,7 +23,15 @@ The requested no-code flow is for a **trusted LAN only**. It is not risk-free:
 
 ## Phone Download (one-way, additive)
 
-Android **Download** connects, reads the full manifest, downloads missing lineups/images, skips duplicates by revision and media hash, and keeps a permanent offline copy. It does **not** push phone edits. Remote deletions/tombstones do not erase previously downloaded phone content. Failed/missing media are reported as warnings; **Update downloads** retries them.
+Android **Download** connects, reads the full manifest, downloads missing lineups/images, skips duplicates by revision and media hash, and keeps a permanent offline copy. It does **not** push phone edits. Remote deletions/tombstones do not erase previously downloaded phone content. Failed/missing media are reported as warnings; repeating **Connect & download** retries them.
+
+Preview 6 lifecycle fixes:
+
+- **Connect & download** is one supported action: connect, fetch, persist, then refresh the visible library. The phone UI reloads Browse through the download callback plus DOM/Tauri `library-changed` events; a regression proves downloaded records survive completion and relaunch.
+- Downloaded rows are committed to SQLite and visible to an already-open Browse connection as well as a fresh connection.
+- **Find desktop** only lists candidates whose live `/health` probe succeeds. A cached mDNS advertisement alone is not treated as available.
+- Stopping sharing unregisters the mDNS service; desktop `RunEvent::Exit` also shuts down the LAN server and mDNS. Remembered manual addresses remain editable, but reconnect/download attempts fail cleanly when the server is gone.
+- The obsolete desktop access-code connection panel is removed from the UI. The core still supports a configured `--pairing-code` for protected/legacy use; the default trusted-LAN flow needs no code.
 
 ## Protocol (version 1)
 
@@ -44,4 +52,6 @@ Desktop sync remains last-writer-wins with deterministic tie-breaks: **timestamp
 
 ## Tests
 
-`core/tests/sync_server.rs`: protected pairing/auth/rate-limit, incremental manifest, complete-field round-trip, image transfer + hash verification, tombstone propagation, stale-write conflict, and open-LAN additive/resumable download that never requests `/images/` for a blank hash.
+`core/tests/sync_server.rs`: protected pairing/auth/rate-limit, incremental manifest, complete-field round-trip, image transfer + hash verification, tombstone propagation, stale-write conflict, open-LAN additive/resumable download that never requests `/images/` for a blank hash, live discovery probing that rejects a stopped server/stale cache candidate, and download persistence visible to both an already-open and a fresh library connection.
+
+`e2e/android-browse.spec.ts`: empty-phone download persists and refreshes Browse after relaunch; stopped desktop sharing is not shown as live; compact Android settings tables stay inside the viewport.

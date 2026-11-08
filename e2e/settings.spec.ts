@@ -27,6 +27,7 @@ test.describe('desktop settings', () => {
     await expect(page.getByTestId('capture-settings')).toBeVisible();
     await page.screenshot({ path: 'docs/screenshots/43-settings-capture.png' });
     await page.getByRole('tab', { name: 'Sharing' }).click();
+    if (await page.getByRole('button', { name: 'Stop sharing' }).isVisible()) await page.getByRole('button', { name: 'Stop sharing' }).click();
     await page.getByRole('button', { name: 'Start sharing' }).click();
     await expect(page.getByTestId('server-address')).toHaveText('http://192.168.1.20:8765');
     await page.screenshot({ path: 'docs/screenshots/44-settings-sharing.png' });

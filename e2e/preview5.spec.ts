@@ -104,9 +104,9 @@ test.describe('Preview 5 Create', () => {
     await page.getByRole('dialog', { name: 'Choose agent' }).getByRole('option', { name: 'Sova' }).click();
     await setup.getByRole('button', { name: 'Choose ability' }).click();
     await page.getByRole('dialog', { name: 'Choose ability' }).getByRole('option', { name: /Shock Bolt/ }).click();
-    await setup.getByRole('radio', { name: /Double shock/ }).click();
+    await setup.getByRole('switch', { name: 'Double shock' }).click();
     await expect(setup.getByTestId('dart-controls')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByRole('navigation', { name: 'Create sections' }).getByRole('button', { name: 'Capture' }).click();
     const capture = page.getByTestId('wizard-capture');
     await expect(capture.getByTestId('slot-stand2')).toBeVisible();
     await expect(capture.getByTestId('slot-aim2')).toBeVisible();
@@ -121,18 +121,19 @@ test.describe('Preview 5 Create', () => {
     await expect(capture.getByRole('radio', { name: 'Full', exact: true })).toHaveAttribute('aria-checked', 'true');
     await expect(capture.getByRole('radio', { name: '2', exact: true })).toHaveAttribute('aria-checked', 'true');
     await page.getByRole('button', { name: 'Setup', exact: true }).click();
-    await page.getByTestId('wizard-setup').getByRole('radio', { name: /Single shock/ }).click();
-    await page.getByRole('button', { name: 'Next' }).click();
+    await page.getByTestId('wizard-setup').getByRole('switch', { name: 'Double shock' }).click();
+    await page.getByRole('navigation', { name: 'Create sections' }).getByRole('button', { name: 'Capture' }).click();
     await expect(capture.getByTestId('slot-stand2')).toHaveCount(0);
     await expect(capture.getByTestId('slot-aim2')).toHaveCount(0);
   });
 
-  test('one top navigation bar and no duplicate bottom Back/Next', async ({ page }) => {
+  test('sidebar navigation replaces the old top progress/Back/Next bar', async ({ page }) => {
     await page.goto('/?mock');
     await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Create' }).click();
-    await expect(page.locator('.ll-wizard__top').getByRole('button', { name: 'Next' })).toBeVisible();
+    await expect(page.locator('.ll-wizard__top')).toHaveCount(0);
     await expect(page.locator('.ll-wizard__foot')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Back' })).toHaveCount(1);
-    await expect(page.getByRole('button', { name: 'Next' })).toHaveCount(1);
+    await expect(page.getByRole('button', { name: 'Back' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Next' })).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'Create sections' })).toBeVisible();
   });
 });

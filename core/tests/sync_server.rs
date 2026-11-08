@@ -217,3 +217,39 @@ async fn open_lan_download_is_additive_resumable_and_never_requests_empty_image_
     assert!(client.image("").await.is_err());
     h.shutdown().await.unwrap();
 }
+
+#[tokio::test]
+async fn discovery_probe_rejects_stopped_server_and_stale_cache_candidates() {
+    let (h, _dir, _client) = server().await;
+    let base = format!("http://{}", h.addr);
+    assert!(probe_server(&base).await);
+    h.shutdown().await.unwrap();
+    // A cached mDNS entry may still contain this address, but the live health
+    // probe must remove it from Find desktop results.
+    assert!(!probe_server(&base).await);
+}
+
+#[tokio::test]
+async fn download_persists_lineups_for_open_and_fresh_library_connections() {
+    let (h, dir, client) = server().await;
+    let server_db = Database::open(dir.path().join("lineuplab.sqlite3")).unwrap();
+    let mut l = lineup("Downloaded", "2026-01-01T00:00:00Z", "desktop", 1);
+    l.draft = false;
+    server_db.put(&l).unwrap();
+    drop(server_db);
+    let phone_path = dir.path().join("phone.sqlite3");
+    let mut phone = Database::open(&phone_path).unwrap();
+    // Browse keeps a managed connection open while SyncSettings downloads on
+    // another connection. It must see the committed rows without a restart.
+    let browse = Database::open(&phone_path).unwrap();
+    let store = MediaStore::new(dir.path().join("phone-media")).unwrap();
+    let report = download_library(&client, &mut phone, &store, |_| {})
+        .await
+        .unwrap();
+    assert_eq!(report.downloaded, 1);
+    assert_eq!(browse.get(&l.id).unwrap().unwrap().title, "Downloaded");
+    drop(phone);
+    let reopened = Database::open(&phone_path).unwrap();
+    assert_eq!(reopened.get(&l.id).unwrap().unwrap().title, "Downloaded");
+    h.shutdown().await.unwrap();
+}

@@ -79,8 +79,9 @@ fn catalog_json(api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::
         })(); let _ = tx.send(result);
     });
     let report = rx.await.map_err(|e| e.to_string())?.map_err(err)?;
+    let _ = app.emit("lineuplab://library-changed", serde_json::json!({"downloaded": report.downloaded, "existing": report.existing}));
     Ok(serde_json::to_value(report).map_err(err)?)
 }
-#[tauri::command] pub fn discover_sync() -> CmdResult<Vec<lineuplab_core::sync::DiscoveredServer>> { lineuplab_core::sync::discover(std::time::Duration::from_millis(1500)).map_err(err) }
+#[tauri::command] pub async fn discover_sync() -> CmdResult<Vec<lineuplab_core::sync::DiscoveredServer>> { lineuplab_core::sync::discover(std::time::Duration::from_millis(1500)).await.map_err(err) }
 #[tauri::command] pub fn get_sync_settings(state: State<MobileState>) -> CmdResult<Value> { Ok(state.db.lock().unwrap().metadata("sync").map_err(err)?.unwrap_or(json!({}))) }
 #[tauri::command] pub fn set_sync_settings(state: State<MobileState>, settings: Value) -> CmdResult<()> { state.db.lock().unwrap().set_metadata("sync", &settings).map_err(err) }
