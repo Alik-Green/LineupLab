@@ -67,6 +67,7 @@ fn catalog_json(api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::
 }
 #[tauri::command] pub async fn download_library(app: tauri::AppHandle, base_url: String, token: String) -> CmdResult<Value> {
     let state = app.state::<MobileState>(); let data_dir = state.data_dir.clone(); let store = state.store.clone(); drop(state);
+    let emitter = app.clone();
     let (tx, rx) = tokio::sync::oneshot::channel();
     std::thread::spawn(move || {
         let result = (|| -> lineuplab_core::Result<lineuplab_core::sync::DownloadReport> {
@@ -74,7 +75,7 @@ fn catalog_json(api: &lineuplab_core::catalog::ValorantApi, c: &lineuplab_core::
             rt.block_on(async move {
                 let client = lineuplab_core::sync::SyncClient::new(base_url, token);
                 let mut db = lineuplab_core::db::Database::open(data_dir.join("lineuplab.sqlite3"))?;
-                lineuplab_core::sync::download_library(&client, &mut db, &store, |p| { let _ = app.emit("lineuplab://download-progress", p); }).await
+                lineuplab_core::sync::download_library(&client, &mut db, &store, |p| { let _ = emitter.emit("lineuplab://download-progress", p); }).await
             })
         })(); let _ = tx.send(result);
     });
