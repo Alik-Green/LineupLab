@@ -58,4 +58,4 @@ Added 2026-11-07 before implementing the new feedback. Duplicate comments in the
 - Callouts: bundled normalized English callouts for 13 standard maps in `core/data/map_callouts.json`, merged into native catalogs and used by UI auto-title. Naming is nearest Euclidean callout, not path-aware. Provenance is recorded in the JSON file.
 - Local verification: TypeScript, UI unit 35/35, Rust 32/32, Playwright 35/35, desktop/mobile production builds, cargo fmt, YAML lint. Screenshots inspected: desktop full-screen viewer, Android map/pickers, Android Preview 5 map.
 
-- Release: draft `v0.1.0-preview.5` created against `d02376c`; CI 42429009026 + Android 42429009025 green. Packaging marker pending.
+- Released as [v0.1.0-preview.5](https://github.com/Alik-Green/LineupLab/releases/tag/v0.1.0-preview.5) from `d02376c`. CI 42429009026 + Android 42429009025 green; packaging run 42430205364 published installer/arm64 APK/checksums. Notes: `docs/releases/v0.1.0-preview.5.md`. Physical Pixel installation remains user-side; CI badging/signature/alignment gates passed.
