@@ -5,7 +5,7 @@ Added 2026-11-07 before implementing the new feedback. Duplicate comments in the
 ## P0 — reproduce and fix the blockers
 
 - [x] **1. Minimap click turns the entire screen into a solid colour (desktop AND phone).** Treat this as the highest-priority bug, not just an empty-map issue. Reproduce clicks on map background, stand marker, landing/ability marker and overlapping markers; inspect navigation, dialogs, focus/scroll locking and rendering. Add desktop/phone regression tests that assert the lineup viewer opens with actual content, the background remains usable, Close/Back returns to Browse, and there are no runtime errors. Test populated and empty libraries and map/list switching. Do not mark complete based only on the previous empty-state reset test.
-- [ ] **2. Latest Android APK says “You can't install this app on your device.”** Inspect the actual release manifest, minimum/target SDK, ABIs/native libraries, package ID/version, signing scheme and build logs. Establish whether this is an OS/device/ABI requirement, a conflict with an existing differently signed preview, or a packaging defect. Ask for the phone model/Android version and whether an older LineupLab is installed. Fix any confirmed packaging issue; add CI manifest/ABI/signature compatibility checks and explicit install troubleshooting. Verify on an emulator/physical device if tooling permits; otherwise state exactly what remains unverified.
+- [x] **2. Latest Android APK says “You can't install this app on your device.”** Inspect the actual release manifest, minimum/target SDK, ABIs/native libraries, package ID/version, signing scheme and build logs. Establish whether this is an OS/device/ABI requirement, a conflict with an existing differently signed preview, or a packaging defect. Ask for the phone model/Android version and whether an older LineupLab is installed. Fix any confirmed packaging issue; add CI manifest/ABI/signature compatibility checks and explicit install troubleshooting. Verify on an emulator/physical device if tooling permits; otherwise state exactly what remains unverified.
 
 ## P1 — map and selector usability
 
@@ -37,8 +37,8 @@ Added 2026-11-07 before implementing the new feedback. Duplicate comments in the
 ## Verification / delivery
 
 - [x] **18. Add regressions and run checks.** Cover the actual minimap-click failure, larger selector artwork, unclipped tooltips, persistent paths, TDM identities, full-screen viewer, zoom/pan, absent optional slots, clean cards, per-throw controls, single-mode slots, reduced pin tools, callout titles and unified Create navigation. Run TypeScript/unit/Rust checks, production builds and desktop/Android Playwright; inspect screenshots and runtime errors.
-- [ ] **19. Verify Android packaging/installability and native builds.** Record actual manifest/ABI/signature results and CI runs. Obtain the missing device details if needed; do not describe an APK as fixed on a physical phone without evidence.
-- [ ] **20. Publish the next prerelease only after the implemented batch passes.** Include checksums, Android compatibility/install guidance and honest limitations. Update this checklist and release docs; keep Preview 4 binaries clearly superseded once the new release is verified.
+- [x] **19. Verify Android packaging/installability and native builds.** Record actual manifest/ABI/signature results and CI runs. Obtain the missing device details if needed; do not describe an APK as fixed on a physical phone without evidence.
+- [x] **20. Publish the next prerelease only after the implemented batch passes.** Include checksums, Android compatibility/install guidance and honest limitations. Update this checklist and release docs; keep Preview 4 binaries clearly superseded once the new release is verified.
 
 ## Working order
 
@@ -57,3 +57,5 @@ Added 2026-11-07 before implementing the new feedback. Duplicate comments in the
 - Android P0: Preview 4 universal APK badging could not be downloaded from the sandbox (CDN EOF). Tauri/GitHub reports show modern 64-bit Pixels rejecting 32-bit/universal native packaging. Preview 5 switches to arm64-v8a-only split APK, target SDK 36, NDK r28, 16 KB ELF/ZIP alignment, CI badging artifacts, and release-time ABI/signature/alignment gates. Physical Pixel installation remains unverified until the user installs the new APK.
 - Callouts: bundled normalized English callouts for 13 standard maps in `core/data/map_callouts.json`, merged into native catalogs and used by UI auto-title. Naming is nearest Euclidean callout, not path-aware. Provenance is recorded in the JSON file.
 - Local verification: TypeScript, UI unit 35/35, Rust 32/32, Playwright 35/35, desktop/mobile production builds, cargo fmt, YAML lint. Screenshots inspected: desktop full-screen viewer, Android map/pickers, Android Preview 5 map.
+
+- Release: draft `v0.1.0-preview.5` created against `d02376c`; CI 42429009026 + Android 42429009025 green. Packaging marker pending.
