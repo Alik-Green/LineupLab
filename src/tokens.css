@@ -1,0 +1,19 @@
+:root {
+  --color-page-bg: #1B1B1F;
+  --color-panel: #2A2B32;
+  --color-tile: #34353D;
+  --color-tile-hover: #3A3B44;
+  --color-border: #3A3B44;
+  --color-text: #EDEDED;
+  --color-muted: #9A9BA5;
+  --color-accent: #E8404F;
+  --color-accent-hover: #D63846;
+  --radius-card: 8px;
+  --radius-pill: 9999px;
+  --transition: 120ms;
+  --left-panel-width: 350px;
+}
+
+* { scrollbar-width: thin; scrollbar-color: var(--color-tile-hover) transparent; }
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-thumb { background: #3A3B44; border-radius: 6px; }

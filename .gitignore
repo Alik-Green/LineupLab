@@ -1,0 +1,15 @@
+node_modules
+dist
+.tmp
+*.log
+.env
+.DS_Store
+coverage
+.playwright
+test-results
+# Tauri build
+src-tauri/target
+src-tauri/gen/android/build
+src-tauri/gen/android/.gradle
+# Screenshots tmp
+test-jimp.png

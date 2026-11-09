@@ -1,0 +1,377 @@
+[
+  {
+    "uuid": "eb93336a-449b-9c1b-0a54-a891f21d9b4d",
+    "displayName": "Astra",
+    "displayIcon": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4d/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4d/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4d/fullportrait.png",
+    "role": { "displayName": "Controller", "displayIcon": "https://media.valorant-api.com/agents/roles/4ee9e50d-4bd6-f90e-b884-4d6a1a8cc64c/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Nova Pulse", "displayIcon": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4d/abilities/ability1/displayicon.png", "description": "Astra ability" },
+      { "slot": "Ability2", "displayName": "Nebula", "displayIcon": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4d/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Gravity Well", "displayIcon": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4d/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Astral Form", "displayIcon": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4d/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "9f8d94e8-4b12-a399-ce25-11b113f6b308",
+    "displayName": "Breach",
+    "displayIcon": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/fullportrait.png",
+    "role": { "displayName": "Initiator", "displayIcon": "https://media.valorant-api.com/agents/roles/1e58de9c-4950-5125-93e9-a39582f04220/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Flashpoint", "displayIcon": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Fault Line", "displayIcon": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Aftershock", "displayIcon": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Rolling Thunder", "displayIcon": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "9f8d94e8-4b12-a399-ce25-11b113f6b309",
+    "displayName": "Brimstone",
+    "displayIcon": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/fullportrait.png",
+    "role": { "displayName": "Controller", "displayIcon": "https://media.valorant-api.com/agents/roles/4ee9e50d-4bd6-f90e-b884-4d6a1a8cc64c/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Incendiary", "displayIcon": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Stim Beacon", "displayIcon": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Sky Smoke", "displayIcon": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Orbital Strike", "displayIcon": "https://media.valorant-api.com/agents/9f8d94e8-4b12-a399-ce25-11b113f6b308/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "a3bfb853-43b2-7238-a4d1-ad90e9e46bcc",
+    "displayName": "Chamber",
+    "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bcc/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bcc/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bcc/fullportrait.png",
+    "role": { "displayName": "Sentinel", "displayIcon": "https://media.valorant-api.com/agents/roles/5fc02f99-4091-4486-a53b-622d5e9af8e8/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Headhunter", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bcc/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Rendezvous", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bcc/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Trademark", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bcc/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Tour De Force", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bcc/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "1e58de9c-4950-5125-93e9-a39582f04220",
+    "displayName": "Clove",
+    "displayIcon": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04220/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04220/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04220/fullportrait.png",
+    "role": { "displayName": "Controller", "displayIcon": "https://media.valorant-api.com/agents/roles/4ee9e50d-4bd6-f90e-b884-4d6a1a8cc64c/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Pick-me-up", "displayIcon": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04220/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Ruse", "displayIcon": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04220/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Meddle", "displayIcon": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04220/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Not Dead Yet", "displayIcon": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04220/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "117ed9e3-49f3-6512-3ccf-0cada7e3823b",
+    "displayName": "Cypher",
+    "displayIcon": "https://media.valorant-api.com/agents/117ed9e3-49f3-6512-3ccf-0cada7e3823b/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/117ed9e3-49f3-6512-3ccf-0cada7e3823b/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/117ed9e3-49f3-6512-3ccf-0cada7e3823b/fullportrait.png",
+    "role": { "displayName": "Sentinel", "displayIcon": "https://media.valorant-api.com/agents/roles/5fc02f99-4091-4486-a53b-622d5e9af8e8/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Cyber Cage", "displayIcon": "https://media.valorant-api.com/agents/117ed9e3-49f3-6512-3ccf-0cada7e3823b/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Spycam", "displayIcon": "https://media.valorant-api.com/agents/117ed9e3-49f3-6512-3ccf-0cada7e3823b/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Trapwire", "displayIcon": "https://media.valorant-api.com/agents/117ed9e3-49f3-6512-3ccf-0cada7e3823b/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Neural Theft", "displayIcon": "https://media.valorant-api.com/agents/117ed9e3-49f3-6512-3ccf-0cada7e3823b/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "cc8b64c8-4b25-4ff0-6e7f-37b4da43d235",
+    "displayName": "Deadlock",
+    "displayIcon": "https://media.valorant-api.com/agents/cc8b64c8-4b25-4ff0-6e7f-37b4da43d235/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/cc8b64c8-4b25-4ff0-6e7f-37b4da43d235/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/cc8b64c8-4b25-4ff0-6e7f-37b4da43d235/fullportrait.png",
+    "role": { "displayName": "Sentinel", "displayIcon": "https://media.valorant-api.com/agents/roles/5fc02f99-4091-4486-a53b-622d5e9af8e8/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Sonic Sensor", "displayIcon": "https://media.valorant-api.com/agents/cc8b64c8-4b25-4ff0-6e7f-37b4da43d235/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Barrier Mesh", "displayIcon": "https://media.valorant-api.com/agents/cc8b64c8-4b25-4ff0-6e7f-37b4da43d235/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "GravNet", "displayIcon": "https://media.valorant-api.com/agents/cc8b64c8-4b25-4ff0-6e7f-37b4da43d235/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Annihilation", "displayIcon": "https://media.valorant-api.com/agents/cc8b64c8-4b25-4ff0-6e7f-37b4da43d235/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "dade69b4-4f5a-8528-247b-219e5a1facd6",
+    "displayName": "Fade",
+    "displayIcon": "https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1facd6/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1facd6/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1facd6/fullportrait.png",
+    "role": { "displayName": "Initiator", "displayIcon": "https://media.valorant-api.com/agents/roles/1e58de9c-4950-5125-93e9-a39582f04220/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Seize", "displayIcon": "https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1facd6/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Haunt", "displayIcon": "https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1facd6/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Prowler", "displayIcon": "https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1facd6/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Nightfall", "displayIcon": "https://media.valorant-api.com/agents/dade69b4-4f5a-8528-247b-219e5a1facd6/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "e370fa57-4757-3604-3648-499e1f0829ea",
+    "displayName": "Gekko",
+    "displayIcon": "https://media.valorant-api.com/agents/e370fa57-4757-3604-3648-499e1f0829ea/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/e370fa57-4757-3604-3648-499e1f0829ea/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/e370fa57-4757-3604-3648-499e1f0829ea/fullportrait.png",
+    "role": { "displayName": "Initiator", "displayIcon": "https://media.valorant-api.com/agents/roles/1e58de9c-4950-5125-93e9-a39582f04220/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Wingman", "displayIcon": "https://media.valorant-api.com/agents/e370fa57-4757-3604-3648-499e1f0829ea/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Dizzy", "displayIcon": "https://media.valorant-api.com/agents/e370fa57-4757-3604-3648-499e1f0829ea/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Mosh Pit", "displayIcon": "https://media.valorant-api.com/agents/e370fa57-4757-3604-3648-499e1f0829ea/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Thrash", "displayIcon": "https://media.valorant-api.com/agents/e370fa57-4757-3604-3648-499e1f0829ea/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "95b78ed7-a463-1021-bd65-1d8a9d2e0ff1",
+    "displayName": "Harbor",
+    "displayIcon": "https://media.valorant-api.com/agents/95b78ed7-a463-1021-bd65-1d8a9d2e0ff1/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/95b78ed7-a463-1021-bd65-1d8a9d2e0ff1/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/95b78ed7-a463-1021-bd65-1d8a9d2e0ff1/fullportrait.png",
+    "role": { "displayName": "Controller", "displayIcon": "https://media.valorant-api.com/agents/roles/4ee9e50d-4bd6-f90e-b884-4d6a1a8cc64c/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Cove", "displayIcon": "https://media.valorant-api.com/agents/95b78ed7-a463-1021-bd65-1d8a9d2e0ff1/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "High Tide", "displayIcon": "https://media.valorant-api.com/agents/95b78ed7-a463-1021-bd65-1d8a9d2e0ff1/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Cascade", "displayIcon": "https://media.valorant-api.com/agents/95b78ed7-a463-1021-bd65-1d8a9d2e0ff1/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Reckoning", "displayIcon": "https://media.valorant-api.com/agents/95b78ed7-a463-1021-bd65-1d8a9d2e0ff1/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "707eabf7-44da-412e-9834-12b5f3b6d12b",
+    "displayName": "Iso",
+    "displayIcon": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12b/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12b/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12b/fullportrait.png",
+    "role": { "displayName": "Duelist", "displayIcon": "https://media.valorant-api.com/agents/roles/dbe8757e-9f10-5c0a-b3b0-4f7c9e1c3b0a/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Undercut", "displayIcon": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12b/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Double Tap", "displayIcon": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12b/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Contingency", "displayIcon": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12b/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Kill Contract", "displayIcon": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12b/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "add6443a-41bd-e414-f6ad-e58d267f4e95",
+    "displayName": "Jett",
+    "displayIcon": "https://media.valorant-api.com/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/fullportrait.png",
+    "role": { "displayName": "Duelist", "displayIcon": "https://media.valorant-api.com/agents/roles/dbe8757e-9f10-5c0a-b3b0-4f7c9e1c3b0a/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Cloudburst", "displayIcon": "https://media.valorant-api.com/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Updraft", "displayIcon": "https://media.valorant-api.com/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Tailwind", "displayIcon": "https://media.valorant-api.com/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Blade Storm", "displayIcon": "https://media.valorant-api.com/agents/add6443a-41bd-e414-f6ad-e58d267f4e95/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "601dbbe7-43ce-be57-2a40-4abd249536e0",
+    "displayName": "KAY/O",
+    "displayIcon": "https://media.valorant-api.com/agents/601dbbe7-43ce-be57-2a40-4abd249536e0/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/601dbbe7-43ce-be57-2a40-4abd249536e0/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/601dbbe7-43ce-be57-2a40-4abd249536e0/fullportrait.png",
+    "role": { "displayName": "Initiator", "displayIcon": "https://media.valorant-api.com/agents/roles/1e58de9c-4950-5125-93e9-a39582f04220/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "FLASH/drive", "displayIcon": "https://media.valorant-api.com/agents/601dbbe7-43ce-be57-2a40-4abd249536e0/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "ZERO/point", "displayIcon": "https://media.valorant-api.com/agents/601dbbe7-43ce-be57-2a40-4abd249536e0/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "FRAG/ment", "displayIcon": "https://media.valorant-api.com/agents/601dbbe7-43ce-be57-2a40-4abd249536e0/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "NULL/cmd", "displayIcon": "https://media.valorant-api.com/agents/601dbbe7-43ce-be57-2a40-4abd249536e0/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "1e58de9c-4950-5125-93e9-a39582f04221",
+    "displayName": "Killjoy",
+    "displayIcon": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04221/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04221/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04221/fullportrait.png",
+    "role": { "displayName": "Sentinel", "displayIcon": "https://media.valorant-api.com/agents/roles/5fc02f99-4091-4486-a53b-622d5e9af8e8/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Alarmbot", "displayIcon": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04221/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Nanoswarm", "displayIcon": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04221/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Turret", "displayIcon": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04221/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Lockdown", "displayIcon": "https://media.valorant-api.com/agents/1e58de9c-4950-5125-93e9-a39582f04221/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "bb2a4828-2956-2a42-42aa-bb793750f6a2",
+    "displayName": "Neon",
+    "displayIcon": "https://media.valorant-api.com/agents/bb2a4828-2956-2a42-42aa-bb793750f6a2/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/bb2a4828-2956-2a42-42aa-bb793750f6a2/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/bb2a4828-2956-2a42-42aa-bb793750f6a2/fullportrait.png",
+    "role": { "displayName": "Duelist", "displayIcon": "https://media.valorant-api.com/agents/roles/dbe8757e-9f10-5c0a-b3b0-4f7c9e1c3b0a/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Fast Lane", "displayIcon": "https://media.valorant-api.com/agents/bb2a4828-2956-2a42-42aa-bb793750f6a2/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Relay Bolt", "displayIcon": "https://media.valorant-api.com/agents/bb2a4828-2956-2a42-42aa-bb793750f6a2/displayiconsmall.png", "description": "" },
+      { "slot": "Grenade", "displayName": "High Gear", "displayIcon": "https://media.valorant-api.com/agents/bb2a4828-2956-2a42-42aa-bb793750f6a2/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Overdrive", "displayIcon": "https://media.valorant-api.com/agents/bb2a4828-2956-2a42-42aa-bb793750f6a2/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "8e253930-4c05-31dd-1b6c-968525494517",
+    "displayName": "Omen",
+    "displayIcon": "https://media.valorant-api.com/agents/8e253930-4c05-31dd-1b6c-968525494517/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/8e253930-4c05-31dd-1b6c-968525494517/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/8e253930-4c05-31dd-1b6c-968525494517/fullportrait.png",
+    "role": { "displayName": "Controller", "displayIcon": "https://media.valorant-api.com/agents/roles/4ee9e50d-4bd6-f90e-b884-4d6a1a8cc64c/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Paranoia", "displayIcon": "https://media.valorant-api.com/agents/8e253930-4c05-31dd-1b6c-968525494517/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Dark Cover", "displayIcon": "https://media.valorant-api.com/agents/8e253930-4c05-31dd-1b6c-968525494517/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Shrouded Step", "displayIcon": "https://media.valorant-api.com/agents/8e253930-4c05-31dd-1b6c-968525494517/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "From the Shadows", "displayIcon": "https://media.valorant-api.com/agents/8e253930-4c05-31dd-1b6c-968525494517/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "eb93336a-449b-9c1b-0a54-a891f21d9b4e",
+    "displayName": "Phoenix",
+    "displayIcon": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4e/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4e/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4e/fullportrait.png",
+    "role": { "displayName": "Duelist", "displayIcon": "https://media.valorant-api.com/agents/roles/dbe8757e-9f10-5c0a-b3b0-4f7c9e1c3b0a/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Blaze", "displayIcon": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4e/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Curveball", "displayIcon": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4e/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Hot Hands", "displayIcon": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4e/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Run it Back", "displayIcon": "https://media.valorant-api.com/agents/eb93336a-449b-9c1b-0a54-a891f21d9b4e/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "f94c3b30-42be-e959-889c-5aa313dba261",
+    "displayName": "Raze",
+    "displayIcon": "https://media.valorant-api.com/agents/f94c3b30-42be-e959-889c-5aa313dba261/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/f94c3b30-42be-e959-889c-5aa313dba261/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/f94c3b30-42be-e959-889c-5aa313dba261/fullportrait.png",
+    "role": { "displayName": "Duelist", "displayIcon": "https://media.valorant-api.com/agents/roles/dbe8757e-9f10-5c0a-b3b0-4f7c9e1c3b0a/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Blast Pack", "displayIcon": "https://media.valorant-api.com/agents/f94c3b30-42be-e959-889c-5aa313dba261/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Paint Shells", "displayIcon": "https://media.valorant-api.com/agents/f94c3b30-42be-e959-889c-5aa313dba261/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Boom Bot", "displayIcon": "https://media.valorant-api.com/agents/f94c3b30-42be-e959-889c-5aa313dba261/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Showstopper", "displayIcon": "https://media.valorant-api.com/agents/f94c3b30-42be-e959-889c-5aa313dba261/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "320b2a48-4d94-01a7-3a8e-02c1edf78698",
+    "displayName": "Reyna",
+    "displayIcon": "https://media.valorant-api.com/agents/320b2a48-4d94-01a7-3a8e-02c1edf78698/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/320b2a48-4d94-01a7-3a8e-02c1edf78698/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/320b2a48-4d94-01a7-3a8e-02c1edf78698/fullportrait.png",
+    "role": { "displayName": "Duelist", "displayIcon": "https://media.valorant-api.com/agents/roles/dbe8757e-9f10-5c0a-b3b0-4f7c9e1c3b0a/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Devour", "displayIcon": "https://media.valorant-api.com/agents/320b2a48-4d94-01a7-3a8e-02c1edf78698/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Dismiss", "displayIcon": "https://media.valorant-api.com/agents/320b2a48-4d94-01a7-3a8e-02c1edf78698/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Leer", "displayIcon": "https://media.valorant-api.com/agents/320b2a48-4d94-01a7-3a8e-02c1edf78698/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Empress", "displayIcon": "https://media.valorant-api.com/agents/320b2a48-4d94-01a7-3a8e-02c1edf78698/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "a3bfb853-43b2-7238-a4d1-ad90e9e46bce",
+    "displayName": "Sage",
+    "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bce/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bce/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bce/fullportrait.png",
+    "role": { "displayName": "Sentinel", "displayIcon": "https://media.valorant-api.com/agents/roles/5fc02f99-4091-4486-a53b-622d5e9af8e8/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Barrier Orb", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bce/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Slow Orb", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bce/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Healing Orb", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bce/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Resurrection", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46bce/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "707eabf7-44da-412e-9834-12b5f3b6d12e",
+    "displayName": "Sova",
+    "displayIcon": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12e/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12e/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12e/fullportrait.png",
+    "role": { "displayName": "Initiator", "displayIcon": "https://media.valorant-api.com/agents/roles/1e58de9c-4950-5125-93e9-a39582f04220/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Owl Drone", "displayIcon": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12e/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Shock Bolt", "displayIcon": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12e/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Recon Bolt", "displayIcon": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12e/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Hunter's Fury", "displayIcon": "https://media.valorant-api.com/agents/707eabf7-44da-412e-9834-12b5f3b6d12e/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d",
+    "displayName": "Viper",
+    "displayIcon": "https://media.valorant-api.com/agents/5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d/fullportrait.png",
+    "role": { "displayName": "Controller", "displayIcon": "https://media.valorant-api.com/agents/roles/4ee9e50d-4bd6-f90e-b884-4d6a1a8cc64c/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Poison Cloud", "displayIcon": "https://media.valorant-api.com/agents/5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Toxic Screen", "displayIcon": "https://media.valorant-api.com/agents/5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Snake Bite", "displayIcon": "https://media.valorant-api.com/agents/5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Viper's Pit", "displayIcon": "https://media.valorant-api.com/agents/5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "a3bfb853-43b2-7238-a4d1-ad90e9e46aac",
+    "displayName": "Yoru",
+    "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46aac/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46aac/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46aac/fullportrait.png",
+    "role": { "displayName": "Duelist", "displayIcon": "https://media.valorant-api.com/agents/roles/dbe8757e-9f10-5c0a-b3b0-4f7c9e1c3b0a/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Blindside", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46aac/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Gatecrash", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46aac/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Fakeout", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46aac/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Dimensional Drift", "displayIcon": "https://media.valorant-api.com/agents/a3bfb853-43b2-7238-a4d1-ad90e9e46aac/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "22697a3d-45bf-bed8-8f06-74bb2a3b69d2",
+    "displayName": "Hush",
+    "displayIcon": "https://media.valorant-api.com/agents/22697a3d-45bf-bed8-8f06-74bb2a3b69d2/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/22697a3d-45bf-bed8-8f06-74bb2a3b69d2/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/22697a3d-45bf-bed8-8f06-74bb2a3b69d2/fullportrait.png",
+    "role": { "displayName": "Sentinel", "displayIcon": "https://media.valorant-api.com/agents/roles/5fc02f99-4091-4486-a53b-622d5e9af8e8/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Silence", "displayIcon": "https://media.valorant-api.com/agents/22697a3d-45bf-bed8-8f06-74bb2a3b69d2/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Hush Ward", "displayIcon": "https://media.valorant-api.com/agents/22697a3d-45bf-bed8-8f06-74bb2a3b69d2/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Muffle", "displayIcon": "https://media.valorant-api.com/agents/22697a3d-45bf-bed8-8f06-74bb2a3b69d2/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Sound Barrier", "displayIcon": "https://media.valorant-api.com/agents/22697a3d-45bf-bed8-8f06-74bb2a3b69d2/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  },
+  {
+    "uuid": "b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e",
+    "displayName": "Miks",
+    "displayIcon": "https://media.valorant-api.com/agents/b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e/displayicon.png",
+    "displayIconSmall": "https://media.valorant-api.com/agents/b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e/displayiconsmall.png",
+    "bustPortrait": "https://media.valorant-api.com/agents/b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e/fullportrait.png",
+    "role": { "displayName": "Controller", "displayIcon": "https://media.valorant-api.com/agents/roles/4ee9e50d-4bd6-f90e-b884-4d6a1a8cc64c/displayicon.png" },
+    "isPlayableCharacter": true,
+    "abilities": [
+      { "slot": "Ability1", "displayName": "Shroud", "displayIcon": "https://media.valorant-api.com/agents/b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e/abilities/ability1/displayicon.png", "description": "" },
+      { "slot": "Ability2", "displayName": "Veil", "displayIcon": "https://media.valorant-api.com/agents/b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e/abilities/ability2/displayicon.png", "description": "" },
+      { "slot": "Grenade", "displayName": "Murmur", "displayIcon": "https://media.valorant-api.com/agents/b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e/abilities/grenade/displayicon.png", "description": "" },
+      { "slot": "Ultimate", "displayName": "Eclipse", "displayIcon": "https://media.valorant-api.com/agents/b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e/abilities/ultimate/displayicon.png", "description": "" }
+    ]
+  }
+]
