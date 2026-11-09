@@ -7,8 +7,6 @@ type ImageEntry = { src: string; circles: any[] };
 
 function buildImageEntries(lineup: Lineup): ImageEntry[] {
   const entries: ImageEntry[] = [];
-
-  // Slot ordered keys with optional media fallback
   const slotKeys: Array<{ key: string; fallback?: string }> = [
     { key: "stand1", fallback: "standImage" },
     { key: "aim1", fallback: "aimImage" },
@@ -16,27 +14,22 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
     { key: "aim2" },
     { key: "landing", fallback: "landingImage" },
   ];
-
   const slotCirclesMap: Record<string, any[]> =
     (lineup as any).slotCircles ??
     lineup.attributes?.slotCircles ??
     (lineup.legacy?.raw?.attributes?.slotCircles) ??
     {};
-
   const attrProjectiles: any[] =
     lineup.attributes?.projectiles ??
     (lineup.legacy?.raw?.attributes?.projectiles) ??
     (lineup.legacy?.raw?.projectiles) ??
     [];
-
   for (const { key, fallback } of slotKeys) {
     const src = (lineup.slots as any)?.[key] ?? (fallback ? (lineup.media as any)?.[fallback] : undefined);
     if (!src) continue;
     const circles = (slotCirclesMap as any)[key] ?? [];
     entries.push({ src, circles: [...circles] });
   }
-
-  // Projectiles images (double shock etc)
   if (Array.isArray(attrProjectiles)) {
     for (const p of attrProjectiles) {
       const pCircles = p.focusCircles ?? p.circles ?? [];
@@ -49,7 +42,6 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
       if (p.stand2) pImages.push(p.stand2);
       if (p.aim2) pImages.push(p.aim2);
       if (Array.isArray(p.images)) pImages.push(...p.images.filter((x: any) => typeof x === "string"));
-      // Fallback: some packs store images as media keys object
       if (p.media && typeof p.media === "object") {
         for (const v of Object.values(p.media)) if (typeof v === "string") pImages.push(v);
       }
@@ -59,19 +51,13 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
       }
     }
   }
-
-  // Steps
   for (const step of lineup.steps ?? []) {
     if (step.image) entries.push({ src: step.image, circles: [...(step.circles ?? [])] });
   }
-
-  // If no entries but lineup has single media fallback (edge case)
   if (entries.length === 0 && lineup.media) {
     const fallbackMedia = [lineup.media.standImage, lineup.media.aimImage, lineup.media.landingImage].filter(Boolean) as string[];
     for (const src of fallbackMedia) entries.push({ src, circles: [] });
   }
-
-  // Deduplicate by lowercased src, merging circles
   const dedup = new Map<string, ImageEntry>();
   for (const e of entries) {
     const norm = e.src.toLowerCase();
@@ -86,48 +72,55 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
       dedup.set(norm, { src: e.src, circles: [...e.circles] });
     }
   }
-
-  const result = Array.from(dedup.values());
-
-  // If result has no circles but lineup.circles exists (legacy pack without per-image), distribute attempt:
-  // For older merged packs, we have no slotCircles mapping, but we can keep lineup.circles on first image only as fallback
-  // We will NOT assign all to first; instead we check if result circles all empty and lineup.circles non-empty:
-  // If single image, assign to it. If multiple images, leave empty to avoid wrong overlay.
-
-  return result;
+  return Array.from(dedup.values());
 }
 
 export default function DetailPanel({
   lineup,
   agent,
   onClose,
+  onDelete,
+  onEdit,
 }: {
   lineup: Lineup | null;
   agent: any;
   onClose: () => void;
+  onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
 }) {
   if (!lineup) return null;
-  const ability = agent?.abilities?.find((a: any) => a.slot === lineup.abilitySlot);
+  if (!lineup.start || !lineup.end) {
+    return (
+      <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+        <div className="bg-panel border border-borderSubtle rounded-card w-full max-w-4xl p-6 text-center" onClick={(e)=>e.stopPropagation()}>
+          <p className="text-textPrimary font-bold">Lineup data incomplete</p><p className="text-muted text-sm mt-1">Missing coordinates — reimport from pack.</p>
+          <button onClick={onClose} className="mt-4 px-4 py-2 rounded bg-accent text-white font-bold min-h-[44px]">Close</button>
+        </div>
+      </div>
+    );
+  }
 
-  const imageEntries = useMemo(() => buildImageEntries(lineup), [lineup]);
+  const imageEntries = useMemo(() => {
+    try { return buildImageEntries(lineup); }
+    catch (e) { console.error("DetailPanel buildImageEntries", e); return []; }
+  }, [lineup]);
   const rawSources = useMemo(() => imageEntries.map((e) => e.src), [imageEntries]);
-  const resolved = useMediaResolver(rawSources);
+  let resolved: (string | undefined)[] = rawSources as (string | undefined)[];
+  try {
+    const r = useMediaResolver(rawSources as (string|undefined)[]);
+    if (r) resolved = r;
+  } catch (e) { console.error("useMediaResolver", e); }
 
   const images = useMemo(() => {
     return imageEntries.map((e, i) => ({
       src: resolved[i] ?? e.src,
       circles: e.circles,
-      originalSrc: e.src,
     }));
   }, [imageEntries, resolved]);
-
-  // If resolver didn't find blob (still media path), images will be original string which will 404 -> show dark
-  // The useMediaResolver already handles fallback to blob via getMediaUrl, but if it fails, we still show original
 
   const [idx, setIdx] = useState(0);
   useEffect(() => setIdx(0), [lineup.id]);
 
-  // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -139,6 +132,7 @@ export default function DetailPanel({
   }, [onClose, images.length]);
 
   const currentCircles = images[idx]?.circles;
+  const ability = agent?.abilities?.find((a: any) => a.slot === lineup.abilitySlot);
 
   return (
     <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
@@ -172,6 +166,10 @@ export default function DetailPanel({
             </div>
           </div>
 
+          <div className="flex gap-2">
+            <button onClick={()=>{ if(confirm(`Delete "${lineup.title}"? This cannot be undone.`)) onDelete?.(lineup.id); }} className="flex-1 h-10 rounded bg-red-600 hover:bg-red-700 text-white text-sm font-bold border border-red-700">Delete</button>
+            <button onClick={()=>{ if(onEdit) onEdit(lineup.id); else alert("Edit coming soon — create/edit flow is being built."); }} className="flex-1 h-10 rounded bg-tile hover:bg-tileHover border border-borderSubtle text-textPrimary text-sm font-bold">Edit</button>
+          </div>
           <div>
             <p className="text-xs font-semibold text-muted mb-2">Preview ({images.length || "no images"})</p>
             {images.length > 0 ? (
@@ -187,10 +185,10 @@ export default function DetailPanel({
                 <div className="flex gap-2 mt-2 overflow-auto overscroll-contain">
                   {images.map((imgEntry, i) => (
                     <button key={i} onClick={() => setIdx(i)} className={`w-20 h-14 rounded overflow-hidden border-2 flex-shrink-0 bg-black ${i === idx ? "border-accent" : "border-transparent opacity-60"}`}>
-                      {imgEntry.src.toLowerCase().endsWith(".mp4") || imgEntry.src.toLowerCase().endsWith(".webm") ? (
+                      {imgEntry.src?.toLowerCase().endsWith(".mp4") || imgEntry.src?.toLowerCase().endsWith(".webm") ? (
                         <video src={imgEntry.src} className="w-full h-full object-cover" muted playsInline />
                       ) : (
-                        <img src={imgEntry.src} alt="" className="w-full h-full object-cover" onError={(e)=>{(e.currentTarget as HTMLImageElement).style.display="none"}} />
+                        <img src={imgEntry.src} alt="" className="w-full h-full object-cover" onError={(e)=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3"}} />
                       )}
                     </button>
                   ))}

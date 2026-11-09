@@ -6,13 +6,14 @@ import SideToggle from "./components/SideToggle";
 import AbilityBar from "./components/AbilityBar";
 import FiltersCardCollapsible from "./components/FiltersCardCollapsible";
 import Minimap from "./components/Minimap";
+import LineupListView from "./components/LineupListView";
 import DetailPanel from "./components/DetailPanel";
 import LoadingScreen from "./components/LoadingScreen";
 import CreateWizard from "./components/CreateWizard";
 import ImportDialog from "./components/ImportDialog";
 import { useValorantData } from "./hooks/useValorantData";
 import { useAppStore } from "./stores/appStore";
-import { getAllLineups, isDemoData, removeDemoData, seedDemoIfEmpty } from "./lib/indexedDBRepository";
+import { getAllLineups, isDemoData, removeDemoData, seedDemoIfEmpty, deleteLineup } from "./lib/indexedDBRepository";
 import { filterLineups } from "./lib/filtering";
 import type { Lineup } from "./types/lineup";
 
@@ -28,6 +29,7 @@ export default function App() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("lineups");
   const [importOpen, setImportOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"map" | "list">("map");
 
   const store = useAppStore();
 
@@ -164,25 +166,39 @@ export default function App() {
             <SideToggle side={store.side} onSideChange={(s) => store.setSide(s)} />
           </div>
 
-          <div className="flex-1 flex flex-col min-h-0 min-w-0 relative bg-[#131315] overflow-hidden" style={{ touchAction: "none" }}>
-            <Minimap
-              map={selectedMap}
-              lineups={filtered}
-              agentsMap={agentsMap}
-              hoveredId={hoveredId}
-              setHoveredId={setHoveredId}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              zoom={store.zoom}
-              pan={store.pan}
-              onZoom={(z) => store.setZoom(z)}
-              onPan={(p) => store.setPan(p)}
-            />
+          <div className="flex-1 flex flex-col min-h-0 min-w-0 relative bg-[#131315] overflow-hidden" style={{ touchAction: viewMode === "map" ? "none" as const : undefined }}>
+            <div className="absolute top-2 right-2 z-10 flex rounded-md overflow-hidden border border-borderSubtle">
+              <button onClick={() => setViewMode("map")} className={`px-3 py-1.5 text-xs font-bold min-h-[36px] ${viewMode === "map" ? "bg-accent text-white" : "bg-panel text-textPrimary"}`}>Map</button>
+              <button onClick={() => setViewMode("list")} className={`px-3 py-1.5 text-xs font-bold min-h-[36px] ${viewMode === "list" ? "bg-accent text-white" : "bg-panel text-textPrimary"}`}>List</button>
+            </div>
+            {viewMode === "map" ? (
+              <Minimap
+                map={selectedMap}
+                lineups={filtered}
+                agentsMap={agentsMap}
+                hoveredId={hoveredId}
+                setHoveredId={setHoveredId}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                zoom={store.zoom}
+                pan={store.pan}
+                onZoom={(z) => store.setZoom(z)}
+                onPan={(p) => store.setPan(p)}
+              />
+            ) : (
+              <LineupListView lineups={filtered} agentsMap={agentsMap} onSelect={setSelectedId} />
+            )}
             <button onClick={() => setMobileFiltersOpen(true)} className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 rounded-md bg-panel border border-borderSubtle text-textPrimary font-bold shadow-xl min-h-[48px]">
               Filters • {filtered.length}
             </button>
             {selectedLineup && (
-              <DetailPanel lineup={selectedLineup as any} agent={agentsMap.get(selectedLineup.agentUuid)} onClose={() => setSelectedId(null)} />
+              <DetailPanel
+                lineup={selectedLineup as any}
+                agent={agentsMap.get(selectedLineup.agentUuid)}
+                onClose={() => setSelectedId(null)}
+                onDelete={async (id) => { await deleteLineup(id); await refreshLineups(); setSelectedId(null); }}
+                onEdit={(id) => { setActiveTab("create"); setSelectedId(null); /* TODO pass id to CreateWizard when edit mode implemented */ }}
+              />
             )}
           </div>
         </div>

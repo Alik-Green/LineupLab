@@ -12,12 +12,11 @@ function ImportanceIcon({ kind, active }: { kind: Importance; active?: boolean }
   if (kind === "useful") {
     return (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8">
-        <circle cx="12" cy="12" r="8" opacity={active ? 1 : 0.7} />
+        <circle cx="12" cy="12" r="8" />
         <path d="M12 4a8 8 0 0 1 8 8" strokeWidth="2" />
       </svg>
     );
   }
-  // optional - diamond
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill={active ? color : "none"} stroke={color} strokeWidth="1.6">
       <path d="M12 2l8 8-8 12-8-12z" />
@@ -57,8 +56,8 @@ export default function FiltersCardCollapsible({
   return (
     <div className="flex flex-col gap-2">
       <div className="rounded-card bg-panel border border-borderSubtle p-2">
-        <p className="text-[10px] font-bold tracking-widest text-muted mb-1.5">IMPORTANCE</p>
-        <div className="grid grid-cols-3 gap-1.5">
+        <p className="text-[10px] font-bold tracking-widest text-muted mb-1.5 text-center">IMPORTANCE</p>
+        <div className="grid grid-cols-3 rounded-md overflow-hidden border border-borderSubtle">
           {(["essential", "useful", "optional"] as Importance[]).map((id) => {
             const sel = importance.has(id);
             return (
@@ -66,10 +65,10 @@ export default function FiltersCardCollapsible({
                 key={id}
                 onClick={() => onToggleImportance(id)}
                 aria-pressed={sel}
-                className={`h-[44px] rounded-md border flex flex-col items-center justify-center gap-1 ${sel ? "bg-tile border-accent" : "border-borderSubtle bg-transparent opacity-60 hover:opacity-100"}`}
+                className={`min-h-[44px] flex flex-col items-center justify-center gap-1 ${sel ? "bg-accent text-white" : "bg-tile text-muted hover:text-textPrimary"}`}
               >
                 <ImportanceIcon kind={id} active={sel} />
-                <span className={`text-[9px] font-bold capitalize ${sel ? "text-textPrimary" : "text-muted"}`}>{id}</span>
+                <span className="text-[9px] font-bold capitalize">{id}</span>
               </button>
             );
           })}
@@ -77,8 +76,8 @@ export default function FiltersCardCollapsible({
       </div>
 
       <div className="rounded-card bg-panel border border-borderSubtle p-2">
-        <p className="text-[10px] font-bold tracking-widest text-muted mb-1.5">DIFFICULTY</p>
-        <div className="grid grid-cols-3 gap-1.5">
+        <p className="text-[10px] font-bold tracking-widest text-muted mb-1.5 text-center">DIFFICULTY</p>
+        <div className="grid grid-cols-3 rounded-md overflow-hidden border border-borderSubtle">
           {(["easy", "normal", "hard"] as Difficulty[]).map((id) => {
             const sel = difficulty.has(id);
             return (
@@ -86,17 +85,17 @@ export default function FiltersCardCollapsible({
                 key={id}
                 onClick={() => onToggleDifficulty(id)}
                 aria-pressed={sel}
-                className={`h-[44px] rounded-md border flex flex-col items-center justify-center gap-1 ${sel ? "bg-tile border-accent" : "border-borderSubtle bg-transparent opacity-60 hover:opacity-100"}`}
+                className={`min-h-[44px] flex flex-col items-center justify-center gap-1 ${sel ? "bg-accent text-white" : "bg-tile text-muted hover:text-textPrimary"}`}
               >
                 <DifficultyIcon kind={id} active={sel} />
-                <span className={`text-[9px] font-bold capitalize ${sel ? "text-textPrimary" : "text-muted"}`}>{id}</span>
+                <span className="text-[9px] font-bold capitalize">{id}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      <button onClick={onReset} className="text-xs text-accent underline min-h-[40px] self-start px-1">Reset filters</button>
+      <button onClick={onReset} className="text-xs text-accent underline min-h-[40px] self-center px-3">Reset filters</button>
     </div>
   );
 }
