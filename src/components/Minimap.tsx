@@ -22,6 +22,15 @@ function importanceRing(imp: string) {
   return "#EDEDED";
 }
 
+function calloutToNorm(c: any, map: ValorantMap): { x: number; y: number } | null {
+  if (!c?.location || map.xMultiplier == null || map.yMultiplier == null) return null;
+  const x = c.location.x * (map.xMultiplier as number) + (map.xScalarToAdd as number);
+  const y = c.location.y * (map.yMultiplier as number) + (map.yScalarToAdd as number);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  if (x < -0.1 || x > 1.1 || y < -0.1 || y > 1.1) return null;
+  return { x, y };
+}
+
 export default function Minimap({
   map,
   lineups,
@@ -40,8 +49,8 @@ export default function Minimap({
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef<{ x: number; y: number; pan: { x: number; y: number } } | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
+  const [showCallouts, setShowCallouts] = useState(false);
 
-  // measure container
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -53,7 +62,6 @@ export default function Minimap({
     return () => ro.disconnect();
   }, []);
 
-  // compute image size at zoom=1 (contain)
   const baseImageSize = useMemo(() => {
     const s = Math.min(containerSize.w * 0.82, containerSize.h * 0.82, 680);
     return { w: s, h: s };
@@ -61,7 +69,6 @@ export default function Minimap({
 
   const zoomClamp = (z: number) => Math.min(3, Math.max(0.6, z));
 
-  // pan handlers
   const onMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY, pan: { ...pan } };
@@ -75,7 +82,6 @@ export default function Minimap({
   };
   const onMouseUp = () => setIsDragging(false);
 
-  // wheel isolated: passive:false + preventDefault so document never scrolls, zoom towards cursor
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -107,7 +113,6 @@ export default function Minimap({
     return () => el.removeEventListener("wheel", handler as any);
   }, [zoom, pan, containerSize, baseImageSize, onZoom, onPan]);
 
-  // touch pinch
   const touchState = useRef<{ dist: number; zoom: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
@@ -139,7 +144,6 @@ export default function Minimap({
   };
 
   const getMarkerPos = (pt: { x: number; y: number }) => {
-    // image center at container center + pan, then offset by (norm - 0.5)*imageSize*zoom
     const cx = containerSize.w / 2 + pan.x;
     const cy = containerSize.h / 2 + pan.y;
     const imgW = baseImageSize.w * zoom;
@@ -151,6 +155,37 @@ export default function Minimap({
 
   const hovered = lineups.find((l) => l.id === hoveredId) ?? null;
 
+  // Derive attacker/defender spawn normalized positions from callouts if available, else defaults
+  const spawnNorms = useMemo(() => {
+    if (map && (map as any).callouts && Array.isArray((map as any).callouts)) {
+      const callouts: any[] = (map as any).callouts;
+      const atk = callouts.filter((c) => c.superRegionName === "Attacker Side" || c.superRegionName === "Attacker");
+      const def = callouts.filter((c) => c.superRegionName === "Defender Side" || c.superRegionName === "Defender");
+      const avgNorm = (list: any[]) => {
+        const pts = list.map((c) => calloutToNorm(c, map)).filter(Boolean) as { x: number; y: number }[];
+        if (pts.length === 0) return null;
+        return { x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length };
+      };
+      const atkNorm = avgNorm(atk);
+      const defNorm = avgNorm(def);
+      return { atk: atkNorm, def: defNorm };
+    }
+    return { atk: null, def: null };
+  }, [map]);
+
+  // Callouts list for rendering
+  const calloutsList = useMemo(() => {
+    if (!map || !(map as any).callouts || !Array.isArray((map as any).callouts)) return [];
+    const list: any[] = (map as any).callouts;
+    return list
+      .map((c) => {
+        const norm = calloutToNorm(c, map);
+        if (!norm) return null;
+        return { label: c.regionName ?? c.superRegionName ?? "?", superRegion: c.superRegionName, norm };
+      })
+      .filter(Boolean) as { label: string; superRegion: string; norm: { x: number; y: number } }[];
+  }, [map]);
+
   if (!map) {
     return (
       <div className="flex-1 bg-pageBg flex items-center justify-center text-muted">
@@ -160,6 +195,8 @@ export default function Minimap({
   }
 
   const empty = lineups.length === 0;
+  const atkPos = spawnNorms.atk ? getMarkerPos(spawnNorms.atk) : getMarkerPos({ x: 0.5, y: 0.88 });
+  const defPos = spawnNorms.def ? getMarkerPos(spawnNorms.def) : getMarkerPos({ x: 0.5, y: 0.12 });
 
   return (
     <div
@@ -178,33 +215,11 @@ export default function Minimap({
       }}
       style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" } as any}
     >
-      {/* blurred backdrop */}
       <div className="absolute inset-0">
         <ValImage src={map.splash} alt="" className="w-full h-full opacity-20 blur-[12px] scale-105" />
         <div className="absolute inset-0 bg-[#1B1B1F]/40" />
       </div>
 
-      {/* spawn labels */}
-      <div className="absolute left-1/2 top-[12%] -translate-x-1/2 px-3 py-1 rounded bg-[#0F2A27] border border-[#3DD6B6]/30 text-[#3DD6B6] text-xs font-bold tracking-widest">
-        Defenders
-      </div>
-      <div className="absolute left-1/2 bottom-[10%] -translate-x-1/2 px-3 py-1 rounded bg-[#2A1B1F] border border-[#E8404F]/30 text-[#E8404F] text-xs font-bold tracking-widest">
-        Attackers
-      </div>
-
-      {/* minimap image */}
-      <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-        style={{
-          width: baseImageSize.w * zoom,
-          height: baseImageSize.h * zoom,
-          transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px)`,
-          // we already handle pan via transform, but marker positions computed via same math so we keep image centered via pan translation
-        }}
-      >
-        {/* Actually pan is applied via this wrapper transform; markers are outside wrapper for fixed pixel size? Simpler markers overlay on container coordinates */}
-      </div>
-      {/* Render image as positioned with computed size+pan for accuracy for markers overlay */}
       <div
         className="absolute pointer-events-none"
         style={{
@@ -220,11 +235,10 @@ export default function Minimap({
           className="w-full h-full object-contain opacity-90"
           style={{ filter: "contrast(1.1) brightness(0.95)" }}
           draggable={false}
-          onError={(e) => console.warn("[Minimap] minimap load failed", map.displayIcon)}
+          onError={() => console.warn("[Minimap] minimap load failed", map.displayIcon)}
         />
       </div>
 
-      {/* Zoom controls */}
       <div className="absolute top-4 right-4 flex rounded-md overflow-hidden border border-borderSubtle bg-panel shadow-lg">
         <button
           onClick={() => onZoom(zoomClamp(zoom - 0.2))}
@@ -243,8 +257,50 @@ export default function Minimap({
         </button>
       </div>
 
-      {/* Markers layer */}
+      {calloutsList.length > 0 && (
+        <div className="absolute top-4 left-4 flex rounded-md overflow-hidden border border-borderSubtle bg-panel shadow-lg">
+          <button
+            onClick={() => setShowCallouts((v) => !v)}
+            className={`px-3 h-10 flex items-center justify-center text-xs font-bold min-h-[40px] ${showCallouts ? "bg-accent text-white" : "text-textPrimary hover:bg-tile"}`}
+            aria-pressed={showCallouts}
+          >
+            Callouts
+          </button>
+        </div>
+      )}
+
       <div className="absolute inset-0">
+        {/* Spawn labels that move with minimap */}
+        <div
+          className="absolute px-3 py-1 rounded bg-[#0F2A27] border border-[#3DD6B6]/30 text-[#3DD6B6] text-xs font-bold tracking-widest -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ left: defPos.x, top: defPos.y }}
+        >
+          Defenders
+        </div>
+        <div
+          className="absolute px-3 py-1 rounded bg-[#2A1B1F] border border-[#E8404F]/30 text-[#E8404F] text-xs font-bold tracking-widest -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ left: atkPos.x, top: atkPos.y }}
+        >
+          Attackers
+        </div>
+
+        {/* Callouts overlay */}
+        {showCallouts &&
+          calloutsList.map((c, i) => {
+            const p = getMarkerPos(c.norm);
+            return (
+              <div
+                key={i}
+                className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ left: p.x, top: p.y }}
+              >
+                <span className="px-1.5 py-0.5 rounded bg-black/70 text-white text-[8px] font-semibold border border-white/20 whitespace-nowrap">
+                  {c.label}
+                </span>
+              </div>
+            );
+          })}
+
         {lineups.map((l) => {
           const pos = getMarkerPos(l.end);
           const isHovered = hoveredId === l.id;
@@ -252,13 +308,10 @@ export default function Minimap({
           const agent = agentsMap.get(l.agentUuid);
           const ability = agent?.abilities?.find((a: any) => a.slot === l.abilitySlot);
           const ring = importanceRing(l.importance);
-          // small z-order: hovered on top
           return (
             <div key={l.id} style={{ position: "absolute", left: pos.x, top: pos.y, zIndex: isHovered ? 20 : 5 }}>
-              {/* path line SVG when hovered: draw from start to end via bounces */}
-              {/* path is drawn as overlay line in same container */}
               <button
-                onMouseEnter={(e) => {
+                onMouseEnter={() => {
                   setHoveredId(l.id);
                   setTooltipPos({ x: pos.x, y: pos.y });
                 }}
@@ -268,7 +321,6 @@ export default function Minimap({
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  // second tap logic handled by parent
                   if (selectedId === l.id) onSelect(null);
                   else onSelect(l.id);
                   setHoveredId(l.id);
@@ -279,7 +331,6 @@ export default function Minimap({
                 style={{
                   borderColor: ring,
                   opacity: isDimmed ? 0.3 : 1,
-                  // ensure constant pixel size regardless of zoom - we already keep 32px fixed
                 }}
                 aria-label={`${l.title} ${l.abilitySlot}`}
               >
@@ -298,14 +349,11 @@ export default function Minimap({
           );
         })}
 
-        {/* Hover path + start marker */}
         {hovered && (() => {
           const startPos = getMarkerPos(hovered.start);
           const endPos = getMarkerPos(hovered.end);
           const bouncePos = hovered.bounces.map(getMarkerPos);
-          // Build SVG path points
           const points = [startPos, ...bouncePos, endPos];
-          // create SVG that covers full container
           return (
             <>
               <svg
@@ -319,14 +367,12 @@ export default function Minimap({
                     <path d="M 0 0 L 10 5 L 0 10 z" fill="#E8404F" />
                   </marker>
                 </defs>
-                {/* smooth line via path with quadratic-ish */}
                 <path
                   d={points.reduce((acc, p, i) => {
                     if (i === 0) return `M ${p.x} ${p.y}`;
                     const prev = points[i - 1];
-                    // create slight curve: midpoint control
                     const mx = (prev.x + p.x) / 2;
-                    const my = (prev.y + p.y) / 2 - 12; // up arc
+                    const my = (prev.y + p.y) / 2 - 12;
                     return `${acc} Q ${mx} ${my} ${p.x} ${p.y}`;
                   }, "")}
                   stroke="#E8404F"
@@ -337,12 +383,10 @@ export default function Minimap({
                   opacity="0.95"
                   style={{ animation: "dash 0.5s linear", transition: "d 150ms ease" }}
                 />
-                {/* bounces dots */}
                 {bouncePos.map((bp, i) => (
                   <circle key={i} cx={bp.x} cy={bp.y} r="5" fill="#EAB308" stroke="#1B1B1F" strokeWidth="2" />
                 ))}
               </svg>
-              {/* start marker */}
               <div
                 className="absolute w-[28px] h-[28px] rounded-full bg-white border-2 border-accent flex items-center justify-center shadow-md -translate-x-1/2 -translate-y-1/2"
                 style={{ left: startPos.x, top: startPos.y }}
@@ -350,7 +394,6 @@ export default function Minimap({
                 <span className="w-2 h-2 rounded-full bg-accent" />
                 <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">Start</span>
               </div>
-              {/* end arrow highlight */}
               <div
                 className="absolute w-3 h-3 rounded-full bg-accent -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                 style={{ left: endPos.x, top: endPos.y }}
@@ -360,7 +403,6 @@ export default function Minimap({
         })()}
       </div>
 
-      {/* Tooltip card near hovered marker */}
       {hovered && tooltipPos && (
         <div
           className="absolute z-30 pointer-events-none bg-panel border border-borderSubtle rounded-md shadow-xl p-3 w-[260px]"
@@ -413,7 +455,6 @@ export default function Minimap({
         </div>
       )}
 
-      {/* Empty state */}
       {empty && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="bg-panel/90 border border-borderSubtle rounded-card p-6 text-center pointer-events-auto">
@@ -421,7 +462,6 @@ export default function Minimap({
             <p className="text-muted text-sm mt-1">Try adjusting ability or importance filters</p>
             <button
               onClick={() => {
-                // will be handled by parent reset
                 const evt = new CustomEvent("reset-filters");
                 window.dispatchEvent(evt);
               }}

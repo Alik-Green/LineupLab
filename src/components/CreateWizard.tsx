@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { ValorantAgent, ValorantMap } from "../types/lineup";
+import ValImage from "./ValImage";
 
 type TabId = "capture" | "pins" | "details";
 const TABS: { id: TabId; label: string }[] = [
@@ -7,6 +8,59 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "pins", label: "MAP PINS" },
   { id: "details", label: "DETAILS" },
 ];
+
+function IconSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { uuid: string; label: string; icon: string | null; sublabel?: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find((o) => o.uuid === value);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="h-8 px-2 rounded-md bg-panel border border-borderSubtle flex items-center gap-2 min-w-[120px] text-left"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        {selected?.icon ? (
+          <img src={selected.icon} alt="" className="w-6 h-6 rounded object-cover bg-tile shrink-0" />
+        ) : (
+          <span className="w-6 h-6 rounded bg-tile shrink-0" />
+        )}
+        <span className="text-textPrimary text-xs font-bold truncate flex-1">{selected?.label ?? "Select"}</span>
+        <span className="text-muted text-xs shrink-0">▾</span>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 w-[220px] max-h-[280px] overflow-auto thin-scrollbar bg-panel border border-borderSubtle rounded-md shadow-xl z-40 p-1">
+          {options.map((o) => (
+            <button
+              key={o.uuid}
+              onClick={() => {
+                onChange(o.uuid);
+                setOpen(false);
+              }}
+              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left hover:bg-tile ${value === o.uuid ? "bg-accent/20" : ""}`}
+            >
+              {o.icon ? (
+                <img src={o.icon} alt="" className="w-6 h-6 rounded object-cover bg-[#1B1B1F] border border-borderSubtle shrink-0" />
+              ) : (
+                <span className="w-6 h-6 rounded bg-tile shrink-0" />
+              )}
+              <span className="text-textPrimary text-xs font-semibold truncate">{o.label}</span>
+              {o.sublabel && <span className="text-muted text-[10px] truncate ml-auto">{o.sublabel}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CreateWizard({ agents, maps }: { agents: ValorantAgent[]; maps: ValorantMap[] }) {
   const [active, setActive] = useState<TabId>("capture");
@@ -29,24 +83,22 @@ export default function CreateWizard({ agents, maps }: { agents: ValorantAgent[]
     { id: "landing" as const, label: "3. LANDING", hotkey: "ALT+3" },
   ];
 
+  const competitive = maps.filter(m=>["Abyss","Ascent","Bind","Breeze","Corrode","Fracture","Haven","Icebox","Lotus","Pearl","Split","Sunset"].includes(m.displayName)).slice(0,12);
+
   return (
     <div className="h-full flex flex-col overflow-hidden bg-[#0F1114]">
       <div className="h-[56px] shrink-0 flex items-center px-3 gap-3 bg-[#1A1E24] border-b border-[#2A2B32]">
         <div className="flex items-center gap-2">
-          <div className="h-8 px-2 rounded-md bg-panel border border-borderSubtle flex items-center gap-2">
-            <span className="text-[11px] font-bold text-accent">📍</span>
-            <select value={selectedMap} onChange={e=>setSelectedMap(e.target.value)} className="bg-transparent text-textPrimary text-xs font-bold outline-none min-h-[32px]">
-              {maps.filter(m=>["Abyss","Ascent","Bind","Breeze","Corrode","Fracture","Haven","Icebox","Lotus","Pearl","Split","Sunset"].includes(m.displayName)).slice(0,12).map(m=> <option key={m.uuid} value={m.uuid}>{m.displayName.toUpperCase()}</option>)}
-            </select>
-            <span className="text-muted text-[11px] border border-borderSubtle rounded px-1">16</span>
-          </div>
-          <div className="h-8 px-2 rounded-md bg-panel border border-borderSubtle flex items-center gap-2">
-            <img src={agent?.displayIcon ?? ""} alt="" className="w-6 h-6 rounded-full object-cover bg-tile" />
-            <select value={selectedAgent} onChange={e=>setSelectedAgent(e.target.value)} className="bg-transparent text-textPrimary text-xs font-bold outline-none">
-              {agents.slice(0,8).map(a=> <option key={a.uuid} value={a.uuid}>{a.displayName.toUpperCase()}</option>)}
-            </select>
-            <span className="text-muted text-xs">▾</span>
-          </div>
+          <IconSelect
+            value={selectedMap}
+            onChange={setSelectedMap}
+            options={competitive.map(m => ({ uuid: m.uuid, label: m.displayName.toUpperCase(), icon: m.listViewIcon ?? m.splash, sublabel: undefined }))}
+          />
+          <IconSelect
+            value={selectedAgent}
+            onChange={setSelectedAgent}
+            options={agents.slice(0, 20).map(a => ({ uuid: a.uuid, label: a.displayName.toUpperCase(), icon: a.displayIconSmall ?? a.displayIcon, sublabel: a.role?.displayName }))}
+          />
           <div className="flex gap-1 ml-1">
             {(agent?.abilities.slice(0,4) ?? []).map((ab,i)=> (
               <button key={i} onClick={()=>toast("Coming soon")} className={`w-8 h-8 rounded-md bg-tile border flex items-center justify-center ${i===1?"border-accent bg-accent/20":"border-borderSubtle"}`}>

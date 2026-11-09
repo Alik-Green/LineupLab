@@ -106,36 +106,41 @@ export default function ImportDialog({ onClose, onImported }: { onClose: () => v
       mediaMap.set(short, owner?.mapped?.id ?? toImport[0]?.mapped?.id ?? batchId);
       mediaMap.set(short.toLowerCase(), owner?.mapped?.id ?? toImport[0]?.mapped?.id ?? batchId);
     }
-    const tx = db.transaction("lineups", "readwrite");
+    // Use individual puts to avoid long-transaction inactivity timeout (stuck at 1/48)
     const insertedIds: string[] = [];
     for (let i = 0; i < toImport.length; i++) {
       const p = toImport[i];
       const lineup = p.mapped!;
       const existing = p.existing;
-      if (existing) {
-        if (conflictMode === "skip" && p.status !== "new") { skipped++; setProgress({ done: i + 1, total: toImport.length }); continue; }
-        if (conflictMode === "copy") {
-          const copyId = `${lineup.id}-copy-${Date.now().toString(36)}-${i}`;
-          const copy = { ...lineup, id: copyId };
-          await tx.store.put(copy as any);
-          insertedIds.push(copyId);
-          copied++;
-        } else if (conflictMode === "overwrite") {
-          await tx.store.put(lineup as any);
-          insertedIds.push(lineup.id);
-          overwritten++;
+      try {
+        if (existing) {
+          if (conflictMode === "skip" && p.status !== "new") { skipped++; } 
+          else if (conflictMode === "copy") {
+            const copyId = `${lineup.id}-copy-${Date.now().toString(36)}-${i}`;
+            const copy = { ...lineup, id: copyId };
+            await db.put("lineups", copy as any);
+            insertedIds.push(copyId);
+            copied++;
+          } else if (conflictMode === "overwrite") {
+            await db.put("lineups", lineup as any);
+            insertedIds.push(lineup.id);
+            overwritten++;
+          } else {
+            skipped++;
+          }
         } else {
-          skipped++;
+          await db.put("lineups", lineup as any);
+          insertedIds.push(lineup.id);
+          imported++;
         }
-      } else {
-        await tx.store.put(lineup as any);
-        insertedIds.push(lineup.id);
-        imported++;
+      } catch (err: any) {
+        allWarnings.push(`Failed to save ${lineup.id}: ${String(err?.message ?? err)}`);
+        skipped++;
       }
       setProgress({ done: i + 1, total: toImport.length });
-      await new Promise(r => setTimeout(r, 2));
+      // yield to keep UI responsive, without breaking IDB tx
+      await new Promise(r => setTimeout(r, 0));
     }
-    await tx.done;
     if (mediaEntries.length > 0) {
       const mediaResult = await storeMediaBatch(mediaEntries, mediaMap);
       if (mediaResult.warnings.length) allWarnings.push(...mediaResult.warnings);

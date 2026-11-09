@@ -18,41 +18,38 @@ export default function MapCard({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-card bg-panel border border-borderSubtle overflow-hidden">
-      {/* banner */}
+    <div className="rounded-card bg-panel border border-borderSubtle overflow-hidden flex-1">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="relative w-full h-[140px] overflow-hidden text-left group"
+        className="relative w-full h-[68px] overflow-hidden text-left flex items-center gap-2 px-2 bg-tile hover:bg-tileHover"
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label="Select map"
       >
         {selectedMap ? (
           <>
-            <ValImage
-              src={selectedMap.splash}
-              alt={selectedMap.displayName}
-              className="absolute inset-0"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
-            <div className="absolute bottom-3 left-4 right-10">
-              <h2 className="text-white font-extrabold text-[22px] leading-none drop-shadow-lg">
-                {selectedMap.displayName}
-              </h2>
-              <p className="text-white/70 text-xs mt-1">Tap to change map</p>
+            <div className="w-10 h-10 rounded-md overflow-hidden bg-[#1B1B1F] border border-borderSubtle shrink-0">
+              <ValImage
+                src={selectedMap.listViewIcon ?? selectedMap.splash}
+                alt={selectedMap.displayName}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-white font-bold text-xs leading-none truncate">{selectedMap.displayName}</div>
+              <div className="text-white/60 text-[10px] mt-0.5">Tap to change</div>
             </div>
           </>
         ) : (
-          <div className="absolute inset-0 bg-tile flex items-center justify-center text-muted">Select map</div>
+          <div className="flex-1 text-muted text-xs">Select map</div>
         )}
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 min-w-[40px] min-h-[40px] rounded bg-black/40 flex items-center justify-center text-white border border-white/10">
+        <span className="w-8 h-8 rounded bg-black/40 flex items-center justify-center text-white border border-white/10 text-xs shrink-0">
           ▾
         </span>
       </button>
 
-      {/* dropdown grid */}
       {open && (
-        <div className="p-3 bg-panel border-t border-borderSubtle max-h-[340px] overflow-auto">
+        <div className="p-2 bg-panel border-t border-borderSubtle max-h-[320px] overflow-auto thin-scrollbar">
           <div className="grid grid-cols-2 gap-2">
             {maps.map((m) => (
               <button
@@ -71,21 +68,14 @@ export default function MapCard({
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setOpen(false)}
-            className="mt-3 w-full min-h-[40px] rounded bg-tile text-muted text-sm"
-          >
-            Close
-          </button>
         </div>
       )}
 
-      {/* Attack / Defense toggle */}
       <div className="p-2 bg-panel">
         <div className="grid grid-cols-2 rounded-md overflow-hidden border border-borderSubtle">
           <button
             onClick={() => onSideChange("attack")}
-            className={`min-h-[44px] text-sm font-bold transition-colors ${
+            className={`min-h-[36px] text-xs font-bold transition-colors ${
               side === "attack" ? "bg-accent text-white" : "bg-tile text-muted hover:text-textPrimary"
             }`}
             aria-pressed={side === "attack"}
@@ -94,7 +84,7 @@ export default function MapCard({
           </button>
           <button
             onClick={() => onSideChange("defense")}
-            className={`min-h-[44px] text-sm font-bold transition-colors ${
+            className={`min-h-[36px] text-xs font-bold transition-colors ${
               side === "defense" ? "bg-accent text-white" : "bg-tile text-muted hover:text-textPrimary"
             }`}
             aria-pressed={side === "defense"}

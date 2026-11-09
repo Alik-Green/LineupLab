@@ -123,6 +123,7 @@ export interface ValorantMap {
   yMultiplier?: number;
   xScalarToAdd?: number;
   yScalarToAdd?: number;
+  callouts?: { regionName: string; superRegionName: string; location: { x: number; y: number; z?: number } }[] | null;
 }
 
 export interface FilterState {

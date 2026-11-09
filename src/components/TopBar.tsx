@@ -1,30 +1,65 @@
 export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImport }: { activeTab: string; onTabChange: (t: any) => void; onOpenSettings: () => void; onImport: () => void }) {
+  const getWin = () => {
+    try {
+      // @ts-ignore - optional tauri dep, only in desktop
+      const w = (window as any).__TAURI__?.window?.getCurrentWindow?.();
+      if (w) return w;
+      // fallback dynamic import if available
+      return null;
+    } catch { return null; }
+  };
+
+  const min = async () => {
+    const win = getWin();
+    try { if (win) await win.minimize(); } catch {}
+  };
+  const max = async () => {
+    const win = getWin();
+    try {
+      if (win) {
+        const isMax = await win.isMaximized();
+        if (isMax) await win.unmaximize(); else await win.maximize();
+      }
+    } catch {}
+  };
+  const close = async () => {
+    const win = getWin();
+    try { if (win) await win.close(); else window.close(); } catch { try { window.close(); } catch {} }
+  };
+
   return (
-    <header className="h-[56px] shrink-0 flex items-center px-4 bg-[#1B1B1F] border-b border-[#2A2B32] sticky top-0 z-30">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded bg-accent flex items-center justify-center text-white font-bold text-sm">LL</div>
-        <span className="font-bold text-textPrimary text-[18px] tracking-tight">LineupLab</span>
-        <span className="ml-2 px-2 py-0.5 rounded-md bg-tile text-muted text-xs">Demo data</span>
+    <header className="h-[56px] shrink-0 flex items-center bg-[#1B1B1F] border-b border-[#2A2B32] sticky top-0 z-30 select-none">
+      <div data-tauri-drag-region className="flex-1 flex items-center px-4 h-full">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded bg-accent flex items-center justify-center text-white font-bold text-sm">LL</div>
+          <span className="font-bold text-textPrimary text-[18px] tracking-tight">LineupLab</span>
+          <span className="ml-2 px-2 py-0.5 rounded-md bg-tile text-muted text-xs">Demo data</span>
+        </div>
+        <nav className="ml-8 flex gap-1">
+          <button
+            onClick={() => onTabChange("lineups")}
+            className={`px-4 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${activeTab === "lineups" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}
+            aria-current={activeTab === "lineups" ? "page" : undefined}
+          >
+            Lineups
+          </button>
+          <button
+            onClick={() => onTabChange("create")}
+            className={`px-4 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${activeTab === "create" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}
+            aria-current={activeTab === "create" ? "page" : undefined}
+          >
+            Create
+          </button>
+        </nav>
+        <div className="ml-auto flex items-center gap-2">
+          <button onClick={onImport} className="min-h-[40px] px-3 rounded-md bg-accent text-white text-sm font-semibold hover:bg-accentHover">Import</button>
+          <button onClick={onOpenSettings} className="min-h-[40px] px-3 rounded-md bg-panel text-muted hover:text-textPrimary text-sm border border-borderSubtle" aria-label="Open settings">⚙ Settings</button>
+        </div>
       </div>
-      <nav className="ml-8 flex gap-1">
-        <button
-          onClick={() => onTabChange("lineups")}
-          className={`px-4 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${activeTab === "lineups" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}
-          aria-current={activeTab === "lineups" ? "page" : undefined}
-        >
-          Lineups
-        </button>
-        <button
-          onClick={() => onTabChange("create")}
-          className={`px-4 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${activeTab === "create" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}
-          aria-current={activeTab === "create" ? "page" : undefined}
-        >
-          Create
-        </button>
-      </nav>
-      <div className="ml-auto flex items-center gap-2">
-        <button onClick={onImport} className="min-h-[40px] px-3 rounded-md bg-accent text-white text-sm font-semibold hover:bg-accentHover">Import</button>
-        <button onClick={onOpenSettings} className="min-h-[40px] px-3 rounded-md bg-panel text-muted hover:text-textPrimary text-sm border border-borderSubtle" aria-label="Open settings">⚙ Settings</button>
+      <div className="flex h-full shrink-0">
+        <button onClick={min} className="w-12 flex items-center justify-center text-muted hover:bg-white/10 hover:text-white" aria-label="Minimize">─</button>
+        <button onClick={max} className="w-12 flex items-center justify-center text-muted hover:bg-white/10 hover:text-white" aria-label="Maximize">□</button>
+        <button onClick={close} className="w-12 flex items-center justify-center text-muted hover:bg-accent hover:text-white" aria-label="Close">✕</button>
       </div>
     </header>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import TopBar from "./components/TopBar";
 import MapCard from "./components/MapCard";
+import AgentCard from "./components/AgentCard";
 import AgentGridCompact from "./components/AgentGridCompact";
 import AbilityBar from "./components/AbilityBar";
 import FiltersCardCollapsible from "./components/FiltersCardCollapsible";
@@ -140,8 +141,9 @@ export default function App() {
         <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
           {/* Left panel - no page scroll, internal fit */}
           <aside className="hidden md:flex w-[350px] shrink-0 flex flex-col gap-2 p-2 bg-[#1B1B1F] border-r border-borderSubtle min-h-0 overflow-hidden">
-            <div className="shrink-0">
+            <div className="shrink-0 flex gap-2">
               <MapCard maps={maps} selectedMap={selectedMap} onSelect={(uuid) => store.setMap(uuid)} side={store.side} onSideChange={(s) => store.setSide(s)} />
+              <AgentCard agents={agents} selectedAgent={selectedAgent} onSelect={(uuid) => store.setAgent(uuid)} />
             </div>
             <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden">
               <AgentGridCompact
@@ -223,9 +225,7 @@ export default function App() {
         </div>
       )}
 
-      <footer className="h-7 shrink-0 bg-pageBg border-t border-borderSubtle flex items-center justify-center text-muted text-xs">
-        LineupLab • {filtered.length} showing
-      </footer>
+
     </div>
   );
 }
