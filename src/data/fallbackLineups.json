@@ -1,0 +1,1290 @@
+[
+  {
+    "id": "demo-002",
+    "title": "Flash for C #2",
+    "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6047",
+    "agentUuid": "b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e",
+    "abilitySlot": "Ability1",
+    "side": "defense",
+    "site": "C",
+    "start": {
+      "x": 0.6678886054202999,
+      "y": 0.4893223694733835
+    },
+    "end": {
+      "x": 0.36161511451010436,
+      "y": 0.7748005077297391
+    },
+    "bounces": [
+      {
+        "x": 0.47081449108142825,
+        "y": 0.724252876850144
+      }
+    ],
+    "throwType": "Standing",
+    "difficulty": "hard",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Practice in custom to get timing right.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-026",
+    "title": "Smoke for A #26",
+    "mapUuid": "a1d05fb9-4c8a-5a9e-86a1-0c2a2b6e0e1a",
+    "agentUuid": "eb93336a-449b-9c1b-0a54-a891f21d9b4e",
+    "abilitySlot": "Grenade",
+    "side": "defense",
+    "site": "A",
+    "start": {
+      "x": 0.4428517210955052,
+      "y": 0.19471096030544097
+    },
+    "end": {
+      "x": 0.20413873166705057,
+      "y": 0.7169940036665678
+    },
+    "bounces": [],
+    "throwType": "Crouch",
+    "difficulty": "easy",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Bounce off wall near spawn, lands deep site.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-021",
+    "title": "Ultimate for C #21",
+    "mapUuid": "a1d05fb9-4c8a-5a9e-86a1-0c2a2b6e0e1a",
+    "agentUuid": "1e58de9c-4950-5125-93e9-a39582f04221",
+    "abilitySlot": "Ability2",
+    "side": "attack",
+    "site": "C",
+    "start": {
+      "x": 0.5531211627385042,
+      "y": 0.40636333795402324
+    },
+    "end": {
+      "x": 0.7881687348803825,
+      "y": 0.44318914644861845
+    },
+    "bounces": [],
+    "throwType": "Standing",
+    "difficulty": "hard",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Use for post-plant denial. Does not require line-up after setup.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-007",
+    "title": "One-way for A #7",
+    "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6048a",
+    "agentUuid": "22697a3d-45bf-bed8-8f06-74bb2a3b69d2",
+    "abilitySlot": "Ultimate",
+    "side": "attack",
+    "site": "A",
+    "start": {
+      "x": 0.39711739020920056,
+      "y": 0.52474151776304
+    },
+    "end": {
+      "x": 0.5923774312815762,
+      "y": 0.26542816633927485
+    },
+    "bounces": [
+      {
+        "x": 0.5538251019201859,
+        "y": 0.4297120636457575
+      }
+    ],
+    "throwType": "Jump throw",
+    "difficulty": "easy",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-001",
+    "title": "Wallbang setup for B #1",
+    "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6047",
+    "agentUuid": "f94c3b30-42be-e959-889c-5aa313dba261",
+    "abilitySlot": "Ability1",
+    "side": "attack",
+    "site": "B",
+    "start": {
+      "x": 0.36694231444333947,
+      "y": 0.25208716333277625
+    },
+    "end": {
+      "x": 0.6550776541287899,
+      "y": 0.7367029780107872
+    },
+    "bounces": [
+      {
+        "x": 0.3469624785320841,
+        "y": 0.544947871620365
+      }
+    ],
+    "throwType": "Running",
+    "difficulty": "normal",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-011",
+    "title": "Retake for A #11",
+    "mapUuid": "2a9d3c1d-4d60-7a96-7f9c-2d2f1a7e0e1a",
+    "agentUuid": "601dbbe7-43ce-be57-2a40-4abd249536e0",
+    "abilitySlot": "Grenade",
+    "side": "attack",
+    "site": "A",
+    "start": {
+      "x": 0.2264878587757579,
+      "y": 0.681582703673339
+    },
+    "end": {
+      "x": 0.195101441494577,
+      "y": 0.1977134444182191
+    },
+    "bounces": [
+      {
+        "x": 0.2627355897886381,
+        "y": 0.6503779620115078
+      },
+      {
+        "x": 0.18534769593076258,
+        "y": 0.27114420183147525
+      }
+    ],
+    "throwType": "Standing",
+    "difficulty": "easy",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Great for retake, covers main choke.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-043",
+    "title": "Postplant for A #43",
+    "mapUuid": "6999a1d3-4d06-6c1e-8d9e-3a2f4a7e1c1a",
+    "agentUuid": "707eabf7-44da-412e-9834-12b5f3b6d12b",
+    "abilitySlot": "Grenade",
+    "side": "attack",
+    "site": "A",
+    "start": {
+      "x": 0.7372109750538428,
+      "y": 0.5781708559209195
+    },
+    "end": {
+      "x": 0.2867979720036395,
+      "y": 0.49707830696600674
+    },
+    "bounces": [],
+    "throwType": "Running",
+    "difficulty": "hard",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": true
+  },
+  {
+    "id": "demo-012",
+    "title": "Stun lineup #12",
+    "mapUuid": "2a9d3c1d-4d60-7a96-7f9c-2d2f1a7e0e1a",
+    "agentUuid": "8e253930-4c05-31dd-1b6c-968525494517",
+    "abilitySlot": "Grenade",
+    "side": "defense",
+    "start": {
+      "x": 0.8288558955125198,
+      "y": 0.6901379798717309
+    },
+    "end": {
+      "x": 0.26073838160219365,
+      "y": 0.5097651976781745
+    },
+    "bounces": [
+      {
+        "x": 0.7106450888326712,
+        "y": 0.6093146128598236
+      },
+      {
+        "x": 0.4386379674537793,
+        "y": 0.6407546860649047
+      }
+    ],
+    "throwType": "Crouch",
+    "difficulty": "normal",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Use for post-plant denial. Does not require line-up after setup.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-030",
+    "title": "Entry for A #30",
+    "mapUuid": "2e34c1be-4a4d-0f6a-6e2e-6c8b3f2f0f1a",
+    "agentUuid": "8e253930-4c05-31dd-1b6c-968525494517",
+    "abilitySlot": "Ultimate",
+    "side": "defense",
+    "site": "A",
+    "start": {
+      "x": 0.5226959597121635,
+      "y": 0.30473721502695317
+    },
+    "end": {
+      "x": 0.7039345840464477,
+      "y": 0.6095049484925963
+    },
+    "bounces": [],
+    "throwType": "Running",
+    "difficulty": "easy",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Align crosshair with roof edge, run and release.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-044",
+    "title": "Recon for B #44",
+    "mapUuid": "2a9d3c1d-4d60-7a96-7f9c-2d2f1a7e0e1a",
+    "agentUuid": "601dbbe7-43ce-be57-2a40-4abd249536e0",
+    "abilitySlot": "Ability2",
+    "side": "attack",
+    "site": "B",
+    "start": {
+      "x": 0.3112750029158768,
+      "y": 0.6892134746567876
+    },
+    "end": {
+      "x": 0.5568033151158535,
+      "y": 0.5189102804967676
+    },
+    "bounces": [],
+    "throwType": "Running",
+    "difficulty": "hard",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": true
+  },
+  {
+    "id": "demo-032",
+    "title": "Postplant for B #32",
+    "mapUuid": "a1d05fb9-4c8a-5a9e-86a1-0c2a2b6e0e1a",
+    "agentUuid": "707eabf7-44da-412e-9834-12b5f3b6d12b",
+    "abilitySlot": "Ability1",
+    "side": "both",
+    "site": "B",
+    "start": {
+      "x": 0.5586845695504828,
+      "y": 0.5160233201563963
+    },
+    "end": {
+      "x": 0.4916418015980484,
+      "y": 0.2869774495789623
+    },
+    "bounces": [],
+    "throwType": "Running",
+    "difficulty": "normal",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Great for retake, covers main choke.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-038",
+    "title": "Wallbang setup for C #38",
+    "mapUuid": "e2ad5c54-4114-a870-9648-8ea21279579a",
+    "agentUuid": "22697a3d-45bf-bed8-8f06-74bb2a3b69d2",
+    "abilitySlot": "Ability2",
+    "side": "both",
+    "site": "C",
+    "start": {
+      "x": 0.5718194724557084,
+      "y": 0.23219347706578414
+    },
+    "end": {
+      "x": 0.7909308195344935,
+      "y": 0.5980307237504768
+    },
+    "bounces": [],
+    "throwType": "Jump throw",
+    "difficulty": "hard",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Bounce off wall near spawn, lands deep site.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-019",
+    "title": "Molotov lineup #19",
+    "mapUuid": "07ea6a58-4e8e-41d0-aa70-0e4f7c3a7c1a",
+    "agentUuid": "eb93336a-449b-9c1b-0a54-a891f21d9b4d",
+    "abilitySlot": "Grenade",
+    "side": "attack",
+    "start": {
+      "x": 0.2249514862101828,
+      "y": 0.6046515700305223
+    },
+    "end": {
+      "x": 0.47114340107145986,
+      "y": 0.22315941619341528
+    },
+    "bounces": [],
+    "throwType": "Standing",
+    "difficulty": "easy",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Practice in custom to get timing right.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-009",
+    "title": "Smoke for C #9",
+    "mapUuid": "d9601898-4233-7fc1-f2f1-81f6f3f8a1c1",
+    "agentUuid": "320b2a48-4d94-01a7-3a8e-02c1edf78698",
+    "abilitySlot": "Ability2",
+    "side": "attack",
+    "site": "C",
+    "start": {
+      "x": 0.4748591419229614,
+      "y": 0.18465904779391462
+    },
+    "end": {
+      "x": 0.3564923277429713,
+      "y": 0.5109966892959885
+    },
+    "bounces": [
+      {
+        "x": 0.4354321982390629,
+        "y": 0.39728518411443514
+      },
+      {
+        "x": 0.40310610321791485,
+        "y": 0.26200560630785213
+      }
+    ],
+    "throwType": "Jump throw",
+    "difficulty": "easy",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Bounce off wall near spawn, lands deep site.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-017",
+    "title": "Entry for B #17",
+    "mapUuid": "6999a1d3-4d06-6c1e-8d9e-3a2f4a7e1c1a",
+    "agentUuid": "a3bfb853-43b2-7238-a4d1-ad90e9e46bce",
+    "abilitySlot": "Grenade",
+    "side": "attack",
+    "site": "B",
+    "start": {
+      "x": 0.5530724710429414,
+      "y": 0.6217319142469195
+    },
+    "end": {
+      "x": 0.1935274680017109,
+      "y": 0.7506778948485389
+    },
+    "bounces": [],
+    "throwType": "Standing",
+    "difficulty": "normal",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-036",
+    "title": "Smoke for A #36",
+    "mapUuid": "6999a1d3-4d06-6c1e-8d9e-3a2f4a7e1c1a",
+    "agentUuid": "e370fa57-4757-3604-3648-499e1f0829ea",
+    "abilitySlot": "Ability1",
+    "side": "both",
+    "site": "A",
+    "start": {
+      "x": 0.7418930194247547,
+      "y": 0.5389799375626663
+    },
+    "end": {
+      "x": 0.3688439742129614,
+      "y": 0.19471278815765458
+    },
+    "bounces": [],
+    "throwType": "Jump throw",
+    "difficulty": "hard",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": true
+  },
+  {
+    "id": "demo-005",
+    "title": "Molotov for A #5",
+    "mapUuid": "7eaecc1b-4337-bbf9-6ab9-04b8f06b3319",
+    "agentUuid": "601dbbe7-43ce-be57-2a40-4abd249536e0",
+    "abilitySlot": "Ability2",
+    "side": "attack",
+    "site": "A",
+    "start": {
+      "x": 0.3143518712264334,
+      "y": 0.43380475661067097
+    },
+    "end": {
+      "x": 0.7834091589095338,
+      "y": 0.4075368144913133
+    },
+    "bounces": [
+      {
+        "x": 0.5018252077729435,
+        "y": 0.3991906742094422
+      },
+      {
+        "x": 0.5026551019999264,
+        "y": 0.4896675946948303
+      }
+    ],
+    "throwType": "Jump throw",
+    "difficulty": "normal",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Use for post-plant denial. Does not require line-up after setup.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-031",
+    "title": "Ultimate lineup #31",
+    "mapUuid": "7eaecc1b-4337-bbf9-6ab9-04b8f06b3319",
+    "agentUuid": "1e58de9c-4950-5125-93e9-a39582f04220",
+    "abilitySlot": "Ability2",
+    "side": "defense",
+    "start": {
+      "x": 0.17621746149424203,
+      "y": 0.25738222701021557
+    },
+    "end": {
+      "x": 0.4659407319729514,
+      "y": 0.765328960126203
+    },
+    "bounces": [],
+    "throwType": "Crouch",
+    "difficulty": "hard",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Practice in custom to get timing right.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-042",
+    "title": "Molotov lineup #42",
+    "mapUuid": "2e34c1be-4a4d-0f6a-6e2e-6c8b3f2f0f1a",
+    "agentUuid": "a3bfb853-43b2-7238-a4d1-ad90e9e46aac",
+    "abilitySlot": "Ability2",
+    "side": "defense",
+    "start": {
+      "x": 0.409166595455288,
+      "y": 0.8230804598844339
+    },
+    "end": {
+      "x": 0.5605057671151181,
+      "y": 0.1859469164776813
+    },
+    "bounces": [],
+    "throwType": "Standing",
+    "difficulty": "easy",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Bounce off wall near spawn, lands deep site.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-024",
+    "title": "Molotov for B #24",
+    "mapUuid": "b9e3e6b7-4b6e-4f1e-8d2e-3a3b4c1d0e1a",
+    "agentUuid": "5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d",
+    "abilitySlot": "Ability2",
+    "side": "defense",
+    "site": "B",
+    "start": {
+      "x": 0.7972482093064498,
+      "y": 0.2582473921324093
+    },
+    "end": {
+      "x": 0.5489104114348697,
+      "y": 0.46088916350738124
+    },
+    "bounces": [],
+    "throwType": "Crouch",
+    "difficulty": "easy",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Use for post-plant denial. Does not require line-up after setup.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-015",
+    "title": "Wallbang setup for B #15",
+    "mapUuid": "ee206a30-1f53-4a72-8ba9-0f7a5d1b0e1a",
+    "agentUuid": "dade69b4-4f5a-8528-247b-219e5a1facd6",
+    "abilitySlot": "Ability1",
+    "side": "attack",
+    "site": "B",
+    "start": {
+      "x": 0.5629592187996858,
+      "y": 0.6400963765377826
+    },
+    "end": {
+      "x": 0.726404952618299,
+      "y": 0.22143413338931608
+    },
+    "bounces": [],
+    "throwType": "Crouch",
+    "difficulty": "easy",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-040",
+    "title": "Stun lineup #40",
+    "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6047",
+    "agentUuid": "9f8d94e8-4b12-a399-ce25-11b113f6b309",
+    "abilitySlot": "Ultimate",
+    "side": "both",
+    "start": {
+      "x": 0.7011104158396103,
+      "y": 0.7565025022643821
+    },
+    "end": {
+      "x": 0.41937685355870524,
+      "y": 0.18572208412922805
+    },
+    "bounces": [],
+    "throwType": "Jump throw",
+    "difficulty": "normal",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Use for post-plant denial. Does not require line-up after setup.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-020",
+    "title": "Smoke for C #20",
+    "mapUuid": "07ea6a58-4e8e-41d0-aa70-0e4f7c3a7c1a",
+    "agentUuid": "601dbbe7-43ce-be57-2a40-4abd249536e0",
+    "abilitySlot": "Ability1",
+    "side": "defense",
+    "site": "C",
+    "start": {
+      "x": 0.18338723160572673,
+      "y": 0.6964073043015533
+    },
+    "end": {
+      "x": 0.5166242448331422,
+      "y": 0.7376459212562883
+    },
+    "bounces": [],
+    "throwType": "Crouch",
+    "difficulty": "hard",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Align crosshair with roof edge, run and release.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-035",
+    "title": "Flash for A #35",
+    "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6048a",
+    "agentUuid": "5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d",
+    "abilitySlot": "Grenade",
+    "side": "both",
+    "site": "A",
+    "start": {
+      "x": 0.8438359687895276,
+      "y": 0.5702624491788197
+    },
+    "end": {
+      "x": 0.4972795185139062,
+      "y": 0.6520758329513995
+    },
+    "bounces": [],
+    "throwType": "Standing",
+    "difficulty": "normal",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Align crosshair with roof edge, run and release.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-034",
+    "title": "Entry lineup #34",
+    "mapUuid": "b9e3e6b7-4b6e-4f1e-8d2e-3a3b4c1d0e1a",
+    "agentUuid": "a3bfb853-43b2-7238-a4d1-ad90e9e46bcc",
+    "abilitySlot": "Ability1",
+    "side": "both",
+    "start": {
+      "x": 0.6168708367583009,
+      "y": 0.6168423915783638
+    },
+    "end": {
+      "x": 0.31727716175835663,
+      "y": 0.6405590928849338
+    },
+    "bounces": [],
+    "throwType": "Crouch",
+    "difficulty": "normal",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "media": {},
+    "isFavorite": true
+  },
+  {
+    "id": "demo-027",
+    "title": "Recon for C #27",
+    "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6048a",
+    "agentUuid": "8e253930-4c05-31dd-1b6c-968525494517",
+    "abilitySlot": "Ultimate",
+    "side": "attack",
+    "site": "C",
+    "start": {
+      "x": 0.38993670721174,
+      "y": 0.337937595104415
+    },
+    "end": {
+      "x": 0.31021630497984715,
+      "y": 0.5576806568344224
+    },
+    "bounces": [],
+    "throwType": "Standing",
+    "difficulty": "normal",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Great for retake, covers main choke.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-013",
+    "title": "Stun for B #13",
+    "mapUuid": "2e34c1be-4a4d-0f6a-6e2e-6c8b3f2f0f1a",
+    "agentUuid": "a3bfb853-43b2-7238-a4d1-ad90e9e46aac",
+    "abilitySlot": "Ability2",
+    "side": "attack",
+    "site": "B",
+    "start": {
+      "x": 0.3699659550683049,
+      "y": 0.403429206913097
+    },
+    "end": {
+      "x": 0.25956192584265037,
+      "y": 0.6309658024077555
+    },
+    "bounces": [],
+    "throwType": "Running",
+    "difficulty": "hard",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-006",
+    "title": "Postplant for C #6",
+    "mapUuid": "7eaecc1b-4337-bbf9-6ab9-04b8f06b3319",
+    "agentUuid": "a3bfb853-43b2-7238-a4d1-ad90e9e46aac",
+    "abilitySlot": "Ultimate",
+    "side": "defense",
+    "site": "C",
+    "start": {
+      "x": 0.5337660208228439,
+      "y": 0.5153620566414197
+    },
+    "end": {
+      "x": 0.6971941969262268,
+      "y": 0.18496408775786122
+    },
+    "bounces": [
+      {
+        "x": 0.636165031891005,
+        "y": 0.3797709815940999
+      }
+    ],
+    "throwType": "Jump throw",
+    "difficulty": "normal",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-008",
+    "title": "Retake lineup #8",
+    "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6048a",
+    "agentUuid": "95b78ed7-a463-1021-bd65-1d8a9d2e0ff1",
+    "abilitySlot": "Ability2",
+    "side": "defense",
+    "start": {
+      "x": 0.7436552334162867,
+      "y": 0.37079670719430935
+    },
+    "end": {
+      "x": 0.4102848689924748,
+      "y": 0.21396072423918525
+    },
+    "bounces": [
+      {
+        "x": 0.6456637072767881,
+        "y": 0.22906855427973324
+      }
+    ],
+    "throwType": "Standing",
+    "difficulty": "easy",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "media": {},
+    "isFavorite": true
+  },
+  {
+    "id": "demo-029",
+    "title": "Flash for C #29",
+    "mapUuid": "ee206a30-1f53-4a72-8ba9-0f7a5d1b0e1a",
+    "agentUuid": "22697a3d-45bf-bed8-8f06-74bb2a3b69d2",
+    "abilitySlot": "Grenade",
+    "side": "attack",
+    "site": "C",
+    "start": {
+      "x": 0.8393778528987759,
+      "y": 0.6460763724681482
+    },
+    "end": {
+      "x": 0.3953798016577207,
+      "y": 0.35296521509635326
+    },
+    "bounces": [],
+    "throwType": "Jump throw",
+    "difficulty": "normal",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Align crosshair with roof edge, run and release.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-004",
+    "title": "Recon for B #4",
+    "mapUuid": "e2ad5c54-4114-a870-9648-8ea21279579a",
+    "agentUuid": "cc8b64c8-4b25-4ff0-6e7f-37b4da43d235",
+    "abilitySlot": "Ability2",
+    "side": "defense",
+    "site": "B",
+    "start": {
+      "x": 0.18005626159549276,
+      "y": 0.3145496035417543
+    },
+    "end": {
+      "x": 0.41883049867119193,
+      "y": 0.537008637831839
+    },
+    "bounces": [
+      {
+        "x": 0.2915501595457615,
+        "y": 0.39384998901019574
+      },
+      {
+        "x": 0.33976824434127795,
+        "y": 0.4154656123646231
+      }
+    ],
+    "throwType": "Crouch",
+    "difficulty": "normal",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Use for post-plant denial. Does not require line-up after setup.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-033",
+    "title": "Shock Dart lineup #33",
+    "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6048a",
+    "agentUuid": "b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e",
+    "abilitySlot": "Grenade",
+    "side": "both",
+    "start": {
+      "x": 0.5432352070596358,
+      "y": 0.6570146212615661
+    },
+    "end": {
+      "x": 0.797533487337988,
+      "y": 0.7494588247268557
+    },
+    "bounces": [],
+    "throwType": "Jump throw",
+    "difficulty": "easy",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Align crosshair with roof edge, run and release.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-045",
+    "title": "Flash for A #45",
+    "mapUuid": "6999a1d3-4d06-6c1e-8d9e-3a2f4a7e1c1a",
+    "agentUuid": "b33a2cdb-7f7a-4bf6-8f2a-5d3e2b5a2f7e",
+    "abilitySlot": "Ability1",
+    "side": "defense",
+    "site": "A",
+    "start": {
+      "x": 0.27712681919627813,
+      "y": 0.2930074109509484
+    },
+    "end": {
+      "x": 0.21007327235301132,
+      "y": 0.7952524278176041
+    },
+    "bounces": [],
+    "throwType": "Standing",
+    "difficulty": "easy",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": true
+  },
+  {
+    "id": "demo-003",
+    "title": "Ultimate for A #3",
+    "mapUuid": "e2ad5c54-4114-a870-9648-8ea21279579a",
+    "agentUuid": "1e58de9c-4950-5125-93e9-a39582f04220",
+    "abilitySlot": "Ability1",
+    "side": "attack",
+    "site": "A",
+    "start": {
+      "x": 0.7903150197805255,
+      "y": 0.3881312269327803
+    },
+    "end": {
+      "x": 0.5788302795786614,
+      "y": 0.7930339118229965
+    },
+    "bounces": [
+      {
+        "x": 0.7217369347388252,
+        "y": 0.40855106356481896
+      },
+      {
+        "x": 0.8256817558950054,
+        "y": 0.6952016940472809
+      }
+    ],
+    "throwType": "Running",
+    "difficulty": "normal",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Use for post-plant denial. Does not require line-up after setup.",
+    "media": {},
+    "isFavorite": true
+  },
+  {
+    "id": "demo-028",
+    "title": "Molotov for A #28",
+    "mapUuid": "a1d05fb9-4c8a-5a9e-86a1-0c2a2b6e0e1a",
+    "agentUuid": "eb93336a-449b-9c1b-0a54-a891f21d9b4e",
+    "abilitySlot": "Grenade",
+    "side": "both",
+    "site": "A",
+    "start": {
+      "x": 0.3411153619538463,
+      "y": 0.32826689230505957
+    },
+    "end": {
+      "x": 0.18206530781827268,
+      "y": 0.6766735715239491
+    },
+    "bounces": [],
+    "throwType": "Jump throw",
+    "difficulty": "hard",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Bounce off wall near spawn, lands deep site.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-041",
+    "title": "Retake for A #41",
+    "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6047",
+    "agentUuid": "707eabf7-44da-412e-9834-12b5f3b6d12b",
+    "abilitySlot": "Ability2",
+    "side": "defense",
+    "site": "A",
+    "start": {
+      "x": 0.49695035917978136,
+      "y": 0.5623586497139436
+    },
+    "end": {
+      "x": 0.6190004943935159,
+      "y": 0.20556344611363556
+    },
+    "bounces": [],
+    "throwType": "Crouch",
+    "difficulty": "normal",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-023",
+    "title": "Postplant for B #23",
+    "mapUuid": "b9e3e6b7-4b6e-4f1e-8d2e-3a3b4c1d0e1a",
+    "agentUuid": "707eabf7-44da-412e-9834-12b5f3b6d12e",
+    "abilitySlot": "Ability2",
+    "side": "attack",
+    "site": "B",
+    "start": {
+      "x": 0.4942403818086256,
+      "y": 0.6135763024405513
+    },
+    "end": {
+      "x": 0.7022270216163642,
+      "y": 0.7695429667042715
+    },
+    "bounces": [],
+    "throwType": "Standing",
+    "difficulty": "hard",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Great for retake, covers main choke.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-016",
+    "title": "Shock Dart for B #16",
+    "mapUuid": "ee206a30-1f53-4a72-8ba9-0f7a5d1b0e1a",
+    "agentUuid": "a3bfb853-43b2-7238-a4d1-ad90e9e46bcc",
+    "abilitySlot": "Ability1",
+    "side": "defense",
+    "site": "B",
+    "start": {
+      "x": 0.17156469895599347,
+      "y": 0.23705226333797585
+    },
+    "end": {
+      "x": 0.6820889141795372,
+      "y": 0.5984178496505959
+    },
+    "bounces": [],
+    "throwType": "Jump throw",
+    "difficulty": "easy",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Align crosshair with roof edge, run and release.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-014",
+    "title": "Recon for B #14",
+    "mapUuid": "2e34c1be-4a4d-0f6a-6e2e-6c8b3f2f0f1a",
+    "agentUuid": "5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d",
+    "abilitySlot": "Ability2",
+    "side": "defense",
+    "site": "B",
+    "start": {
+      "x": 0.4769586685988708,
+      "y": 0.3655037695425203
+    },
+    "end": {
+      "x": 0.7117233187674203,
+      "y": 0.7785364025152055
+    },
+    "bounces": [],
+    "throwType": "Jump throw",
+    "difficulty": "normal",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Use for post-plant denial. Does not require line-up after setup.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-018",
+    "title": "One-way for B #18",
+    "mapUuid": "6999a1d3-4d06-6c1e-8d9e-3a2f4a7e1c1a",
+    "agentUuid": "117ed9e3-49f3-6512-3ccf-0cada7e3823b",
+    "abilitySlot": "Ultimate",
+    "side": "defense",
+    "site": "B",
+    "start": {
+      "x": 0.6717249650621295,
+      "y": 0.6197748266232304
+    },
+    "end": {
+      "x": 0.387676641366946,
+      "y": 0.35016263866726527
+    },
+    "bounces": [],
+    "throwType": "Crouch",
+    "difficulty": "hard",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Practice in custom to get timing right.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-010",
+    "title": "Flash lineup #10",
+    "mapUuid": "d9601898-4233-7fc1-f2f1-81f6f3f8a1c1",
+    "agentUuid": "9f8d94e8-4b12-a399-ce25-11b113f6b309",
+    "abilitySlot": "Ultimate",
+    "side": "defense",
+    "start": {
+      "x": 0.23878268019713703,
+      "y": 0.6449648280950099
+    },
+    "end": {
+      "x": 0.4277471895202623,
+      "y": 0.4138283954806982
+    },
+    "bounces": [
+      {
+        "x": 0.4441147036746893,
+        "y": 0.43672512682196374
+      },
+      {
+        "x": 0.3108231734235314,
+        "y": 0.44149150670022574
+      }
+    ],
+    "throwType": "Jump throw",
+    "difficulty": "easy",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Bounce off wall near spawn, lands deep site.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-022",
+    "title": "Molotov for C #22",
+    "mapUuid": "a1d05fb9-4c8a-5a9e-86a1-0c2a2b6e0e1a",
+    "agentUuid": "5ff0d3c3-4b0f-4b4d-8b8e-1b7a3e5d2c3d",
+    "abilitySlot": "Grenade",
+    "side": "defense",
+    "site": "C",
+    "start": {
+      "x": 0.6270215427131351,
+      "y": 0.7486932582548245
+    },
+    "end": {
+      "x": 0.3337073737346227,
+      "y": 0.24202041604372965
+    },
+    "bounces": [],
+    "throwType": "Standing",
+    "difficulty": "easy",
+    "importance": "optional",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-037",
+    "title": "Recon for B #37",
+    "mapUuid": "2a9d3c1d-4d60-7a96-7f9c-2d2f1a7e0e1a",
+    "agentUuid": "22697a3d-45bf-bed8-8f06-74bb2a3b69d2",
+    "abilitySlot": "Ability2",
+    "side": "defense",
+    "site": "B",
+    "start": {
+      "x": 0.7379713526839229,
+      "y": 0.5890234734524743
+    },
+    "end": {
+      "x": 0.4742793280621161,
+      "y": 0.6174016177061443
+    },
+    "bounces": [],
+    "throwType": "Crouch",
+    "difficulty": "easy",
+    "importance": "useful",
+    "tags": [
+      "demo"
+    ],
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-025",
+    "title": "One-way lineup #25",
+    "mapUuid": "2bee0dc9-4ffe-519b-1cbd-7fbe763a6047",
+    "agentUuid": "eb93336a-449b-9c1b-0a54-a891f21d9b4d",
+    "abilitySlot": "Ultimate",
+    "side": "attack",
+    "start": {
+      "x": 0.6100467557821181,
+      "y": 0.68230583676749
+    },
+    "end": {
+      "x": 0.7558339398130562,
+      "y": 0.399012715708734
+    },
+    "bounces": [],
+    "throwType": "Running",
+    "difficulty": "hard",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Stand in corner, aim at antenna tip, jump-throw.",
+    "media": {},
+    "isFavorite": false
+  },
+  {
+    "id": "demo-039",
+    "title": "One-way for B #39",
+    "mapUuid": "2a9d3c1d-4d60-7a96-7f9c-2d2f1a7e0e1a",
+    "agentUuid": "9f8d94e8-4b12-a399-ce25-11b113f6b309",
+    "abilitySlot": "Ultimate",
+    "side": "both",
+    "site": "B",
+    "start": {
+      "x": 0.6546580477999152,
+      "y": 0.4922374713681551
+    },
+    "end": {
+      "x": 0.5010919397429574,
+      "y": 0.2586756808298477
+    },
+    "bounces": [],
+    "throwType": "Running",
+    "difficulty": "easy",
+    "importance": "essential",
+    "tags": [
+      "demo"
+    ],
+    "notes": "Bounce off wall near spawn, lands deep site.",
+    "media": {},
+    "isFavorite": false
+  }
+]

@@ -107,18 +107,18 @@ export default function App() {
   if (loading || !maps || !agents) {
     return <LoadingScreen error={error} onRetry={retry} />;
   }
-  if (lineupsError) {
-    return (
-      <div className="min-h-screen bg-pageBg flex flex-col items-center justify-center p-6">
-        <p className="text-accent font-bold">Failed to load lineups: {lineupsError}</p>
-        <button onClick={() => location.reload()} className="mt-4 px-4 py-2 rounded bg-accent text-white">Reload</button>
-      </div>
-    );
-  }
+  // lineupsError is now handled via fallbackLineups, but keep a non-blocking banner if it ever occurs
+  const showLineupsErrorBanner = !!lineupsError;
 
   return (
     <div className="min-h-screen bg-pageBg flex flex-col">
       <TopBar onOpenSettings={() => setSettingsOpen((v) => !v)} />
+      {showLineupsErrorBanner && (
+        <div className="mx-3 mt-3 p-3 rounded bg-accent/20 border border-accent text-accent text-sm flex items-center justify-between">
+          <span>Failed to load lineups: {lineupsError} — showing embedded demo data</span>
+          <button onClick={() => window.location.reload()} className="ml-3 px-3 py-1 rounded bg-accent text-white text-xs min-h-[40px]">Reload</button>
+        </div>
+      )}
 
       {/* Settings overlay */}
       {settingsOpen && (

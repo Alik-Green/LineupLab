@@ -21,7 +21,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' ipc: http://ipc.localhost; connect-src ipc: http://ipc.localhost https://valorant-api.com https://media.valorant-api.com; img-src 'self' asset: http://asset.localhost https://media.valorant-api.com https://valorant-api.com data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:;"
+      "csp": "default-src 'self' ipc: http://ipc.localhost https://tauri.localhost http://tauri.localhost; connect-src 'self' ipc: http://ipc.localhost https://tauri.localhost http://tauri.localhost https://valorant-api.com https://media.valorant-api.com asset: http://asset.localhost; img-src 'self' asset: http://asset.localhost https://tauri.localhost http://tauri.localhost https://media.valorant-api.com https://valorant-api.com data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:;"
     }
   },
   "bundle": {
