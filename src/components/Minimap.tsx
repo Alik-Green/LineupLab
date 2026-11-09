@@ -75,18 +75,37 @@ export default function Minimap({
   };
   const onMouseUp = () => setIsDragging(false);
 
-  // wheel isolated: passive:false + preventDefault so document never scrolls
+  // wheel isolated: passive:false + preventDefault so document never scrolls, zoom towards cursor
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const handler = (e: WheelEvent) => {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -0.08 : 0.08;
-      onZoom(zoomClamp(zoom + delta));
+      const newZoom = zoomClamp(zoom + delta);
+      if (newZoom === zoom) return;
+      const rect = el.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      const centerX = containerSize.w / 2 + pan.x;
+      const centerY = containerSize.h / 2 + pan.y;
+      const imgW = baseImageSize.w * zoom;
+      const imgH = baseImageSize.h * zoom;
+      const imgLeft = centerX - imgW / 2;
+      const imgTop = centerY - imgH / 2;
+      const normX = imgW ? (cx - imgLeft) / imgW : 0.5;
+      const normY = imgH ? (cy - imgTop) / imgH : 0.5;
+      const newImgW = baseImageSize.w * newZoom;
+      const newImgH = baseImageSize.h * newZoom;
+      const newCenterX = cx - (normX - 0.5) * newImgW;
+      const newCenterY = cy - (normY - 0.5) * newImgH;
+      const newPan = { x: newCenterX - containerSize.w / 2, y: newCenterY - containerSize.h / 2 };
+      onPan(newPan);
+      onZoom(newZoom);
     };
     el.addEventListener("wheel", handler, { passive: false });
     return () => el.removeEventListener("wheel", handler as any);
-  }, [zoom, onZoom]);
+  }, [zoom, pan, containerSize, baseImageSize, onZoom, onPan]);
 
   // touch pinch
   const touchState = useRef<{ dist: number; zoom: number } | null>(null);

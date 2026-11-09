@@ -33,18 +33,13 @@ const StepSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
   note: z.string().optional(),
+  text: z.string().optional(),
   image: z.string().optional(),
+  imageRef: z.string().optional(),
   media: z.string().optional(),
   asset: z.string().optional(),
   circles: z.array(CircleSchema).optional(),
-}).passthrough();
-
-const AttributesSchema = z.object({
-  side: z.string().optional(),
-  site: z.string().optional(),
-  difficulty: z.string().optional(),
-  importance: z.string().optional(),
-  tags: z.array(z.string()).optional(),
+  focusCircles: z.array(CircleSchema).optional(),
 }).passthrough();
 
 const PackLineupSchema = z.object({
@@ -83,7 +78,6 @@ const PackLineupSchema = z.object({
   isSeedPlaceholder: z.boolean().optional(),
 }).passthrough();
 
-export type ImportWarning = { lineupId: string; message: string };
 export type ParsedPack = {
   manifest: PackManifest & { raw: any };
   lineupsRaw: any[];
@@ -91,13 +85,12 @@ export type ParsedPack = {
   warnings: string[];
 };
 
-const MAX_UNZIP_BYTES = 100 * 1024 * 1024; // 100MB
-const MAX_FILES = 2000;
-const MAX_JSON_SIZE = 2 * 1024 * 1024;
+const MAX_UNZIP_BYTES = 500 * 1024 * 1024;
+const MAX_FILES = 5000;
+const MAX_JSON_SIZE = 5 * 1024 * 1024;
 
 function isSafePath(name: string): boolean {
   if (name.includes("..") || name.startsWith("/") || name.startsWith("\\")) return false;
-  // disallow absolute or traversal
   return true;
 }
 
@@ -113,18 +106,14 @@ export async function parsePackZip(file: File | Blob): Promise<ParsedPack> {
   const names = Object.keys(unzipped);
   if (names.length === 0) throw new Error("Empty pack");
   if (names.length > MAX_FILES) throw new Error(`Too many files: ${names.length} > ${MAX_FILES}`);
-  // Validate paths safe
   for (const n of names) {
     if (!isSafePath(n)) throw new Error(`Unsafe path in pack: ${n}`);
-    if (unzipped[n].length > MAX_JSON_SIZE && (n.endsWith(".json") )) {
-      // allow media to be larger but json limited
+    if (unzipped[n].length > MAX_JSON_SIZE && n.endsWith(".json")) {
       throw new Error(`JSON too large: ${n}`);
     }
   }
-  // manifest.json required (case-insensitive search)
   let manifestKey = names.find((n) => n.toLowerCase() === "manifest.json" || n.endsWith("/manifest.json"));
   if (!manifestKey) {
-    // also try any json at root named manifest
     manifestKey = names.find((n) => n.toLowerCase().includes("manifest"));
     if (!manifestKey) throw new Error("Missing manifest.json in pack");
   }
@@ -133,7 +122,6 @@ export async function parsePackZip(file: File | Blob): Promise<ParsedPack> {
   try { manifestRaw = JSON.parse(manifestText); } catch { throw new Error("Invalid manifest.json JSON"); }
   const manifestParsed = ManifestSchema.safeParse(manifestRaw);
   if (!manifestParsed.success) {
-    // tolerant: still accept but add warning
   }
   const manifest: PackManifest & { raw: any } = {
     raw: manifestRaw,
@@ -145,12 +133,9 @@ export async function parsePackZip(file: File | Blob): Promise<ParsedPack> {
     formatVersion: manifestRaw.formatVersion ?? manifestRaw.version,
   };
 
-  // Collect lineups/*.json
   const lineupFiles = names.filter((n) => n.startsWith("lineups/") && n.endsWith(".json"));
   const mediaFiles = names.filter((n) => n.startsWith("media/") && (n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".png") || n.endsWith(".mp4") || n.endsWith(".webm")));
-
   const mediaEntries = mediaFiles.map((n) => ({ name: n, data: unzipped[n] }));
-
   const lineupsRaw: any[] = [];
   const warnings: string[] = [];
   for (const lf of lineupFiles) {
@@ -160,14 +145,12 @@ export async function parsePackZip(file: File | Blob): Promise<ParsedPack> {
       warnings.push(`Invalid JSON in ${lf}: ${String(e)}`);
       continue;
     }
-    // tolerant: could be array or object
     if (Array.isArray(json)) {
       for (const item of json) lineupsRaw.push(item);
     } else {
       lineupsRaw.push(json);
     }
   }
-  // Also support lineups listed in manifest.lineups as inline array
   if (manifestRaw.lineups && Array.isArray(manifestRaw.lineups) && lineupFiles.length === 0) {
     for (const item of manifestRaw.lineups) lineupsRaw.push(item);
   }
@@ -183,7 +166,6 @@ function normalizeSide(v: any): "attack" | "defense" | "both" | undefined {
   if (s === "both" || s === "all") return "both";
   return undefined;
 }
-
 function normalizeDifficulty(v: any): "easy"|"normal"|"hard"|undefined {
   if (!v) return undefined;
   const s = String(v).toLowerCase();
@@ -200,20 +182,17 @@ function normalizeImportance(v: any): "essential"|"useful"|"optional"|undefined 
   if (["optional","situational","niche"].includes(s)) return "optional";
   return undefined;
 }
-
 function normalizeAbilitySlot(v: any): string | undefined {
   if (!v) return undefined;
   const s = String(v).toLowerCase();
   if (s.includes("ability1") || s === "c" || s === "q") return "Ability1";
   if (s.includes("ability2") || s === "e") return "Ability2";
-  if (s.includes("grenade") || s === "q" || s === "c") return "Grenade"; // ambiguous, but keep
+  if (s.includes("grenade") || s === "q" || s === "c") return "Grenade";
   if (s.includes("ultimate") || s === "x" || s === "ult") return "Ultimate";
-  // Try direct
   if (["Ability1","Ability2","Grenade","Ultimate"].includes(v)) return v;
   return v;
 }
 
-// Map legacy attributes/projectiles/steps/media to internal
 export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): Lineup | null {
   const parsed = PackLineupSchema.safeParse(raw);
   if (!parsed.success) {
@@ -223,7 +202,6 @@ export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): L
   const r = parsed.data as any;
   const id = String(r.id);
   const title = r.title ?? r.name ?? `Lineup ${id}`;
-  // map mapUuid
   let mapUuid = r.mapUuid ?? r.mapId ?? r.map;
   if (!mapUuid) {
     warnings.push(`Lineup ${id}: missing mapUuid`);
@@ -238,14 +216,12 @@ export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): L
   if (abilitySlot) abilitySlot = normalizeAbilitySlot(abilitySlot) as any;
   abilitySlot = abilitySlot ?? "Ability1";
 
-  // side/site from attributes fallback
   const attrs = r.attributes ?? {};
   let side: any = normalizeSide(r.side ?? attrs.side ?? r.attributes?.side) ?? "both";
   let site: string | undefined = r.site ?? attrs.site;
   let difficulty: any = normalizeDifficulty(r.difficulty ?? attrs.difficulty ?? r.attributes?.difficulty) ?? "normal";
   let importance: any = normalizeImportance(r.importance ?? attrs.importance ?? r.attributes?.importance) ?? "useful";
 
-  // start/end/bounces: can be {x,y} or array
   const toPt = (v: any): {x:number,y:number}|null => {
     if (!v) return null;
     if (Array.isArray(v) && v.length===2) return { x: Number(v[0]), y: Number(v[1]) };
@@ -260,10 +236,7 @@ export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): L
     const b = toPt(r.bounces);
     if (b) bounces = [b];
   }
-  // projectiles -> bounces or steps?
   if (r.projectiles && Array.isArray(r.projectiles)) {
-    // projectiles example: [{ start, end, bounces }]
-    // We'll take first projectile's path if present
     const p0 = r.projectiles[0];
     if (p0) {
       if (!r.start && p0.start) { const pt=toPt(p0.start); if(pt) (start as any).x=pt.x,(start as any).y=pt.y; }
@@ -272,49 +245,44 @@ export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): L
     }
   }
 
-  // media / slots mapping
   let media: any = r.media ?? {};
   let slots: any = r.slots ?? {};
-  // legacy media could be { standImage, aimImage, landingImage } or { stand1, aim1, stand2, aim2, landing }
-  // Normalize slots: support stand1/aim1/stand2/aim2/landing
   if (media.stand1 || media.aim1 || media.stand2 || media.aim2 || media.landing) {
     slots = { stand1: media.stand1, aim1: media.aim1, stand2: media.stand2, aim2: media.aim2, landing: media.landing, ...slots };
   }
-  // also support attributes.media
-  // throws
+
+  let attrProjectiles: any[] = [];
+  if (attrs.projectiles && Array.isArray(attrs.projectiles)) attrProjectiles = attrs.projectiles;
+  if (r.attributes?.projectiles && Array.isArray(r.attributes.projectiles)) attrProjectiles = r.attributes.projectiles;
+  if ((r as any).projectiles && Array.isArray((r as any).projectiles) && attrProjectiles.length===0) attrProjectiles = (r as any).projectiles;
+
   let throws: any[] = [];
   if (Array.isArray(r.throws)) throws = r.throws;
-  else if (r.throwType) throws = [{ type: r.throwType }];
+  else if (attrProjectiles.length > 0) {
+    throws = attrProjectiles.map((p:any)=> ({ type: p.throwType ?? r.throwType ?? "stand", label: p.label, chargeBars: p.chargeBars, chargeStage: p.chargeStage, timing: p.timing, bounces: p.bounces }));
+  } else if (r.throwType) throws = [{ type: r.throwType }];
 
-  // steps: array of {description, image, circles}
   let steps: any[] = [];
   if (Array.isArray(r.steps)) steps = r.steps.map((s:any)=> ({
-    id: s.id,
-    title: s.title,
-    description: s.description ?? s.note,
-    image: s.image ?? s.media ?? s.asset,
-    circles: s.circles ?? [],
+    id: s.id ?? `step-${s.order ?? Math.random().toString(36).slice(2)}`,
+    title: s.title ?? s.label,
+    description: s.description ?? s.note ?? s.text,
+    image: s.image ?? s.imageRef ?? s.media ?? s.asset,
+    circles: s.circles ?? s.focusCircles ?? [],
+    order: s.order,
   }));
-  // circles top-level deduped by id (B4)
+
   let circles: LineupCircle[] = [];
   if (Array.isArray(r.circles)) {
     const byId = new Map<string, LineupCircle>();
     for (const c of r.circles) {
       const idc = c.id ?? `${c.x}-${c.y}`;
-      const norm: LineupCircle = {
-        id: String(idc),
-        x: Number(c.x),
-        y: Number(c.y),
-        r: c.r ?? c.radius,
-        color: c.color,
-        label: c.label,
-      };
+      const norm: LineupCircle = { id: String(idc), x: Number(c.x), y: Number(c.y), r: c.r ?? c.radius, color: c.color, label: c.label };
       if (!byId.has(norm.id)) byId.set(norm.id, norm);
     }
     circles = Array.from(byId.values());
   }
-  // Also collect circles from steps dedup
-  if (steps.length) {
+  const collectAllCircles = () => {
     const byId = new Map<string, LineupCircle>();
     circles.forEach(c=>byId.set(c.id, c));
     for (const st of steps) {
@@ -323,7 +291,26 @@ export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): L
         if (!byId.has(String(idc))) byId.set(String(idc), { ...c, id: String(idc)} as LineupCircle);
       }
     }
-    circles = Array.from(byId.values());
+    const slotCircles = attrs.slotCircles ?? r.attributes?.slotCircles;
+    if (slotCircles && typeof slotCircles === "object") {
+      for (const key of Object.keys(slotCircles)) {
+        const arr = (slotCircles as any)[key];
+        if (Array.isArray(arr)) for (const c of arr) {
+          const idc = (c as any).id ?? `${c.x}-${c.y}`;
+          if (!byId.has(String(idc))) byId.set(String(idc), { id: String(idc), x: Number(c.x), y: Number(c.y), r: (c as any).r ?? (c as any).radius, color: (c as any).color, label: (c as any).label } as LineupCircle);
+        }
+      }
+    }
+    for (const p of attrProjectiles) {
+      if (p.focusCircles && Array.isArray(p.focusCircles)) for (const c of p.focusCircles) {
+        const idc = (c as any).id ?? `${c.x}-${c.y}`;
+        if (!byId.has(String(idc))) byId.set(String(idc), { id: String(idc), x: Number(c.x), y: Number(c.y), r: (c as any).r ?? (c as any).radius, color: (c as any).color, label: (c as any).label } as LineupCircle);
+      }
+    }
+    return Array.from(byId.values());
+  };
+  if (steps.length || attrProjectiles.length || (attrs.slotCircles || r.attributes?.slotCircles)) {
+    circles = collectAllCircles();
   }
 
   const tags: string[] = r.tags ?? attrs.tags ?? [];
@@ -348,14 +335,14 @@ export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): L
     media: {
       standImage: media.standImage ?? slots.stand1,
       aimImage: media.aimImage ?? slots.aim1,
-      landingImage: media.landingImage ?? slots.landing,
+      landingImage: media.landingImage ?? slots.landing ?? media.videoThumbnail,
     },
     slots: {
-      stand1: slots.stand1 ?? media.stand1,
-      aim1: slots.aim1 ?? media.aim1,
+      stand1: slots.stand1 ?? media.stand1 ?? media.standImage,
+      aim1: slots.aim1 ?? media.aim1 ?? media.aimImage,
       stand2: slots.stand2 ?? media.stand2,
       aim2: slots.aim2 ?? media.aim2,
-      landing: slots.landing ?? media.landing ?? media.landingImage,
+      landing: slots.landing ?? media.landing ?? media.landingImage ?? media.videoThumbnail,
     },
     throws,
     steps,
@@ -370,12 +357,10 @@ export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): L
     isSeedPlaceholder: !!r.isSeedPlaceholder,
   };
 
-  // basic validation: clamp 0..1 for normalized coords
   const clamp01 = (v:number)=> Math.max(0, Math.min(1, v));
   lineup.start.x = clamp01(lineup.start.x); lineup.start.y = clamp01(lineup.start.y);
   lineup.end.x = clamp01(lineup.end.x); lineup.end.y = clamp01(lineup.end.y);
   lineup.bounces = lineup.bounces.map(b=> ({ x: clamp01(b.x), y: clamp01(b.y)}));
-
   return lineup;
 }
 
@@ -402,12 +387,10 @@ export async function buildPreview(lineupsRaw: any[], batchId: string): Promise<
     let status: ImportPreviewItem["status"] = "new";
     if (!existing) status = "new";
     else {
-      // identical if JSON stringify equal ignoring updatedAt
       const a = JSON.stringify({ ...mapped, updatedAt: undefined, createdAt: undefined, importBatchId: undefined });
       const b = JSON.stringify({ ...existing, updatedAt: undefined, createdAt: undefined, importBatchId: undefined });
       if (a === b) status = "identical";
       else {
-        // compare updatedAt if present
         const packTime = mapped.updatedAt ? new Date(mapped.updatedAt).getTime() : 0;
         const localTime = (existing as any).updatedAt ? new Date((existing as any).updatedAt).getTime() : 0;
         if (packTime > localTime) status = "pack_newer";
@@ -419,38 +402,26 @@ export async function buildPreview(lineupsRaw: any[], batchId: string): Promise<
   return results;
 }
 
-// Media storage with SHA deduplication never re-encode
 export async function storeMediaBatch(
   mediaEntries: { name: string; data: Uint8Array }[],
-  lineupIdMap: Map<string, string> // assetName -> lineupId (or assign to batch)
+  lineupIdMap: Map<string, string>
 ): Promise<{ stored: number; deduped: number; warnings: string[] }> {
   const db = await getDB();
   let stored = 0, deduped = 0;
   const warnings: string[] = [];
   for (const entry of mediaEntries) {
-    const assetName = entry.name; // e.g. media/asset_001.jpg
-    const lineupId = lineupIdMap.get(assetName) ?? lineupIdMap.get(assetName.split("/").pop()!) ?? "unassigned";
+    const assetName = entry.name;
+    const lineupId = lineupIdMap.get(assetName) ?? lineupIdMap.get(assetName.split("/").pop()!) ?? lineupIdMap.get(assetName.split("/").pop()!.toLowerCase()) ?? "unassigned";
     const mimeType = assetName.endsWith(".mp4") ? "video/mp4" : assetName.endsWith(".png") ? "image/png" : "image/jpeg";
     const blob = new Blob([entry.data as any], { type: mimeType });
     let sha: string;
     try { sha = await sha256Bytes(entry.data); } catch { sha = `${Date.now()}-${assetName}`; warnings.push(`SHA fail for ${assetName}`); }
-    // dedup check
     const existing = await db.getAllFromIndex("media", "by-sha", sha);
     if (existing.length > 0) { deduped++; continue; }
-    // create thumbnail without re-encoding original (original stored as-is)
     let thumb: Blob | undefined;
     try { thumb = await createThumbnail(blob); } catch {}
     const id = `${sha}-${assetName}`;
-    const rec = {
-      id,
-      lineupId,
-      assetName,
-      blob,
-      sha256: sha,
-      mimeType,
-      createdAt: new Date().toISOString(),
-      thumbnail: thumb,
-    } as any;
+    const rec = { id, lineupId, assetName, blob, sha256: sha, mimeType, createdAt: new Date().toISOString(), thumbnail: thumb } as any;
     await db.put("media", rec);
     stored++;
   }

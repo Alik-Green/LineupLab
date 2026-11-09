@@ -87,6 +87,22 @@ export async function getMediaBySha(sha: string): Promise<MediaRecord[]> {
   return db.getAllFromIndex("media", "by-sha", sha);
 }
 
+export async function getMediaByAssetName(assetName: string): Promise<MediaRecord | undefined> {
+  const db = await getDB();
+  const all = await db.getAll("media");
+  const lower = assetName.toLowerCase();
+  const short = lower.split("/").pop()!;
+  return all.find(m => m.assetName.toLowerCase() === lower || m.assetName.toLowerCase().endsWith("/" + short) || m.id.toLowerCase().includes(short));
+}
+
+export async function getMediaUrl(assetName: string): Promise<string | null> {
+  if (!assetName) return null;
+  if (assetName.startsWith("http") || assetName.startsWith("data:") || assetName.startsWith("blob:")) return assetName;
+  const rec = await getMediaByAssetName(assetName);
+  if (!rec) return null;
+  try { return URL.createObjectURL(rec.blob); } catch { return null; }
+}
+
 export async function checkDuplicateBySha(sha: string): Promise<boolean> {
   const found = await getMediaBySha(sha);
   return found.length > 0;
@@ -123,7 +139,6 @@ export function makeCopyId(originalId: string): string {
 
 // Create thumbnail without re-encoding original: generate small JPEG thumbnail via canvas if possible, otherwise keep original truncated
 export async function createThumbnail(blob: Blob, maxSize = 240): Promise<Blob | undefined> {
-  // Only for images; video thumbnail not generated here (could be placeholder)
   if (!blob.type.startsWith("image/")) return undefined;
   try {
     const bitmap = await createImageBitmap(blob);

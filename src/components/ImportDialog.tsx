@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { parsePackZip, buildPreview, storeMediaBatch, mapRawToLineup, type ImportPreviewItem } from "../lib/packImporter";
+import { parsePackZip, buildPreview, storeMediaBatch, type ImportPreviewItem } from "../lib/packImporter";
 import { getDB } from "../lib/db";
 import { getImportHistory, addImportHistory } from "../lib/indexedDBRepository";
 import type { ConflictResolution } from "../lib/indexedDBRepository";
@@ -26,25 +26,50 @@ export default function ImportDialog({ onClose, onImported }: { onClose: () => v
     try {
       const parsed = await parsePackZip(f);
       setManifest(parsed.manifest);
-      setWarnings(parsed.warnings);
+      let extraWarnings = [...parsed.warnings];
+      const mediaNames = new Set(parsed.mediaEntries.map(e => e.name.split("/").pop()!.toLowerCase()));
+      const mediaFull = new Set(parsed.mediaEntries.map(e => e.name.toLowerCase()));
+      for (const raw of parsed.lineupsRaw) {
+        const refs: string[] = [];
+        const collect = (obj: any) => {
+          if (!obj) return;
+          if (typeof obj === "string" && (obj.includes("media/") || obj.endsWith(".jpg") || obj.endsWith(".png") || obj.endsWith(".mp4"))) refs.push(obj);
+          if (typeof obj === "object") {
+            for (const v of Object.values(obj)) {
+              if (typeof v === "string" && v.startsWith("media/")) refs.push(v);
+              else if (Array.isArray(v)) v.forEach(collect);
+              else if (typeof v === "object" && v) collect(v);
+            }
+          }
+        };
+        collect(raw);
+        const extraRefs = [raw.media?.standImage, raw.media?.aimImage, raw.media?.landingImage, raw.media?.videoClip, raw.slots?.stand1, raw.slots?.aim1, raw.slots?.stand2, raw.slots?.aim2, raw.slots?.landing, ...(raw.steps ?? []).map((s: any) => s.imageRef ?? s.image), ...(raw.attributes?.projectiles ?? []).map((p: any) => p.standImage ?? p.aimImage)].filter(Boolean);
+        extraRefs.forEach((r: string) => refs.push(r));
+        for (const ref of refs) {
+          const short = ref.split("/").pop()!.toLowerCase();
+          if (!mediaNames.has(short) && !mediaFull.has(ref.toLowerCase())) {
+            if (!extraWarnings.some(w => w.includes(ref))) {
+              extraWarnings.push(`Missing media for ${raw.id ?? "lineup"}: ${ref} not in pack — will show placeholder`);
+            }
+          }
+        }
+      }
+      setWarnings(extraWarnings);
       setMediaEntries(parsed.mediaEntries);
       const batchId = `batch-${Date.now().toString(36)}`;
       const prev = await buildPreview(parsed.lineupsRaw, batchId);
-      // check duplicate pack name? look at import history
       const history = await getImportHistory();
       const dup = history.find(h => h.packName === parsed.manifest.name);
       if (dup) setDuplicateWarning(`Pack "${parsed.manifest.name}" was already imported on ${dup.importedAt}.`);
       else setDuplicateWarning(null);
       setPreview(prev);
-      // default select all except identical and seed placeholders (unchecked)
       const sel = new Set<string>();
       prev.forEach(p => {
         if (p.status === "identical") return;
-        if (p.isSeedPlaceholder) return; // unchecked per spec
+        if (p.isSeedPlaceholder) return;
         if (p.mapped) sel.add(p.mapped.id);
       });
       setSelectedIds(sel);
-      // store batchId for later import
       (window as any).__importBatchId = batchId;
       (window as any).__importManifest = parsed.manifest;
     } catch (e: any) {
@@ -68,31 +93,27 @@ export default function ImportDialog({ onClose, onImported }: { onClose: () => v
     let imported = 0, skipped = 0, overwritten = 0, copied = 0;
     const allWarnings: string[] = [...warnings];
     const toImport = preview.filter(p => p.mapped && selectedIds.has(p.mapped.id));
-    setProgress({ done: 0, total: toImport.length });
-    // For media map: naive map all media entries to first lineup or by name match (if media filename appears in slots)
+    setProgress({ done: 0, total: toImport.length || 1 });
     const mediaMap = new Map<string, string>();
-    // Simple: map each media asset to lineup that references it via slots/media/image
     for (const entry of mediaEntries) {
       const short = entry.name.split("/").pop()!;
-      // find lineup referencing this asset
       const owner = toImport.find(p => {
         const m = p.mapped!;
         const refs = [m.slots?.stand1, m.slots?.aim1, m.slots?.stand2, m.slots?.aim2, m.slots?.landing, m.media.standImage, m.media.aimImage, m.media.landingImage, ...(m.steps ?? []).map(s=>s.image)];
-        return refs.some(r => r && (r as string).includes(short));
+        return refs.some(r => r && (r as string).toLowerCase().includes(short.toLowerCase()));
       });
       mediaMap.set(entry.name, owner?.mapped?.id ?? toImport[0]?.mapped?.id ?? batchId);
       mediaMap.set(short, owner?.mapped?.id ?? toImport[0]?.mapped?.id ?? batchId);
+      mediaMap.set(short.toLowerCase(), owner?.mapped?.id ?? toImport[0]?.mapped?.id ?? batchId);
     }
-
     const tx = db.transaction("lineups", "readwrite");
     const insertedIds: string[] = [];
     for (let i = 0; i < toImport.length; i++) {
       const p = toImport[i];
       const lineup = p.mapped!;
-      // conflict handling
       const existing = p.existing;
       if (existing) {
-        if (conflictMode === "skip" && p.status !== "new") { skipped++; continue; }
+        if (conflictMode === "skip" && p.status !== "new") { skipped++; setProgress({ done: i + 1, total: toImport.length }); continue; }
         if (conflictMode === "copy") {
           const copyId = `${lineup.id}-copy-${Date.now().toString(36)}-${i}`;
           const copy = { ...lineup, id: copyId };
@@ -104,7 +125,6 @@ export default function ImportDialog({ onClose, onImported }: { onClose: () => v
           insertedIds.push(lineup.id);
           overwritten++;
         } else {
-          // skip
           skipped++;
         }
       } else {
@@ -113,25 +133,15 @@ export default function ImportDialog({ onClose, onImported }: { onClose: () => v
         imported++;
       }
       setProgress({ done: i + 1, total: toImport.length });
-      // small yield
-      await new Promise(r => setTimeout(r, 5));
+      await new Promise(r => setTimeout(r, 2));
     }
     await tx.done;
-    // store media with SHA dedup
     if (mediaEntries.length > 0) {
       const mediaResult = await storeMediaBatch(mediaEntries, mediaMap);
       if (mediaResult.warnings.length) allWarnings.push(...mediaResult.warnings);
       if (mediaResult.deduped > 0) allWarnings.push(`${mediaResult.deduped} media files were duplicates (SHA match) and were deduped.`);
     }
-    // history
-    await addImportHistory({
-      batchId,
-      packName: manifest?.name ?? "Unnamed Pack",
-      importedAt: new Date().toISOString(),
-      counts: { total: preview.length, imported: imported + overwritten + copied, skipped, overwritten },
-      undoAvailable: true,
-    });
-    // store undo info
+    await addImportHistory({ batchId, packName: manifest?.name ?? "Unnamed Pack", importedAt: new Date().toISOString(), counts: { total: preview.length, imported: imported + overwritten + copied, skipped, overwritten }, undoAvailable: true });
     (window as any).__lastImport = { batchId, insertedIds };
     setResult({ imported, skipped, overwritten, copied, warnings: allWarnings });
     setProgress(null);
@@ -151,16 +161,7 @@ export default function ImportDialog({ onClose, onImported }: { onClose: () => v
     onImported();
   };
 
-  // counts
-  const counts = preview ? {
-    total: preview.length,
-    new: preview.filter(p => p.status === "new").length,
-    identical: preview.filter(p => p.status === "identical").length,
-    packNewer: preview.filter(p => p.status === "pack_newer").length,
-    localNewer: preview.filter(p => p.status === "local_newer").length,
-    error: preview.filter(p => p.status === "error").length,
-  } : null;
-
+  const counts = preview ? { total: preview.length, new: preview.filter(p => p.status === "new").length, identical: preview.filter(p => p.status === "identical").length, packNewer: preview.filter(p => p.status === "pack_newer").length, localNewer: preview.filter(p => p.status === "local_newer").length, error: preview.filter(p => p.status === "error").length } : null;
   const chipColor = (s: string) => {
     if (s === "new") return "bg-essential/20 border-essential text-essential";
     if (s === "identical") return "bg-tile border-borderSubtle text-muted";
@@ -171,19 +172,19 @@ export default function ImportDialog({ onClose, onImported }: { onClose: () => v
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-panel border border-borderSubtle rounded-card w-full max-w-3xl max-h-[calc(100dvh-2rem)] overflow-auto overscroll-contain flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-panel border border-borderSubtle rounded-card w-full max-w-3xl max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b border-borderSubtle flex items-center justify-between shrink-0">
           <h3 className="text-textPrimary font-bold text-lg">Import Pack</h3>
           <button onClick={onClose} className="w-10 h-10 rounded bg-tile hover:bg-tileHover text-muted min-h-[40px] min-w-[40px]">✕</button>
         </div>
-        <div className="p-4 space-y-4 overflow-auto min-h-0 flex-1">
+        <div className="p-4 space-y-4 overflow-auto overscroll-contain min-h-0 flex-1 thin-scrollbar">
           {!preview && !parsing && !parseError && (
             <div>
               <p className="text-sm text-muted mb-2">Select a .zip pack containing <code className="bg-tile px-1 rounded">manifest.json</code> + <code className="bg-tile px-1 rounded">lineups/*.json</code> + <code className="bg-tile px-1 rounded">media/asset_*.jpg|.mp4</code></p>
               <label className="block w-full rounded-md border-2 border-dashed border-borderSubtle bg-tile p-6 text-center cursor-pointer hover:bg-tileHover">
                 <input type="file" accept=".zip" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
                 <span className="text-accent font-semibold">Choose .zip file</span>
-                <p className="text-xs text-muted mt-1">or drag and drop here</p>
+                <p className="text-xs text-muted mt-1">or drag and drop here (up to 500MB)</p>
               </label>
               {file && <p className="text-xs text-muted mt-2">Selected: {file.name}</p>}
             </div>
@@ -211,21 +212,19 @@ export default function ImportDialog({ onClose, onImported }: { onClose: () => v
                 </div>
               </div>
               {duplicateWarning && <div className="p-2 rounded bg-[#EAB308]/20 border border-[#EAB308] text-[#EAB308] text-xs">{duplicateWarning}</div>}
-              {warnings.length > 0 && <div className="p-2 rounded bg-accent/10 border border-accent text-accent text-xs">{warnings.map((w,i)=><div key={i}>⚠ {w}</div>)}</div>}
+              {warnings.length > 0 && <div className="p-2 rounded bg-accent/10 border border-accent text-accent text-xs max-h-[100px] overflow-auto thin-scrollbar">{warnings.map((w,i)=><div key={i}>⚠ {w}</div>)}</div>}
               {preview.some(p=>p.isSeedPlaceholder) && <div className="p-2 rounded bg-tile border border-borderSubtle text-xs text-muted">Seed placeholders (incomplete seeds) are unchecked by default — review before importing.</div>}
-
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-muted">Conflict:</span>
-                <button onClick={()=>setConflictMode("skip")} className={`px-3 py-1 rounded border min-h-[40px] ${conflictMode==="skip"?"bg-accent text-white border-accent":"bg-tile text-muted border-borderSubtle"}`}>Skip</button>
-                <button onClick={()=>setConflictMode("overwrite")} className={`px-3 py-1 rounded border min-h-[40px] ${conflictMode==="overwrite"?"bg-accent text-white border-accent":"bg-tile text-muted border-borderSubtle"}`}>Overwrite</button>
-                <button onClick={()=>setConflictMode("copy")} className={`px-3 py-1 rounded border min-h-[40px] ${conflictMode==="copy"?"bg-accent text-white border-accent":"bg-tile text-muted border-borderSubtle"}`}>Copy</button>
+                <button onClick={()=>setConflictMode("skip")} className={`px-3 py-1 rounded-md border min-h-[40px] ${conflictMode==="skip"?"bg-accent text-white border-accent":"bg-tile text-muted border-borderSubtle"}`}>Skip</button>
+                <button onClick={()=>setConflictMode("overwrite")} className={`px-3 py-1 rounded-md border min-h-[40px] ${conflictMode==="overwrite"?"bg-accent text-white border-accent":"bg-tile text-muted border-borderSubtle"}`}>Overwrite</button>
+                <button onClick={()=>setConflictMode("copy")} className={`px-3 py-1 rounded-md border min-h-[40px] ${conflictMode==="copy"?"bg-accent text-white border-accent":"bg-tile text-muted border-borderSubtle"}`}>Copy</button>
               </div>
-
-              <div className="rounded-md border border-borderSubtle overflow-hidden max-h-[300px] overflow-auto">
+              <div className="rounded-md border border-borderSubtle overflow-auto thin-scrollbar" style={{ maxHeight: "40vh" }}>
                 <table className="w-full text-xs">
                   <thead className="bg-tile text-muted sticky top-0">
                     <tr>
-                      <th className="p-2 text-left"><input type="checkbox" checked={selectedIds.size === preview.filter(p=>p.mapped).length} onChange={(e)=>{ if(e.target.checked){ const s=new Set<string>(); preview.forEach(p=> p.mapped && s.add(p.mapped.id)); setSelectedIds(s);} else setSelectedIds(new Set());}} /></th>
+                      <th className="p-2 text-left"><input type="checkbox" checked={selectedIds.size === preview.filter(p=>p.mapped).length && preview.filter(p=>p.mapped).length>0} onChange={(e)=>{ if(e.target.checked){ const s=new Set<string>(); preview.forEach(p=> p.mapped && s.add(p.mapped.id)); setSelectedIds(s);} else setSelectedIds(new Set());}} /></th>
                       <th className="p-2 text-left">Title</th>
                       <th className="p-2 text-left">Status</th>
                       <th className="p-2 text-left">Warnings</th>
@@ -239,17 +238,12 @@ export default function ImportDialog({ onClose, onImported }: { onClose: () => v
                           {p.isSeedPlaceholder && <span className="ml-1 text-[10px] bg-amber-500/20 text-amber-500 px-1 rounded">placeholder</span>}
                         </td>
                         <td className="p-2 text-textPrimary">{p.mapped?.title ?? p.raw?.id ?? "—"}</td>
-                        <td className="p-2"><span className={`px-2 py-0.5 rounded-full border text-[10px] font-bold ${chipColor(p.status)}`}>{p.status === "new" ? "New" : p.status === "identical" ? "Identical" : p.status === "pack_newer" ? "Pack newer" : p.status === "local_newer" ? "Local newer" : "Error"}</span></td>
+                        <td className="p-2"><span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold ${chipColor(p.status)}`}>{p.status === "new" ? "New" : p.status === "identical" ? "Identical" : p.status === "pack_newer" ? "Pack newer" : p.status === "local_newer" ? "Local newer" : "Error"}</span></td>
                         <td className="p-2 text-muted">{p.warnings.join("; ") || (p.status==="error"?"Failed to map":"")}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-              {progress && <div className="w-full bg-tile rounded-full h-2"><div className="bg-accent h-2 rounded-full transition-all" style={{ width: `${(progress.done / progress.total) * 100}%`}} /></div>}
-              <div className="flex gap-2 justify-end">
-                <button onClick={()=>{ setPreview(null); setFile(null); }} className="px-4 py-2 rounded bg-tile text-textPrimary border border-borderSubtle min-h-[40px]">Back</button>
-                <button onClick={doImport} disabled={selectedIds.size===0 || !!progress} className="px-5 py-2 rounded bg-accent text-white font-bold disabled:opacity-40 min-h-[40px]">Import {selectedIds.size} lineups</button>
               </div>
             </>
           )}
@@ -262,11 +256,27 @@ export default function ImportDialog({ onClose, onImported }: { onClose: () => v
                 <div className="bg-tile rounded p-2 border border-borderSubtle text-center"><div className="text-lg font-bold text-[#EAB308]">{result.copied}</div><div className="text-muted">Copied</div></div>
                 <div className="bg-tile rounded p-2 border border-borderSubtle text-center"><div className="text-lg font-bold text-muted">{result.skipped}</div><div className="text-muted">Skipped</div></div>
               </div>
-              {result.warnings.length>0 && <div className="p-2 rounded bg-tile border border-borderSubtle text-xs text-muted">{result.warnings.map((w,i)=><div key={i}>{w}</div>)}</div>}
-              <div className="flex gap-2">
-                <button onClick={doUndo} className="px-4 py-2 rounded bg-tile text-textPrimary border border-borderSubtle min-h-[40px]">Undo</button>
-                <button onClick={onClose} className="ml-auto px-5 py-2 rounded bg-accent text-white font-bold min-h-[40px]">Done</button>
-              </div>
+              {result.warnings.length>0 && <div className="p-2 rounded bg-tile border border-borderSubtle text-xs text-muted max-h-[120px] overflow-auto thin-scrollbar">{result.warnings.map((w,i)=><div key={i}>{w}</div>)}</div>}
+            </div>
+          )}
+        </div>
+        <div className="shrink-0 border-t border-borderSubtle p-3 bg-panel flex flex-col gap-2">
+          {progress && (
+            <div className="w-full">
+              <div className="flex justify-between text-xs text-muted mb-1"><span>Importing… {progress.done}/{progress.total}</span><span>{Math.round((progress.done/progress.total)*100)}%</span></div>
+              <div className="w-full bg-tile rounded-full h-2.5 overflow-hidden"><div className="bg-accent h-2.5 rounded-full transition-all" style={{ width: `${(progress.done / progress.total) * 100}%`}} /></div>
+            </div>
+          )}
+          {manifest && preview && !result && (
+            <div className="flex gap-2 justify-end">
+              <button onClick={()=>{ setPreview(null); setFile(null); setWarnings([]); }} className="px-4 py-2 rounded bg-tile text-textPrimary border border-borderSubtle min-h-[40px]">Back</button>
+              <button onClick={doImport} disabled={selectedIds.size===0 || !!progress} className="px-5 py-2 rounded bg-accent text-white font-bold disabled:opacity-40 min-h-[40px]">Import {selectedIds.size} lineups</button>
+            </div>
+          )}
+          {result && (
+            <div className="flex gap-2">
+              <button onClick={doUndo} className="px-4 py-2 rounded bg-tile text-textPrimary border border-borderSubtle min-h-[40px]">Undo</button>
+              <button onClick={onClose} className="ml-auto px-5 py-2 rounded bg-accent text-white font-bold min-h-[40px]">Done</button>
             </div>
           )}
         </div>

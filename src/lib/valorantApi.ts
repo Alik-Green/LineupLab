@@ -60,6 +60,18 @@ export async function fetchAgents(): Promise<ValorantAgent[]> {
 
 const EXCLUDED_MAPS = new Set(["The Range", "The Range ", "Basic Training"]);
 
+// Competitive (comp/unrated) maps allowlist — excludes TDM/DM etc
+const COMPETITIVE_MAP_NAMES = new Set([
+  "Abyss", "Ascent", "Bind", "Breeze", "Corrode", "Fracture", "Haven", "Icebox", "Lotus", "Pearl", "Split", "Sunset",
+]);
+function isCompetitiveMap(m: any): boolean {
+  if (EXCLUDED_MAPS.has(m.displayName)) return false;
+  if (COMPETITIVE_MAP_NAMES.has(m.displayName)) return true;
+  const nonCompKeywords = ["District", "Drift", "Kasbah", "Piazza", "Range", "Training", "Deathmatch", "Spike Rush", "Replication", "Escalation", "Snowball"];
+  if (nonCompKeywords.some((k) => m.displayName.includes(k))) return false;
+  return false;
+}
+
 export async function fetchMaps(): Promise<ValorantMap[]> {
   const cached = loadCache<{ version: string; data: ValorantMap[] }>(MAPS_KEY);
   const version = await getVersion();
@@ -71,14 +83,7 @@ export async function fetchMaps(): Promise<ValorantMap[]> {
     if (!res.ok) throw new Error("maps fetch failed");
     const json = await res.json();
     let data: ValorantMap[] = json.data;
-    // Exclude The Range and non-competitive if possible
-    data = data.filter((m: any) => {
-      if (EXCLUDED_MAPS.has(m.displayName)) return false;
-      // filter out duplicates or broken minimaps? Keep if displayIcon exists
-      // Some maps like "District" arcade etc - still keep unless no minimap
-      return true;
-    });
-    // Prefer maps with displayIcon (minimap) but keep all for picker
+    data = data.filter((m: any) => isCompetitiveMap(m));
     if (version) saveCache(MAPS_KEY, { version, data });
     return data;
   } catch (e) {

@@ -30,7 +30,7 @@ export default function FiltersCardCollapsible({
                 {(["essential", "useful", "optional"] as Importance[]).map((id) => {
                   const sel = importance.has(id);
                   return (
-                    <button key={id} onClick={() => onToggleImportance(id)} aria-pressed={sel} className={`h-8 min-h-[40px] md:min-h-[32px] px-2 rounded-full text-[11px] font-bold border flex items-center justify-center ${sel ? (id === "essential" ? "bg-essential/20 border-essential text-essential" : id === "optional" ? "bg-accent/20 border-accent text-accent" : "bg-white/10 border-white text-white") : "border-borderSubtle text-muted opacity-60"} `}>
+                    <button key={id} onClick={() => onToggleImportance(id)} aria-pressed={sel} className={`h-8 min-h-[40px] md:min-h-[32px] px-2 rounded-md text-[11px] font-bold border flex items-center justify-center ${sel ? (id === "essential" ? "bg-essential/20 border-essential text-essential" : id === "optional" ? "bg-accent/20 border-accent text-accent" : "bg-white/10 border-white text-white") : "border-borderSubtle text-muted opacity-60"} `}>
                       {id}
                     </button>
                   );
@@ -43,7 +43,7 @@ export default function FiltersCardCollapsible({
                 {(["easy", "normal", "hard"] as Difficulty[]).map((id) => {
                   const sel = difficulty.has(id);
                   return (
-                    <button key={id} onClick={() => onToggleDifficulty(id)} aria-pressed={sel} className={`h-8 min-h-[40px] md:min-h-[32px] px-2 rounded-full text-[11px] font-bold border flex items-center justify-center ${sel ? (id === "easy" ? "bg-essential/20 border-essential text-essential" : id === "hard" ? "bg-accent/20 border-accent text-accent" : "bg-[#EAB308]/20 border-[#EAB308] text-[#EAB308]") : "border-borderSubtle text-muted opacity-60"}`}>
+                    <button key={id} onClick={() => onToggleDifficulty(id)} aria-pressed={sel} className={`h-8 min-h-[40px] md:min-h-[32px] px-2 rounded-md text-[11px] font-bold border flex items-center justify-center ${sel ? (id === "easy" ? "bg-essential/20 border-essential text-essential" : id === "hard" ? "bg-accent/20 border-accent text-accent" : "bg-[#EAB308]/20 border-[#EAB308] text-[#EAB308]") : "border-borderSubtle text-muted opacity-60"}`}>
                       {id}
                     </button>
                   );

@@ -1,140 +1,135 @@
 import { useState } from "react";
 import type { ValorantAgent, ValorantMap } from "../types/lineup";
 
-type StepId = "setup" | "capture" | "pins" | "details" | "review";
-const STEPS: { id: StepId; label: string }[] = [
-  { id: "setup", label: "Setup" },
-  { id: "capture", label: "Capture" },
-  { id: "pins", label: "Pins" },
-  { id: "details", label: "Details" },
-  { id: "review", label: "Review" },
+type TabId = "capture" | "pins" | "details";
+const TABS: { id: TabId; label: string }[] = [
+  { id: "capture", label: "CAPTURE" },
+  { id: "pins", label: "MAP PINS" },
+  { id: "details", label: "DETAILS" },
 ];
 
 export default function CreateWizard({ agents, maps }: { agents: ValorantAgent[]; maps: ValorantMap[] }) {
-  const [active, setActive] = useState<StepId>("setup");
-  const idx = STEPS.findIndex((s) => s.id === active);
+  const [active, setActive] = useState<TabId>("capture");
+  const [selectedSlot, setSelectedSlot] = useState<"stand"|"aim"|"landing">("stand");
+  const [selectedMap, setSelectedMap] = useState<string>(maps[0]?.uuid ?? "");
+  const [selectedAgent, setSelectedAgent] = useState<string>(agents[0]?.uuid ?? "");
+  const agent = agents.find(a=>a.uuid===selectedAgent);
 
   const toast = (msg: string) => {
-    // Simple toast via custom event or alert fallback
-    // We'll dispatch a transient DOM toast
     const el = document.createElement("div");
     el.textContent = msg;
     el.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-panel border border-borderSubtle text-textPrimary px-4 py-2 rounded-md shadow-xl z-50 text-sm";
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 2500);
+    setTimeout(() => el.remove(), 2200);
   };
 
-  const Content = () => {
-    switch (active) {
-      case "setup":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-textPrimary">Setup</h3>
-            <p className="text-sm text-muted">Choose map, agent, ability for your lineup.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-md bg-tile border border-borderSubtle p-3">
-                <p className="text-xs font-semibold text-muted mb-2">Map</p>
-                <select className="w-full bg-panel border border-borderSubtle rounded px-3 py-2 text-sm text-textPrimary min-h-[40px]" onChange={() => toast("Coming soon")}>
-                  <option>Select map</option>
-                  {maps.slice(0, 6).map((m) => <option key={m.uuid}>{m.displayName}</option>)}
-                </select>
-              </div>
-              <div className="rounded-md bg-tile border border-borderSubtle p-3">
-                <p className="text-xs font-semibold text-muted mb-2">Agent</p>
-                <select className="w-full bg-panel border border-borderSubtle rounded px-3 py-2 text-sm text-textPrimary min-h-[40px]" onChange={() => toast("Coming soon")}>
-                  <option>Select agent</option>
-                  {agents.slice(0, 6).map((a) => <option key={a.uuid}>{a.displayName}</option>)}
-                </select>
-              </div>
-            </div>
-            <button onClick={() => toast("Coming soon")} className="w-full min-h-[48px] rounded bg-accent text-white font-bold text-[15px]">Continue to Capture</button>
-          </div>
-        );
-      case "capture":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-textPrimary">Capture</h3>
-            <p className="text-sm text-muted">Capture stand, aim and landing media (40/48px controls).</p>
-            <div className="grid grid-cols-3 gap-2">
-              {["Stand 1", "Aim 1", "Landing"].map((label) => (
-                <button key={label} onClick={() => toast("Coming soon")} className="h-[120px] rounded-md bg-tile border-2 border-dashed border-borderSubtle flex flex-col items-center justify-center text-muted hover:bg-tileHover min-h-[48px]">
-                  <span className="text-2xl">📸</span>
-                  <span className="text-xs font-semibold mt-1">{label}</span>
-                </button>
-              ))}
-            </div>
-            <button onClick={() => toast("Coming soon")} className="w-full min-h-[48px] rounded bg-accent text-white font-bold">Save captures (Coming soon)</button>
-          </div>
-        );
-      case "pins":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-textPrimary">Pins</h3>
-            <p className="text-sm text-muted">Place map pins for start, end and bounces.</p>
-            <div className="h-[220px] rounded-md bg-tile border border-borderSubtle flex items-center justify-center text-muted">
-              Minimap pin editor — Coming soon
-            </div>
-            <button onClick={() => toast("Coming soon")} className="w-full min-h-[48px] rounded bg-accent text-white font-bold">Add pin (Coming soon)</button>
-          </div>
-        );
-      case "details":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-textPrimary">Details</h3>
-            <div className="space-y-2">
-              <input placeholder="Lineup title" className="w-full min-h-[48px] px-3 rounded bg-tile border border-borderSubtle text-textPrimary text-[15px]" onFocus={() => toast("Coming soon")} />
-              <textarea placeholder="Notes / steps" rows={3} className="w-full px-3 py-2 rounded bg-tile border border-borderSubtle text-textPrimary text-[15px]" onFocus={() => toast("Coming soon")} />
-              <div className="grid grid-cols-2 gap-2">
-                <select className="min-h-[48px] px-3 rounded bg-tile border border-borderSubtle text-textPrimary" onChange={() => toast("Coming soon")}><option>Difficulty</option><option>easy</option><option>normal</option><option>hard</option></select>
-                <select className="min-h-[48px] px-3 rounded bg-tile border border-borderSubtle text-textPrimary" onChange={() => toast("Coming soon")}><option>Importance</option><option>essential</option><option>useful</option><option>optional</option></select>
-              </div>
-            </div>
-          </div>
-        );
-      case "review":
-        return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-textPrimary">Review</h3>
-            <p className="text-sm text-muted">Review and save your lineup (mock state).</p>
-            <div className="rounded-md bg-tile border border-borderSubtle p-4 text-center text-muted">
-              No lineup to review yet — complete previous steps.
-            </div>
-            <button onClick={() => toast("Coming soon — create will save to IndexedDB in a future release")} className="w-full min-h-[48px] rounded bg-accent text-white font-bold">Save lineup (Coming soon)</button>
-          </div>
-        );
-    }
-  };
+  const slotDefs = [
+    { id: "stand" as const, label: "1. STAND", hotkey: "ALT+1" },
+    { id: "aim" as const, label: "2. AIM", hotkey: "ALT+2" },
+    { id: "landing" as const, label: "3. LANDING", hotkey: "ALT+3" },
+  ];
 
   return (
-    <div className="h-full flex flex-col overflow-hidden bg-pageBg">
-      {/* Stepper */}
-      <div className="shrink-0 border-b border-borderSubtle bg-panel p-2">
-        <div className="flex items-center gap-1 overflow-auto overscroll-contain">
-          {STEPS.map((s, i) => {
-            const isActive = s.id === active;
-            const isDone = i < idx;
-            return (
-              <button
-                key={s.id}
-                onClick={() => setActive(s.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-full border shrink-0 min-h-[40px] ${isActive ? "bg-accent border-accent text-white" : isDone ? "bg-essential/20 border-essential text-essential" : "bg-tile border-borderSubtle text-muted"}`}
-              >
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${isActive ? "bg-white text-accent" : isDone ? "bg-essential text-white" : "bg-borderSubtle text-muted"}`}>{i + 1}</span>
-                <span className="text-xs font-semibold">{s.label}</span>
+    <div className="h-full flex flex-col overflow-hidden bg-[#0F1114]">
+      <div className="h-[56px] shrink-0 flex items-center px-3 gap-3 bg-[#1A1E24] border-b border-[#2A2B32]">
+        <div className="flex items-center gap-2">
+          <div className="h-8 px-2 rounded-md bg-panel border border-borderSubtle flex items-center gap-2">
+            <span className="text-[11px] font-bold text-accent">📍</span>
+            <select value={selectedMap} onChange={e=>setSelectedMap(e.target.value)} className="bg-transparent text-textPrimary text-xs font-bold outline-none min-h-[32px]">
+              {maps.filter(m=>["Abyss","Ascent","Bind","Breeze","Corrode","Fracture","Haven","Icebox","Lotus","Pearl","Split","Sunset"].includes(m.displayName)).slice(0,12).map(m=> <option key={m.uuid} value={m.uuid}>{m.displayName.toUpperCase()}</option>)}
+            </select>
+            <span className="text-muted text-[11px] border border-borderSubtle rounded px-1">16</span>
+          </div>
+          <div className="h-8 px-2 rounded-md bg-panel border border-borderSubtle flex items-center gap-2">
+            <img src={agent?.displayIcon ?? ""} alt="" className="w-6 h-6 rounded-full object-cover bg-tile" />
+            <select value={selectedAgent} onChange={e=>setSelectedAgent(e.target.value)} className="bg-transparent text-textPrimary text-xs font-bold outline-none">
+              {agents.slice(0,8).map(a=> <option key={a.uuid} value={a.uuid}>{a.displayName.toUpperCase()}</option>)}
+            </select>
+            <span className="text-muted text-xs">▾</span>
+          </div>
+          <div className="flex gap-1 ml-1">
+            {(agent?.abilities.slice(0,4) ?? []).map((ab,i)=> (
+              <button key={i} onClick={()=>toast("Coming soon")} className={`w-8 h-8 rounded-md bg-tile border flex items-center justify-center ${i===1?"border-accent bg-accent/20":"border-borderSubtle"}`}>
+                {ab.displayIcon ? <img src={ab.displayIcon} alt="" className="w-5 h-5 object-contain" /> : <span className="text-[10px] text-muted">{ab.slot[0]}</span>}
               </button>
-            );
-          })}
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 ml-6">
+          {TABS.map(t=> (
+            <button key={t.id} onClick={()=>setActive(t.id)} className={`h-8 px-4 rounded-md text-xs font-bold tracking-wide border ${active===t.id?"bg-accent border-accent text-white":"bg-tile border-borderSubtle text-muted hover:text-textPrimary"}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <button onClick={()=>toast("Coming soon")} className="h-8 px-3 rounded-md bg-tile border border-borderSubtle text-textPrimary text-xs font-bold flex items-center gap-1">✦ SAVE + NEXT</button>
+          <button onClick={()=>toast("Coming soon — save will store to IndexedDB in next release")} className="h-8 px-4 rounded-md bg-accent text-white text-xs font-bold">SAVE</button>
         </div>
       </div>
 
-      {/* Content fits viewport without scrolling page */}
-      <div className="flex-1 min-h-0 overflow-auto overscroll-contain p-4">
-        <div className="max-w-2xl mx-auto bg-panel border border-borderSubtle rounded-card p-4">
-          <Content />
+      <div className="flex-1 flex min-h-0 overflow-hidden">
+        <div className="w-[160px] shrink-0 bg-[#0F1114] border-r border-borderSubtle p-2 flex flex-col gap-2 overflow-auto thin-scrollbar">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold tracking-widest text-muted">SLOTS [ALT+P]</span>
+          </div>
+          {slotDefs.map(s=> {
+            const isSel = selectedSlot===s.id;
+            return (
+              <button key={s.id} onClick={()=>setSelectedSlot(s.id)} className={`rounded-md border-2 p-1.5 text-left flex flex-col gap-1 ${isSel?"border-accent bg-panel":"border-borderSubtle bg-[#1A1E24] hover:bg-panel"}`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-textPrimary">{s.label}</span>
+                  <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-[#0ea5e9] text-white">{s.hotkey}</span>
+                </div>
+                <div className="h-[88px] rounded bg-[#07080A] border border-borderSubtle flex items-center justify-center">
+                  <span className="text-muted text-lg">◎</span>
+                </div>
+              </button>
+            );
+          })}
+          <div className="mt-auto text-[10px] text-muted text-center pt-2">Slots show in capture view</div>
         </div>
-        <div className="flex gap-2 mt-4 max-w-2xl mx-auto">
-          <button disabled={idx === 0} onClick={() => setActive(STEPS[idx - 1].id)} className="flex-1 min-h-[48px] rounded bg-tile border border-borderSubtle text-textPrimary font-semibold disabled:opacity-40">Back</button>
-          <button disabled={idx === STEPS.length - 1} onClick={() => setActive(STEPS[idx + 1].id)} className="flex-1 min-h-[48px] rounded bg-accent text-white font-bold disabled:opacity-40">Next</button>
+
+        <div className="flex-1 flex flex-col min-h-0 bg-[#0F1114] p-3">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs font-bold text-textPrimary tracking-widest">{selectedSlot.toUpperCase()}</span>
+            <span className="px-2 py-0.5 rounded bg-[#0ea5e9] text-white text-[10px] font-bold flex items-center gap-1">◎ ALT+{selectedSlot==="stand"?1:selectedSlot==="aim"?2:3}</span>
+            <button onClick={()=>toast("Coming soon")} className="w-7 h-7 rounded-md bg-tile border border-borderSubtle flex items-center justify-center text-muted">📁</button>
+          </div>
+
+          {active==="capture" && (
+            <div onClick={()=>toast("Coming soon — capture will use Alt+P hotkey or click/drop/paste")} onDragOver={e=>e.preventDefault()} onDrop={(e)=>{ e.preventDefault(); toast("Drop image — Coming soon"); }} className="flex-1 rounded-md border border-dashed border-[#2A3A4A] bg-[#0B0E14] flex flex-col items-center justify-center p-6 min-h-0 cursor-pointer hover:bg-[#0F1420]">
+              <div className="w-10 h-10 rounded-full bg-[#0ea5e9]/20 flex items-center justify-center mb-3">
+                <span className="text-[#0ea5e9] text-xl">◎</span>
+              </div>
+              <p className="text-sm font-extrabold tracking-widest text-white">PRESS ALT+P IN VALORANT</p>
+              <p className="text-xs text-muted mt-1">Or click here to capture • Drop image • Paste (Ctrl+V)</p>
+              <div className="mt-4 flex gap-2">
+                <button onClick={(e)=>{ e.stopPropagation(); toast("Capture — Coming soon"); }} className="px-4 py-2 rounded-md bg-accent text-white text-xs font-bold min-h-[40px]">Capture (Alt+P)</button>
+                <button onClick={(e)=>{ e.stopPropagation(); toast("Paste image — Coming soon"); }} className="px-4 py-2 rounded-md bg-tile border border-borderSubtle text-textPrimary text-xs font-bold min-h-[40px]">Paste</button>
+              </div>
+            </div>
+          )}
+          {active==="pins" && (
+            <div className="flex-1 rounded-md border border-borderSubtle bg-panel p-4 flex flex-col gap-3 overflow-auto thin-scrollbar">
+              <h3 className="text-sm font-bold text-textPrimary">Map Pins</h3>
+              <p className="text-xs text-muted">Place start, end and bounces on the minimap.</p>
+              <div className="h-[300px] rounded-md bg-[#07080A] border border-borderSubtle flex items-center justify-center text-muted">Minimap pin editor — Coming soon</div>
+              <button onClick={()=>toast("Coming soon")} className="w-full min-h-[48px] rounded-md bg-accent text-white font-bold">Add pin (Coming soon)</button>
+            </div>
+          )}
+          {active==="details" && (
+            <div className="flex-1 rounded-md border border-borderSubtle bg-panel p-4 flex flex-col gap-3 overflow-auto thin-scrollbar">
+              <h3 className="text-sm font-bold text-textPrimary">Details</h3>
+              <input placeholder="Lineup title" className="w-full min-h-[48px] px-3 rounded-md bg-tile border border-borderSubtle text-textPrimary text-sm" onFocus={()=>toast("Coming soon")} />
+              <textarea placeholder="Notes / steps" rows={4} className="w-full px-3 py-2 rounded-md bg-tile border border-borderSubtle text-textPrimary text-sm" onFocus={()=>toast("Coming soon")} />
+              <div className="grid grid-cols-2 gap-2">
+                <select className="min-h-[48px] px-3 rounded-md bg-tile border border-borderSubtle text-textPrimary text-sm" onChange={()=>toast("Coming soon")}><option>Difficulty</option><option>easy</option><option>normal</option><option>hard</option></select>
+                <select className="min-h-[48px] px-3 rounded-md bg-tile border border-borderSubtle text-textPrimary text-sm" onChange={()=>toast("Coming soon")}><option>Importance</option><option>essential</option><option>useful</option><option>optional</option></select>
+              </div>
+              <button onClick={()=>toast("Coming soon — save will store to IndexedDB")} className="w-full min-h-[48px] rounded-md bg-accent text-white font-bold">Save lineup (Coming soon)</button>
+            </div>
+          )}
         </div>
       </div>
     </div>

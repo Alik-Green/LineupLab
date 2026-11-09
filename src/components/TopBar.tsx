@@ -4,7 +4,7 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
       <div className="flex items-center gap-2">
         <div className="w-8 h-8 rounded bg-accent flex items-center justify-center text-white font-bold text-sm">LL</div>
         <span className="font-bold text-textPrimary text-[18px] tracking-tight">LineupLab</span>
-        <span className="ml-2 px-2 py-0.5 rounded-full bg-tile text-muted text-xs">Demo data</span>
+        <span className="ml-2 px-2 py-0.5 rounded-md bg-tile text-muted text-xs">Demo data</span>
       </div>
       <nav className="ml-8 flex gap-1">
         <button

@@ -13,7 +13,6 @@ export default function DetailPanel({
 }) {
   if (!lineup) return null;
   const ability = agent?.abilities?.find((a: any) => a.slot === lineup.abilitySlot);
-  // Build images from slots/media + steps
   const slotImages = [
     lineup.slots?.stand1 ?? lineup.media.standImage,
     lineup.slots?.aim1 ?? lineup.media.aimImage,
@@ -23,7 +22,6 @@ export default function DetailPanel({
   ].filter(Boolean) as string[];
   const stepImages = (lineup.steps ?? []).map((s) => s.image).filter(Boolean) as string[];
   const images = [...slotImages, ...stepImages];
-  // circles per image: if steps have circles, associate; otherwise top-level circles apply to first image
   const circlesForIdx = (idx: number) => {
     if (lineup.steps && lineup.steps[idx - slotImages.length]?.circles) {
       return lineup.steps[idx - slotImages.length].circles;
@@ -47,7 +45,7 @@ export default function DetailPanel({
   const currentCircles = circlesForIdx(idx) as any;
 
   return (
-    <div className="absolute inset-0 md:inset-auto md:right-0 md:top-0 md:w-[380px] md:h-full bg-panel border-l border-borderSubtle shadow-2xl z-40 flex flex-col max-h-[calc(100dvh-2rem)] md:max-h-none md:rounded-none rounded-t-xl overflow-hidden">
+    <div className="absolute inset-0 md:inset-auto md:right-0 md:top-0 md:w-[520px] md:h-full bg-panel border-l border-borderSubtle shadow-2xl z-40 flex flex-col max-h-[calc(100dvh-2rem)] md:max-h-none md:rounded-none rounded-t-xl overflow-hidden">
       <div className="p-4 border-b border-borderSubtle flex items-start justify-between shrink-0">
         <div className="flex-1 min-w-0">
           <h3 className="text-[18px] font-extrabold text-textPrimary leading-tight">{lineup.title}</h3>
@@ -89,7 +87,7 @@ export default function DetailPanel({
               <div className="flex gap-2 mt-2 overflow-auto overscroll-contain">
                 {images.map((src, i) => (
                   <button key={i} onClick={() => setIdx(i)} className={`w-20 h-14 rounded overflow-hidden border-2 flex-shrink-0 ${i === idx ? "border-accent" : "border-transparent opacity-60"}`}>
-                    <img src={src} alt="" className="w-full h-full object-cover" />
+                    <img src={src} alt="" className="w-full h-full object-cover" onError={(e)=>{(e.currentTarget as HTMLImageElement).style.display="none"}} />
                   </button>
                 ))}
               </div>

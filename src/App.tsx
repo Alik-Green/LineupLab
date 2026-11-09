@@ -200,7 +200,7 @@ export default function App() {
               onZoom={(z) => store.setZoom(z)}
               onPan={(p) => store.setPan(p)}
             />
-            <button onClick={() => setMobileFiltersOpen(true)} className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 rounded-full bg-panel border border-borderSubtle text-textPrimary font-bold shadow-xl min-h-[48px]">
+            <button onClick={() => setMobileFiltersOpen(true)} className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 rounded-md bg-panel border border-borderSubtle text-textPrimary font-bold shadow-xl min-h-[48px]">
               Filters • {filtered.length}
             </button>
             {selectedLineup && (

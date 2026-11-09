@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from "react";
 import ValImage from "./ValImage";
 import type { ValorantAgent } from "../types/lineup";
 
@@ -13,33 +12,12 @@ export default function AgentGridCompact({
   onSelect: (uuid: string | null) => void;
   hasLineups: (uuid: string) => boolean;
 }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [cols, setCols] = useState(6);
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0].contentRect.width;
-      // Compute columns: aim for tile ~48-54px + gap 6
-      // w ~ 326 (350-24), so 6 cols => 48+6=54*6=324 fits, 7 cols => 42*7=294 fits with smaller tiles
-      if (w < 300) setCols(5);
-      else if (w < 340) setCols(6);
-      else setCols(7);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
   const sorted = [...agents].sort((a, b) => a.displayName.localeCompare(b.displayName));
 
   return (
     <div className="rounded-card bg-panel border border-borderSubtle p-2 flex flex-col min-h-0 overflow-hidden">
       <h3 className="text-xs font-semibold text-textPrimary mb-2 shrink-0">Select an agent</h3>
-      <div
-        ref={containerRef}
-        className="grid gap-1.5 overflow-auto overscroll-contain thin-scrollbar flex-1 min-h-0 content-start"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-      >
+      <div className="grid gap-1.5 overflow-auto overscroll-contain thin-scrollbar flex-1 min-h-0 content-start grid-cols-4">
         {sorted.map((agent) => {
           const isSelected = selectedAgentUuid === agent.uuid;
           const has = hasLineups(agent.uuid);
