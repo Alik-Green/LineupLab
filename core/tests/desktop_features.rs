@@ -93,7 +93,7 @@ fn overlay_create_checklist_and_view_flipping() {
         .any(|c| c.slot == Slot::Landing && !c.done));
     s.toggle_mode();
     assert_eq!(s.mode, OverlayMode::View);
-    s.set_view_lineup(&l);
+    s.set_view_lineup(&l, &[Slot::Stand1, Slot::Aim1, Slot::Landing]);
     assert_eq!(s.current_view_slot(), Some(Slot::Stand1));
     s.view_next();
     assert_eq!(s.current_view_slot(), Some(Slot::Aim1));
@@ -157,4 +157,136 @@ fn draft_capture_uses_required_slot_flow_and_undo() {
     assert!(draft.lineup.slot(Slot::Landing).image.is_none());
     assert!(draft.redo());
     assert!(draft.lineup.slot(Slot::Landing).image.is_some());
+}
+
+#[test]
+fn learn_steps_skip_missing_and_duplicated_second_stand() {
+    let required = [Slot::Stand1, Slot::Aim1, Slot::Landing];
+    let mut l = Lineup::new("map".into(), "Sova".into(), "Grenade".into(), "dev".into());
+    let stand = "a".repeat(64);
+    let aim = "b".repeat(64);
+    let land = "c".repeat(64);
+    l.slot_mut(Slot::Stand1).image = Some(stand.clone());
+    l.slot_mut(Slot::Aim1).image = Some(aim.clone());
+    l.slot_mut(Slot::Landing).image = Some(land.clone());
+
+    // No second throw: a leftover second stand (distinct or copied) is not a step.
+    l.slot_mut(Slot::Stand2).image = Some("d".repeat(64));
+    assert_eq!(
+        learn_slots(&l, &required),
+        vec![Slot::Stand1, Slot::Aim1, Slot::Landing]
+    );
+    let mut s = OverlayState::default();
+    s.set_view_lineup(&l, &required);
+    assert_eq!(s.view_slots, vec![Slot::Stand1, Slot::Aim1, Slot::Landing]);
+    s.update_checklist(&l, &required, &[]);
+    assert!(!s.checklist.iter().any(|c| c.slot == Slot::Stand2));
+
+    // Double shock where both throws share the same standing picture: still one stand step.
+    let double = [Slot::Stand1, Slot::Aim1, Slot::Aim2, Slot::Landing];
+    l.slot_mut(Slot::Stand2).image = Some(stand.clone());
+    l.slot_mut(Slot::Aim2).image = Some("e".repeat(64));
+    assert!(has_second_throw(&l, &double));
+    assert_eq!(
+        learn_slots(&l, &double),
+        vec![Slot::Stand1, Slot::Aim1, Slot::Aim2, Slot::Landing]
+    );
+    s.update_checklist(&l, &double, &[]);
+    assert!(!s.checklist.iter().any(|c| c.slot == Slot::Stand2));
+
+    // A genuinely different second stand is kept.
+    l.slot_mut(Slot::Stand2).image = Some("f".repeat(64));
+    assert_eq!(
+        learn_slots(&l, &double),
+        vec![
+            Slot::Stand1,
+            Slot::Aim1,
+            Slot::Stand2,
+            Slot::Aim2,
+            Slot::Landing
+        ]
+    );
+    s.update_checklist(&l, &double, &[]);
+    assert!(s.checklist.iter().any(|c| c.slot == Slot::Stand2 && c.done));
+
+    // A missing required second stand still appears in the Create checklist.
+    l.slot_mut(Slot::Stand2).image = None;
+    s.update_checklist(
+        &l,
+        &[
+            Slot::Stand1,
+            Slot::Aim1,
+            Slot::Stand2,
+            Slot::Aim2,
+            Slot::Landing,
+        ],
+        &[],
+    );
+    assert!(s
+        .checklist
+        .iter()
+        .any(|c| c.slot == Slot::Stand2 && c.required && !c.done));
+
+    // Blank hashes and repeated pictures never become steps.
+    l.slot_mut(Slot::Landing).image = Some("   ".into());
+    l.slot_mut(Slot::Aim2).image = Some(aim.clone());
+    assert_eq!(learn_slots(&l, &double), vec![Slot::Stand1, Slot::Aim1]);
+}
+
+#[test]
+fn second_throw_is_detected_from_saved_data_for_legacy_modes() {
+    let required = [Slot::Stand1, Slot::Aim1, Slot::Landing];
+    let mut l = Lineup::new("map".into(), "Sova".into(), "Ability2".into(), "dev".into());
+    assert!(!has_second_throw(&l, &required));
+    l.slot_mut(Slot::Aim1).image = Some("a".repeat(64));
+    l.slot_mut(Slot::Aim2).image = Some("a".repeat(64));
+    assert!(
+        !has_second_throw(&l, &required),
+        "a copied second aim is not a second throw"
+    );
+    l.slot_mut(Slot::Aim2).image = Some("b".repeat(64));
+    assert!(has_second_throw(&l, &required));
+    l.slot_mut(Slot::Aim2).image = None;
+    l.attributes
+        .insert("doubleShock".into(), serde_json::json!(true));
+    assert!(has_second_throw(&l, &required));
+    l.attributes.clear();
+    l.mode = "double".into();
+    assert!(has_second_throw(&l, &required));
+}
+
+#[test]
+fn overlay_lineup_order_steps_wrap_and_survive_legacy_settings() {
+    let mut s = OverlayState::default();
+    assert_eq!(s.step_lineup(None, true), None);
+    s.set_lineup_order(vec![
+        "a".into(),
+        "".into(),
+        "b".into(),
+        "a".into(),
+        "c".into(),
+    ]);
+    assert_eq!(s.lineup_order, vec!["a", "b", "c"]);
+    assert_eq!(s.step_lineup(Some("a"), true).as_deref(), Some("b"));
+    assert_eq!(s.step_lineup(Some("c"), true).as_deref(), Some("a"));
+    assert_eq!(s.step_lineup(Some("a"), false).as_deref(), Some("c"));
+    assert_eq!(s.step_lineup(Some("missing"), true).as_deref(), Some("a"));
+    assert_eq!(s.step_lineup(None, false).as_deref(), Some("c"));
+    // Preview 7 overlay.json has no lineupOrder key; settings must still load.
+    let legacy = serde_json::json!({
+        "settings": OverlaySettings::default(), "visible": true, "mode": "view",
+        "showChecklist": true, "checklist": [], "viewSlots": [], "viewIndex": 0, "flipped": false
+    });
+    let parsed: OverlayState = serde_json::from_value(legacy).unwrap();
+    assert!(parsed.lineup_order.is_empty());
+    assert_eq!(parsed.mode, OverlayMode::View);
+}
+
+#[test]
+fn lineup_step_hotkeys_default_to_alt_up_and_down_without_conflicts() {
+    let cfg = HotkeyConfig::default();
+    cfg.validate().unwrap();
+    assert_eq!(cfg.action_for("Alt+Down"), Some("lineup_next"));
+    assert_eq!(cfg.action_for("Alt+Up"), Some("lineup_prev"));
+    assert_eq!(cfg.action_for("alt+arrowdown"), Some("lineup_next"));
 }

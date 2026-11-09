@@ -137,6 +137,10 @@ pub struct OverlayState {
     pub view_slots: Vec<Slot>,
     pub view_index: usize,
     pub flipped: bool,
+    /// Browse order for Alt+Up/Alt+Down lineup stepping. Defaults to empty so
+    /// overlay.json files written before Preview 8 still load untouched.
+    #[serde(default)]
+    pub lineup_order: Vec<String>,
 }
 impl Default for OverlayState {
     fn default() -> Self {
@@ -149,9 +153,73 @@ impl Default for OverlayState {
             view_slots: vec![],
             view_index: 0,
             flipped: false,
+            lineup_order: vec![],
         }
     }
 }
+/// A capture that can be shown as a step: present and not blank.
+fn step_image(lineup: &crate::Lineup, slot: Slot) -> Option<&str> {
+    lineup
+        .slot(slot)
+        .image
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+}
+
+/// True when this lineup actually has a second throw. The mode's required slots
+/// are authoritative; saved throws, double-shock attributes, legacy `double`
+/// mode ids and a distinct second aim image also prove it. Single-throw lineups
+/// never gain a phantom second stand from leftover or duplicated data.
+pub fn has_second_throw(lineup: &crate::Lineup, required: &[Slot]) -> bool {
+    if required.contains(&Slot::Aim2) || required.contains(&Slot::Stand2) {
+        return true;
+    }
+    if lineup.throws.iter().any(|t| t.index >= 2) {
+        return true;
+    }
+    let flag = |key: &str| {
+        lineup
+            .attributes
+            .get(key)
+            .is_some_and(|v| v.as_bool() == Some(true) || v.as_f64().is_some_and(|n| n > 0.0))
+    };
+    if flag("doubleShock") || flag("hasSecondStand") || flag("secondThrow") {
+        return true;
+    }
+    if lineup.mode.to_ascii_lowercase().contains("double") {
+        return true;
+    }
+    match step_image(lineup, Slot::Aim2) {
+        Some(aim2) => step_image(lineup, Slot::Aim1) != Some(aim2),
+        None => false,
+    }
+}
+
+/// Learn-mode steps: only captured, distinct pictures that belong to this
+/// lineup. A second stand that repeats the first image (or belongs to a
+/// single-throw lineup) is not a step, and neither is any other duplicate.
+/// Stored data is never modified.
+pub fn learn_slots(lineup: &crate::Lineup, required: &[Slot]) -> Vec<Slot> {
+    let second = has_second_throw(lineup, required);
+    let mut seen: Vec<&str> = Vec::new();
+    let mut out = Vec::new();
+    for slot in SLOT_ORDER {
+        let Some(image) = step_image(lineup, slot) else {
+            continue;
+        };
+        if matches!(slot, Slot::Stand2 | Slot::Aim2) && !second {
+            continue;
+        }
+        if seen.contains(&image) {
+            continue;
+        }
+        seen.push(image);
+        out.push(slot);
+    }
+    out
+}
+
 impl OverlayState {
     pub fn toggle_visible(&mut self) {
         self.visible = !self.visible;
@@ -178,12 +246,17 @@ impl OverlayState {
         required: &[Slot],
         skipped: &[Slot],
     ) {
+        let second = has_second_throw(lineup, required);
+        let steps = learn_slots(lineup, required);
         self.checklist = SLOT_ORDER
             .into_iter()
             .filter(|s| {
                 required.contains(s)
                     || matches!(s, Slot::Stand1 | Slot::Aim1 | Slot::Landing)
-                    || lineup.slot(*s).image.is_some()
+                    // An optional second stand/aim only earns a row when this
+                    // lineup really has a second throw and the capture is its
+                    // own picture rather than a copy of the first one.
+                    || (second && steps.contains(s))
             })
             .map(|slot| ChecklistItem {
                 slot,
@@ -194,12 +267,45 @@ impl OverlayState {
             })
             .collect();
     }
-    pub fn set_view_lineup(&mut self, lineup: &crate::Lineup) {
-        self.view_slots = SLOT_ORDER
-            .into_iter()
-            .filter(|s| lineup.slot(*s).image.is_some())
-            .collect();
+    pub fn set_view_lineup(&mut self, lineup: &crate::Lineup, required: &[Slot]) {
+        self.view_slots = learn_slots(lineup, required);
         self.view_index = 0;
+    }
+    /// Replace the Alt+Up/Alt+Down order with what Browse is currently showing.
+    /// Blank ids and repeats are dropped; the first occurrence wins.
+    pub fn set_lineup_order(&mut self, ids: impl IntoIterator<Item = String>) {
+        let mut next: Vec<String> = Vec::new();
+        for id in ids {
+            if !id.trim().is_empty() && !next.contains(&id) {
+                next.push(id);
+            }
+        }
+        self.lineup_order = next;
+    }
+    /// Next/previous lineup id, wrapping at both ends. An unknown or missing
+    /// current id starts at the first (down) or last (up) entry.
+    pub fn step_lineup(&self, current: Option<&str>, forward: bool) -> Option<String> {
+        let len = self.lineup_order.len();
+        if len == 0 {
+            return None;
+        }
+        let index = match current.and_then(|id| self.lineup_order.iter().position(|x| x == id)) {
+            Some(i) => {
+                if forward {
+                    (i + 1) % len
+                } else {
+                    (i + len - 1) % len
+                }
+            }
+            None => {
+                if forward {
+                    0
+                } else {
+                    len - 1
+                }
+            }
+        };
+        self.lineup_order.get(index).cloned()
     }
     pub fn view_next(&mut self) {
         if !self.view_slots.is_empty() {

@@ -94,3 +94,9 @@ Eight milestones on `arena/e082cc85-lineuplab`, preserving the core data model, 
 - Annotations: contain-frame SVG/hit layers and pointer math keep circles/lines/lenses aligned across window sizes and overlay aspect ratios.
 - Settings: capture saves use a stale-closure-safe ref and surface failures; click-through default regression added.
 - Automated: Vitest 43, Playwright 51, core 35, typecheck/build/fmt. Physical Pixel 9/gameplay validation still pending.
+
+## Preview 8 — overlay Learn follows Browse (this commit)
+- Learn steps are real captures only: a second stand/aim that is missing, blank or a copy of an earlier picture is no longer a phantom "stand position 2" step. Real second throws (required second slots, saved throws, double-shock attributes, legacy `double` modes, distinct second aim) keep their captures; the Create checklist applies the same rule to optional slots while required slots stay listed, and the lineup viewer rail matches. Stored data is never modified.
+- Alt+Down / Alt+Up step through whole lineups in the current Browse order (filtered + sorted, wrapping), distinct from Alt+Left/Right image stepping; rebindable in Settings → Hotkeys. The overlay header gains previous/next-lineup buttons and an `n/total` position; the hint row shows the lineup keys and wraps inside the existing nav height (no overflow at 320px).
+- Viewing a lineup in Browse automatically shows it in an enabled, visible overlay — no "Learn in overlay" click. Hidden/disabled overlays remember the lineup without appearing; stepping never overrides Alt+V. Opening Create restores the capture checklist. Legacy `overlay.json` without a lineup order still loads.
+- Automated: Vitest 47, Playwright 57 (6 new overlay specs), core 39, typecheck/build/fmt. Physical Windows gameplay validation still pending.

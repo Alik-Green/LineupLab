@@ -443,6 +443,9 @@ html.ll-overlay-window, html.ll-overlay-window body, html.ll-overlay-window #roo
 .ll-ov__head { display: flex; align-items: center; gap: 4px; min-height: 48px; padding: 4px 8px; border-bottom: 1px solid rgb(255 255 255 / .08); }
 .ll-ov__head .ll-logo__mark { width: 18px; height: 18px; flex: none; }
 .ll-ov__title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--ll-font-display); font-size: max(13px, calc(17px * var(--ov-scale))); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.ll-ov__stepper { display: flex; align-items: center; gap: 1px; flex: none; }
+.ll-ov__stepper .ll-icon-btn { width: 28px; min-width: 28px; height: 32px; }
+.ll-ov__pos { font-size: 11px; color: var(--ll-muted); font-variant-numeric: tabular-nums; }
 .ll-ov__mode { min-width: 64px; min-height: 40px; padding: 0 10px; border: 1px solid var(--ll-border); border-radius: var(--ll-radius); background: var(--ll-raised); color: var(--ll-text); font-family: var(--ll-font-display); font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
 .ll-ov__mode:hover:not(:disabled) { border-color: var(--ll-accent); }
 .ll-ov__mode:disabled, .ll-ov .ll-icon-btn:disabled { opacity: .55; cursor: default; }
@@ -854,7 +857,7 @@ html[data-platform="desktop"] .ll-browse__map-wrap { flex: 1 1 auto; width: 100%
 .ll-ov__nav { min-height: 40px; padding: 0 4px; }
 .ll-ov__nav .ll-icon-btn { width: 40px; height: 40px; min-width: 40px; }
 .ll-ov__nav-label { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: 12px; }
-.ll-ov__nav-label small { display: flex; justify-content: center; align-items: center; gap: 3px; color: var(--ll-muted); font-size: 9px; font-weight: 400; white-space: nowrap; }
+.ll-ov__nav-label small { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 3px; color: var(--ll-muted); font-size: 9px; font-weight: 400; line-height: 1.15; }
 .ll-ov__nav-label .ll-kbd span { min-width: 14px; height: 14px; padding: 0 2px; font-size: 9px; }
 .ll-ov__body--create { padding: 0 4px 4px; }
 .ll-ov__image--create { width: 100%; }

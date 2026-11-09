@@ -29,8 +29,38 @@ export function useOverlayViewPrefs(): [OverlayViewPrefs, (patch: Partial<Overla
   return [prefs, patch => setPrefs(writeViewPrefs({ ...readViewPrefs(), ...patch }))];
 }
 export interface OverlayChecklistItem { slot: SlotId; label: string; required: boolean; done: boolean; skipped: boolean }
+function stepImage(lineup: Lineup, slot: SlotId): string | null { const image = lineup.slots?.[slot]?.image; return typeof image === 'string' && image.trim() ? image.trim() : null; }
+/** Mirrors core `overlay::has_second_throw`: the mode's required slots win, and
+ * saved throws, double-shock attributes, legacy `double` ids or a distinct second
+ * aim image also prove a second throw. Leftover/copied data does not. */
+export function hasSecondThrow(lineup: Lineup, required: SlotId[] = []): boolean {
+  if (required.includes('aim2') || required.includes('stand2')) return true;
+  if ((lineup.throws ?? []).some(t => t.index >= 2)) return true;
+  const attrs = lineup.attributes ?? {};
+  const flag = (k: string) => attrs[k] === true || (typeof attrs[k] === 'number' && (attrs[k] as number) > 0);
+  if (flag('doubleShock') || flag('hasSecondStand') || flag('secondThrow')) return true;
+  if ((lineup.mode ?? '').toLowerCase().includes('double')) return true;
+  const aim2 = stepImage(lineup, 'aim2');
+  return Boolean(aim2) && aim2 !== stepImage(lineup, 'aim1');
+}
+/** Mirrors core `overlay::learn_slots`: captured, distinct pictures only. A second
+ * stand that repeats the first image, or belongs to a single-throw lineup, is not
+ * a step. Stored images are never touched. */
+export function learnSlots(lineup: Lineup, required: SlotId[] = []): SlotId[] {
+  const second = hasSecondThrow(lineup, required);
+  const seen = new Set<string>(); const out: SlotId[] = [];
+  for (const slot of SLOT_ORDER) {
+    const image = stepImage(lineup, slot);
+    if (!image) continue;
+    if ((slot === 'stand2' || slot === 'aim2') && !second) continue;
+    if (seen.has(image)) continue;
+    seen.add(image); out.push(slot);
+  }
+  return out;
+}
 /** Mirrors core OverlayState::update_checklist for the live editor draft shown in the overlay. */
 export function draftChecklist(lineup: Lineup, required: SlotId[], skipped: SlotId[] = []): OverlayChecklistItem[] {
-  return SLOT_ORDER.filter(s => required.includes(s) || s === 'stand1' || s === 'aim1' || s === 'landing' || Boolean(lineup.slots[s]?.image))
+  const second = hasSecondThrow(lineup, required); const steps = learnSlots(lineup, required);
+  return SLOT_ORDER.filter(s => required.includes(s) || s === 'stand1' || s === 'aim1' || s === 'landing' || (second && steps.includes(s)))
     .map(slot => ({ slot, label: SLOT_LABELS[slot], required: required.includes(slot), done: Boolean(lineup.slots[slot]?.image), skipped: skipped.includes(slot) }));
 }

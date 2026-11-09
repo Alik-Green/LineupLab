@@ -82,7 +82,7 @@ pub fn run() {
             commands::media_path, commands::put_image, commands::capture_monitor,
             commands::import_preview, commands::import_commit, commands::export_pack, commands::undo_import,
             commands::get_hotkeys, commands::rebind_hotkey, commands::get_overlay_settings, commands::set_overlay_settings, commands::resize_overlay,
-            commands::get_capture_settings, commands::set_capture_settings, commands::list_monitors, commands::get_overlay_view, commands::set_overlay_lineup,
+            commands::get_capture_settings, commands::set_capture_settings, commands::list_monitors, commands::get_overlay_view, commands::set_overlay_lineup, commands::set_overlay_mode,
             commands::overlay_action, commands::learn_lineup,
             commands::start_sync_server, commands::stop_sync_server, commands::get_sync_server_status,
             commands::pair_sync, commands::sync_now, commands::download_library, commands::discover_sync

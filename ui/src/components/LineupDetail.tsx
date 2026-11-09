@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Copy, Download, GraduationCap, Maximize, Pencil, Star, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import type { Catalog, LibraryAdapter, Lineup, SlotId } from '../types';
-import { SLOT_LABELS, SLOT_ORDER } from '../types';
+import { SLOT_LABELS } from '../types';
+import { learnSlots } from '../lib/overlay';
 import { AnnotatedImage } from './AnnotatedImage';
 import { Minimap } from './Minimap';
 import { Button, Chip, IconButton, Popup, Tooltip, useToast } from './ui';
@@ -14,7 +15,7 @@ import { clampImagePan, zoomImageAt, type MapView } from '../lib/geometry';
  * one layer so circles/lenses/lines never drift away from the capture. */
 export function LineupDetail({ adapter, lineup, catalog, onClose, onEdit, onRefresh, readOnly = false }: { adapter: LibraryAdapter; lineup: Lineup; catalog: Catalog | null; onClose(): void; onEdit(id: string): void; onRefresh(): void; readOnly?: boolean }) {
   const toast = useToast();
-  const slots = useMemo(() => SLOT_ORDER.filter(s => lineup.slots?.[s]?.image), [lineup]);
+  const slots = useMemo(() => learnSlots(lineup), [lineup]);
   const [index, setIndex] = useState(0);
   const [view, setView] = useState<MapView>({ scale: 1, tx: 0, ty: 0 });
   const [showInfo, setShowInfo] = useState(false);

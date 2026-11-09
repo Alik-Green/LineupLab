@@ -53,6 +53,15 @@ export function Browse({ adapter, lineups, catalog, onEdit, onRefresh, readOnly 
   useEffect(() => { if (filters.ability && agent && !abilities.some(a => a.slot === filters.ability)) set({ ability: '' }); }, [filters.agent]); // eslint-disable-line react-hooks/exhaustive-deps
   const filtered = useMemo(() => sortLineups(filterLineups(lineups, filters), sort.value), [lineups, filters, sort.value]);
   const tags = useMemo(() => [...new Set(lineups.flatMap(l => l.tags))].sort(), [lineups]);
+  // The overlay follows the lineup being viewed here — no "Learn in overlay"
+  // click needed. The shell only reveals it when the overlay is enabled/visible,
+  // and Alt+Up/Alt+Down walk this same filtered/sorted order.
+  const focusId = detail?.id ?? selected;
+  const orderKey = filtered.map(l => l.id).join('|');
+  useEffect(() => {
+    if (readOnly || adapter.kind !== 'tauri' || !orderKey) return;
+    void adapter.setOverlayLineup(focusId ?? null, { order: orderKey.split('|'), reveal: Boolean(focusId) }).catch(() => {});
+  }, [adapter, readOnly, focusId, orderKey]);
   const map = catalog?.maps.find(m => m.uuid === filters.map);
   const abilityIcons = useMemo(() => { const out: Record<string, string> = {}; for (const l of filtered) { const icon = abilityIcon(catalog, l.agentUuid, l.abilitySlot); if (icon) out[`${l.agentUuid}:${l.abilitySlot}`] = icon; } return out; }, [filtered, catalog]);
   const cols = Math.max(1, Math.min(view.value === 'compact' ? 4 : 3, Math.floor(width / (view.value === 'compact' ? 240 : 300))));

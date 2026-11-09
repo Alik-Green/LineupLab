@@ -70,6 +70,9 @@ export interface LibraryAdapter {
   getOverlaySettings(): Promise<OverlaySettings>;
   setOverlaySettings(settings: OverlaySettings): Promise<void>;
   learnLineup(id: string): Promise<void>;
+  /** Point the overlay at a lineup; `order` drives Alt+Up/Down, `reveal` auto-switches an active overlay to Learn. */
+  setOverlayLineup(id: string | null, options?: { order?: string[]; reveal?: boolean }): Promise<void>;
+  setOverlayMode(mode: 'create' | 'view'): Promise<void>;
   getCaptureSettings(): Promise<CaptureSettings>;
   setCaptureSettings(settings: CaptureSettings): Promise<void>;
   startSyncServer(name?: string): Promise<SyncServerStatus>;

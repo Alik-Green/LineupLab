@@ -48,6 +48,10 @@ Automated CI compiles the Windows installer and runs the portable core/UI suites
 27. Browse pickers: Map/Agent/Ability buttons show the current value; dialogs list all choices with search/role filters and favorite-agent pinning; Esc/focus return work; Android targets remain ≥48px.
 28. Overlay on 2560×1440 and mixed-DPI monitors: Settings → Overlay detects the selected monitor, shows physical/logical size and scaling, corners match the native window, “Reapply placement” works, and placement persists after restart.
 
+## Preview 8 regression checks
+29. Overlay Learn on a single-throw lineup shows only Stand/Aim/Landing even if the stored pack contains a leftover or copied second stand; a real double shock keeps its distinct second aim (and a genuinely different second stand).
+30. Alt+Down / Alt+Up in the overlay step through whole lineups in Browse order and wrap; Alt+Left/Right still step images; header stepper buttons and the n/total position agree; rebinding both keys in Settings works and conflicts are rejected.
+31. With the overlay enabled and visible, opening a lineup in Browse shows it in the overlay without clicking Learn; hiding the overlay (Alt+V) keeps it hidden while browsing/stepping; opening Create brings back the capture checklist.
+
 ## Known untested paths
 - Actual WDA_EXCLUDEFROMCAPTURE behavior, global shortcut registration under Valorant focus, physical multi-monitor DPI placement, WebView2 runtime variations, NSIS upgrade/uninstall, real Android device touch/sync. CI compile and Linux Playwright are not a substitute for this plan.
-EOF

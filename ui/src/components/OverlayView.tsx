@@ -1,22 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { emit, listen } from '@tauri-apps/api/event';
-import { BookOpen, Check, ChevronLeft, ChevronRight, Circle, EyeOff, Image as ImageIcon, ListChecks, Minus, MousePointer2, RefreshCw } from 'lucide-react';
+import { BookOpen, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Circle, EyeOff, Image as ImageIcon, ListChecks, Minus, MousePointer2, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 import type { Catalog, LibraryAdapter, Lineup, OverlaySettings, SlotId } from '../types';
-import { SLOT_LABELS, SLOT_ORDER } from '../types';
-import { DEFAULT_OVERLAY, overlayHeight, draftChecklist, useOverlayViewPrefs, writeViewPrefs, readViewPrefs, type OverlayChecklistItem, type OverlayViewPrefs } from '../lib/overlay';
+import { SLOT_LABELS } from '../types';
+import { DEFAULT_OVERLAY, overlayHeight, draftChecklist, learnSlots, useOverlayViewPrefs, writeViewPrefs, readViewPrefs, type OverlayChecklistItem, type OverlayViewPrefs } from '../lib/overlay';
+import { eventToHotkey } from '../lib/hotkeys';
 import { ValImage } from '../lib/images';
 import { AnnotatedImage } from './AnnotatedImage';
 import { Minimap } from './Minimap';
 import { Button, EmptyState, IconButton, Kbd, ProgressBar, Skeleton } from './ui';
 
 export interface OverlayViewData {
-  state: { mode: 'create' | 'view'; visible?: boolean; showChecklist: boolean; flipped: boolean; checklist: OverlayChecklistItem[]; viewSlots: SlotId[]; viewIndex: number; settings: OverlaySettings };
+  state: { mode: 'create' | 'view'; visible?: boolean; showChecklist: boolean; flipped: boolean; checklist: OverlayChecklistItem[]; viewSlots: SlotId[]; viewIndex: number; settings: OverlaySettings; lineupOrder?: string[] };
   lineup: Lineup | null;
 }
 export interface OverlayDraft { editing: boolean; lineup?: Lineup; activeSlot?: SlotId; requiredSlots?: SlotId[] }
-const OVERLAY_ACTIONS = new Set(['overlay_toggle', 'overlay_controls', 'overlay_mode', 'view_next', 'view_prev', 'view_flip', 'checklist_toggle']);
+const OVERLAY_ACTIONS = new Set(['overlay_toggle', 'overlay_controls', 'overlay_mode', 'view_next', 'view_prev', 'lineup_next', 'lineup_prev', 'view_flip', 'checklist_toggle']);
 const DEFAULT_REQUIRED: SlotId[] = ['stand1', 'aim1', 'landing'];
 
 /** Polls the native overlay state (events + 1.5 s fallback). Browser demo builds an equivalent preview from the local library. */
@@ -30,7 +31,7 @@ export function useOverlayData(adapter: LibraryAdapter) {
       else {
         const lineup = (await adapter.listLineups())[0] ?? null;
         const params = new URLSearchParams(location.search);
-        next = { state: { mode: params.get('overlayMode') === 'view' ? 'view' : 'create', showChecklist: true, flipped: params.has('flipped'), checklist: lineup ? draftChecklist(lineup, DEFAULT_REQUIRED) : [], viewSlots: lineup ? SLOT_ORDER.filter(s => lineup.slots[s].image) : [], viewIndex: 0, settings: DEFAULT_OVERLAY }, lineup };
+        next = { state: { mode: params.get('overlayMode') === 'view' ? 'view' : 'create', showChecklist: true, flipped: params.has('flipped'), checklist: lineup ? draftChecklist(lineup, DEFAULT_REQUIRED) : [], viewSlots: lineup ? learnSlots(lineup) : [], viewIndex: 0, settings: DEFAULT_OVERLAY }, lineup };
       }
       if (id === seq.current) { setData(next); setError(''); }
     } catch (e) { if (id === seq.current) setError(String(e)); }
@@ -68,6 +69,20 @@ export function OverlayView({ adapter }: { adapter: LibraryAdapter }) {
     void emit('lineuplab://overlay-draft-request').catch(() => {});
     return () => { live = false; uns.forEach(f => f()); window.clearTimeout(fadeTimer.current); };
   }, [adapter, act, prefs.fade]);
+  // The native overlay is click-through and non-focusable, so it is driven by
+  // global shortcuts. The browser demo/mock has no global provider, so it maps
+  // the same bindings from local key events instead.
+  const native = adapter.kind === 'tauri' && typeof window !== 'undefined' && !('__LL_MOCK_STATE__' in window);
+  useEffect(() => {
+    if (native) return;
+    const onKey = (e: KeyboardEvent) => {
+      const combo = eventToHotkey(e); if (!combo) return;
+      const action = Object.keys(keys).find(a => keys[a] === combo); if (!action) return;
+      if (action === 'overlay_minimal') { e.preventDefault(); const p = readViewPrefs(); writeViewPrefs({ ...p, minimal: !p.minimal }); return; }
+      if (OVERLAY_ACTIONS.has(action)) { e.preventDefault(); act(action); }
+    };
+    window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
+  }, [native, keys, act]);
   const fitWindow = useCallback((ratio: number, minimal: boolean, mode: string) => { if (adapter.kind === 'tauri') void invoke('resize_overlay', { aspectRatio: ratio, minimal, mode }).catch(() => {}); }, [adapter]);
   const lineup = data?.state.mode === 'create' && draft?.lineup ? draft.lineup : data?.lineup ?? null;
   const checklist = data?.state.mode === 'create' && draft?.lineup ? draftChecklist(draft.lineup, draft.requiredSlots ?? DEFAULT_REQUIRED) : data?.state.checklist ?? [];
@@ -83,7 +98,7 @@ interface ContentProps { data: OverlayViewData; lineup: Lineup | null; checklist
 /** Presentational overlay used by the real window and the Settings live preview. All text is ≥13px at 100% scale. */
 export function OverlayContent({ data, lineup, checklist, activeSlot, catalog, prefs, keys = {}, onAction, error, onRetry, preview, onAspect }: ContentProps) {
   const s = data.state; const view = s.mode === 'view';
-  const viewSlots = s.viewSlots.length ? s.viewSlots : lineup ? SLOT_ORDER.filter(k => lineup.slots[k].image) : [];
+  const viewSlots = s.viewSlots.length ? s.viewSlots : lineup ? learnSlots(lineup) : [];
   const index = Math.min(Math.max(0, s.viewIndex), Math.max(0, viewSlots.length - 1)); const slot = viewSlots[index];
   const slotData = slot && lineup ? lineup.slots[slot] : undefined;
   const shownSlot = useMemo(() => slotData ? (prefs.hideAnnotations ? { ...slotData, circles: [], lines: [] } : slotData) : undefined, [slotData, prefs.hideAnnotations]);
@@ -92,6 +107,9 @@ export function OverlayContent({ data, lineup, checklist, activeSlot, catalog, p
   const required = checklist.filter(c => c.required); const done = required.filter(c => c.done).length;
   const step = slotData?.image ? lineup?.steps.find(x => x.imageRef === slotData.image) : undefined;
   const key = (a: string, fallback: string) => keys[a] ?? fallback;
+  /** Overlay shortcuts are all Alt-based; drop the shared prefix so the hint row stays readable. */
+  const hint = (a: string, fallback: string) => key(a, fallback).replace(/^Alt\+/, '');
+  const order = s.lineupOrder ?? []; const orderIndex = lineup ? order.indexOf(lineup.id) : -1;
   const disabled = !onAction;
   const createSlot: SlotId = activeSlot && lineup?.slots[activeSlot]?.image ? activeSlot : [...checklist].reverse().find(c => c.done && lineup?.slots[c.slot]?.image)?.slot ?? activeSlot ?? 'stand1';
   const createImage = !view && lineup?.slots[createSlot]?.image ? lineup.slots[createSlot].image! : null;
@@ -105,6 +123,11 @@ export function OverlayContent({ data, lineup, checklist, activeSlot, catalog, p
   }
   return <div className={clsx('ll-ov', preview && 'll-ov--preview')} data-mode={s.mode} data-testid={preview ? 'overlay-content-preview' : 'overlay-content'} style={{ '--ov-scale': prefs.scale } as React.CSSProperties}>
     <header className="ll-ov__head"><span className="ll-logo__mark" aria-hidden /><strong className="ll-ov__title" title={view ? lineup?.title : 'Create checklist'}>{view ? lineup?.title || 'No lineup selected' : lineup?.title || 'Create checklist'}</strong>
+      {view && <div className="ll-ov__stepper">
+        <IconButton label="Previous lineup" tooltip={`Previous lineup (${key('lineup_prev', 'Alt+Up')})`} disabled={disabled} onClick={() => onAction?.('lineup_prev')}><ChevronUp size={15} /></IconButton>
+        {order.length > 1 && <span className="ll-ov__pos" data-testid="overlay-lineup-position">{orderIndex >= 0 ? orderIndex + 1 : '–'}/{order.length}</span>}
+        <IconButton label="Next lineup" tooltip={`Next lineup (${key('lineup_next', 'Alt+Down')})`} disabled={disabled} onClick={() => onAction?.('lineup_next')}><ChevronDown size={15} /></IconButton>
+      </div>}
       <button className="ll-ov__mode" disabled={disabled} onClick={() => onAction?.('overlay_mode')} title={`Switch mode (${key('overlay_mode', 'Alt+M')})`} aria-label={`Switch to ${view ? 'create' : 'learn'} mode`}>{view ? 'Learn' : 'Create'}</button>
       <IconButton label="Toggle overlay controls" tooltip={`Controls (${key('overlay_controls', 'Alt+O')})`} disabled={disabled} onClick={() => onAction?.('overlay_controls')} className={s.settings.clickThrough ? '' : 'is-active'}><MousePointer2 size={16} /></IconButton>
       <IconButton label="Hide overlay" tooltip={`Hide (${key('overlay_toggle', 'Alt+V')})`} disabled={disabled} onClick={() => onAction?.('overlay_toggle')}><EyeOff size={16} /></IconButton>
@@ -121,7 +144,7 @@ export function OverlayContent({ data, lineup, checklist, activeSlot, catalog, p
     {view && (!lineup || !slot || !slotData?.image ? <div className="ll-ov__body"><EmptyState title="No lineup to show" description="Pick a lineup in Browse and send it to the overlay, or switch to Create." /></div> : <>
       {!s.flipped ? <div className="ll-ov__body ll-ov__body--image"><AnnotatedImage src={slotData.image} slot={shownSlot} alt={SLOT_LABELS[slot]} className="ll-ov__image" onLoad={reportAspect} />{step && <p className="ll-ov__step">{step.order}. {step.text}</p>}</div>
         : <div className="ll-ov__body ll-ov__body--notes"><Minimap src={map?.displayIcon} lineups={[lineup]} selectedId={lineup.id} showToolbar={false} className="ll-ov__map" emptyMessage={null} /><div className="ll-ov__notes">{lineup.steps.length > 0 && <ol>{lineup.steps.map(x => <li key={x.order}><span>{x.order}.</span> {x.text}</li>)}</ol>}{lineup.notes && <p>{lineup.notes}</p>}{lineup.steps.length === 0 && !lineup.notes && <p className="ll-muted">No steps or notes for this lineup.</p>}</div></div>}
-      <footer className="ll-ov__nav"><IconButton label="Previous image" tooltip={`Previous (${key('view_prev', 'Alt+Left')})`} disabled={disabled || viewSlots.length < 2} onClick={() => onAction?.('view_prev')}><ChevronLeft size={18} /></IconButton><span className="ll-ov__nav-label">{SLOT_LABELS[slot]} · {index + 1}/{viewSlots.length}<small data-testid="overlay-hotkey-hints"><Kbd>{key('view_prev', 'Alt+Left')}</Kbd><Kbd>{key('view_next', 'Alt+Right')}</Kbd> image <Kbd>{key('view_flip', 'Alt+F')}</Kbd> flip <Kbd>{key('overlay_minimal', 'Alt+I')}</Kbd> minimal</small></span><IconButton label={s.flipped ? 'Show image' : 'Show steps and map'} tooltip={`Flip (${key('view_flip', 'Alt+F')})`} disabled={disabled} onClick={() => onAction?.('view_flip')} className={s.flipped ? 'is-active' : ''}>{s.flipped ? <ImageIcon size={16} /> : <BookOpen size={16} />}</IconButton><IconButton label="Next image" tooltip={`Next (${key('view_next', 'Alt+Right')})`} disabled={disabled || viewSlots.length < 2} onClick={() => onAction?.('view_next')}><ChevronRight size={18} /></IconButton></footer>
+      <footer className="ll-ov__nav"><IconButton label="Previous image" tooltip={`Previous (${key('view_prev', 'Alt+Left')})`} disabled={disabled || viewSlots.length < 2} onClick={() => onAction?.('view_prev')}><ChevronLeft size={18} /></IconButton><span className="ll-ov__nav-label">{SLOT_LABELS[slot]} · {index + 1}/{viewSlots.length}<small data-testid="overlay-hotkey-hints"><Kbd>{hint('view_prev', 'Alt+Left')}</Kbd><Kbd>{hint('view_next', 'Alt+Right')}</Kbd> image <Kbd>{hint('lineup_prev', 'Alt+Up')}</Kbd><Kbd>{hint('lineup_next', 'Alt+Down')}</Kbd> lineup <Kbd>{hint('view_flip', 'Alt+F')}</Kbd> flip <Kbd>{hint('overlay_minimal', 'Alt+I')}</Kbd> minimal</small></span><IconButton label={s.flipped ? 'Show image' : 'Show steps and map'} tooltip={`Flip (${key('view_flip', 'Alt+F')})`} disabled={disabled} onClick={() => onAction?.('view_flip')} className={s.flipped ? 'is-active' : ''}>{s.flipped ? <ImageIcon size={16} /> : <BookOpen size={16} />}</IconButton><IconButton label="Next image" tooltip={`Next (${key('view_next', 'Alt+Right')})`} disabled={disabled || viewSlots.length < 2} onClick={() => onAction?.('view_next')}><ChevronRight size={18} /></IconButton></footer>
     </>)}
   </div>;
 }

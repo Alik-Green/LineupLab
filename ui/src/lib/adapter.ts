@@ -66,6 +66,8 @@ export class BrowserAdapter implements LibraryAdapter {
   async getOverlaySettings(): Promise<OverlaySettings> { try { return clampOverlay({ ...DEFAULT_OVERLAY, ...JSON.parse(localStorage.getItem('lineuplab.overlay') ?? '{}') }); } catch { return DEFAULT_OVERLAY; } }
   async setOverlaySettings(settings: OverlaySettings) { localStorage.setItem('lineuplab.overlay', JSON.stringify(clampOverlay(settings))); }
   async learnLineup(): Promise<void> { throw new Error('The overlay runs in the Windows desktop app.'); }
+  async setOverlayLineup(): Promise<void> { /* no overlay window in the browser demo */ }
+  async setOverlayMode(): Promise<void> { /* no overlay window in the browser demo */ }
   async getCaptureSettings(): Promise<CaptureSettings> { try { return { maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150, ...JSON.parse(localStorage.getItem('lineuplab.capture') ?? '{}') }; } catch { return { maxWidth: 1600, quality: 85, webp: true, thumbnail: true, targetMs: 150 }; } }
   async setCaptureSettings(settings: CaptureSettings) { localStorage.setItem('lineuplab.capture', JSON.stringify(settings)); }
   async startSyncServer(): Promise<SyncServerStatus> { throw new Error('Run `cargo run -p lineuplab-core --bin lineuplab-server` or use the desktop app to host sync.'); }
@@ -103,6 +105,8 @@ export class TauriAdapter implements LibraryAdapter {
   getOverlaySettings() { return invoke<OverlaySettings>('get_overlay_settings'); }
   setOverlaySettings(settings: OverlaySettings) { return invoke<void>('set_overlay_settings', { settings }); }
   learnLineup(id: string) { return invoke<void>('learn_lineup', { id }); }
+  setOverlayLineup(id: string | null, options?: { order?: string[]; reveal?: boolean }) { return invoke<void>('set_overlay_lineup', { id, order: options?.order ?? null, reveal: options?.reveal ?? false }); }
+  setOverlayMode(mode: 'create' | 'view') { return invoke<void>('set_overlay_mode', { mode }); }
   getCaptureSettings() { return invoke<CaptureSettings>('get_capture_settings'); }
   setCaptureSettings(settings: CaptureSettings) { return invoke<void>('set_capture_settings', { settings }); }
   startSyncServer(name?: string) { return invoke<SyncServerStatus>('start_sync_server', { name }); }

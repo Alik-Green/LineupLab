@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampViewPrefs, clampOverlay, DEFAULT_OVERLAY, DEFAULT_VIEW_PREFS, draftChecklist, overlayHeight, overlayPosition } from './overlay';
+import { clampViewPrefs, clampOverlay, DEFAULT_OVERLAY, DEFAULT_VIEW_PREFS, draftChecklist, hasSecondThrow, learnSlots, overlayHeight, overlayPosition } from './overlay';
 import { newLineup } from './adapter';
 
 describe('overlay defaults', () => {
@@ -14,12 +14,50 @@ describe('overlay view prefs', () => {
 });
 describe('draftChecklist', () => {
   it('mirrors core required/optional/done semantics', () => {
-    const l = newLineup(); l.slots.aim1.image = 'a'; l.slots.stand2.image = 'b';
+    const l = newLineup(); l.mode = 'double'; l.slots.aim1.image = 'a'; l.slots.stand2.image = 'b';
     const items = draftChecklist(l, ['stand1', 'aim1', 'landing'], ['landing']);
     expect(items.map(i => i.slot)).toEqual(['stand1', 'aim1', 'stand2', 'landing']);
     expect(items.find(i => i.slot === 'aim1')).toMatchObject({ required: true, done: true });
     expect(items.find(i => i.slot === 'stand2')).toMatchObject({ required: false, done: true });
     expect(items.find(i => i.slot === 'landing')).toMatchObject({ required: true, done: false, skipped: true });
+  });
+  it('never lists a second stand for a single throw, or one that repeats the first picture', () => {
+    const single = newLineup(); single.slots.stand1.image = 'stand'; single.slots.stand2.image = 'other';
+    expect(draftChecklist(single, ['stand1', 'aim1', 'landing']).map(i => i.slot)).toEqual(['stand1', 'aim1', 'landing']);
+    const double = newLineup(); double.mode = 'double'; double.slots.stand1.image = 'stand'; double.slots.stand2.image = 'stand';
+    expect(draftChecklist(double, ['stand1', 'aim1', 'aim2', 'landing']).map(i => i.slot)).toEqual(['stand1', 'aim1', 'aim2', 'landing']);
+    // A required second stand still shows while it is missing.
+    double.slots.stand2.image = null;
+    expect(draftChecklist(double, ['stand1', 'aim1', 'stand2', 'aim2', 'landing']).find(i => i.slot === 'stand2')).toMatchObject({ required: true, done: false });
+  });
+});
+
+describe('learn steps', () => {
+  it('shows only captured, distinct pictures that belong to the lineup', () => {
+    const l = newLineup();
+    l.slots.stand1.image = 'stand'; l.slots.aim1.image = 'aim'; l.slots.landing.image = 'land';
+    expect(learnSlots(l)).toEqual(['stand1', 'aim1', 'landing']);
+    l.slots.stand2.image = 'stand';                       // same picture as the first stand
+    expect(learnSlots(l, ['stand1', 'aim1', 'aim2', 'landing'])).toEqual(['stand1', 'aim1', 'landing']);
+    l.slots.stand2.image = '  ';                          // blank hash is not a capture
+    expect(learnSlots(l, ['stand1', 'aim1', 'aim2', 'landing'])).toEqual(['stand1', 'aim1', 'landing']);
+    l.slots.stand2.image = 'stand2'; l.slots.aim2.image = 'aim2';
+    expect(learnSlots(l, ['stand1', 'aim1', 'aim2', 'landing'])).toEqual(['stand1', 'aim1', 'stand2', 'aim2', 'landing']);
+    l.slots.landing.image = 'aim';                        // duplicate landing is not another step
+    expect(learnSlots(l, ['stand1', 'aim1', 'aim2', 'landing'])).toEqual(['stand1', 'aim1', 'stand2', 'aim2']);
+  });
+  it('detects a real second throw from saved data, not from leftover copies', () => {
+    const l = newLineup();
+    expect(hasSecondThrow(l)).toBe(false);
+    l.slots.aim1.image = 'aim'; l.slots.aim2.image = 'aim';
+    expect(hasSecondThrow(l)).toBe(false);
+    l.slots.aim2.image = 'aim2';
+    expect(hasSecondThrow(l)).toBe(true);
+    l.slots.aim2.image = null; l.attributes = { doubleShock: true };
+    expect(hasSecondThrow(l)).toBe(true);
+    l.attributes = {}; l.throws = [{ index: 2, chargeStage: 0, chargeBars: 1, bounces: 0, throwType: 'normal', focusCircles: [] }];
+    expect(hasSecondThrow(l)).toBe(true);
+    expect(hasSecondThrow(newLineup(), ['stand1', 'aim1', 'stand2', 'aim2', 'landing'])).toBe(true);
   });
 });
 

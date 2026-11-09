@@ -224,21 +224,75 @@ pub(crate) fn apply_overlay(app: &tauri::AppHandle, s: &OverlayState) {
     let lineup = match id { Some(id) => state.db.lock().unwrap().get(&id).map_err(err)?.as_ref().map(to_ui), None => None };
     Ok(json!({"state":s,"lineup":lineup}))
 }
-#[tauri::command] pub fn set_overlay_lineup(app: tauri::AppHandle, state: State<AppState>, id: Option<String>) -> CmdResult<()> {
-    *state.overlay_lineup.lock().unwrap() = id.clone();
-    if let Some(id) = id { if let Some(l) = state.db.lock().unwrap().get(&id).map_err(err)? { let mut s = state.overlay.lock().unwrap(); s.set_view_lineup(&l); let required = ModeConfig::load().ok().and_then(|c| c.mode(&l.agent_id, &l.ability_slot, &l.mode).or_else(|| c.mode("*", &l.ability_slot, &l.mode))).map(|m| m.required_slots).unwrap_or_else(|| vec![Slot::Stand1, Slot::Aim1, Slot::Landing]); s.update_checklist(&l, &required, &[]); } }
-    let _ = app.emit("lineuplab://overlay-changed", &*state.overlay.lock().unwrap()); Ok(())
+/// Required slots for a saved lineup, falling back to the standard trio.
+fn required_for(l: &Lineup) -> Vec<Slot> {
+    ModeConfig::load().ok()
+        .and_then(|c| c.mode(&l.agent_id, &l.ability_slot, &l.mode).or_else(|| c.mode("*", &l.ability_slot, &l.mode)))
+        .map(|m| m.required_slots)
+        .unwrap_or_else(|| vec![Slot::Stand1, Slot::Aim1, Slot::Landing])
+}
+/// Point the overlay at a lineup. `order` is the id order Browse is showing, used
+/// by Alt+Up/Alt+Down. `reveal` switches an already-active overlay to Learn mode
+/// so viewing a lineup in Browse shows it in the overlay without a manual click.
+/// A hidden or disabled overlay is never forced back on. `id: None` keeps the
+/// current lineup and only refreshes the stepping order.
+#[tauri::command] pub fn set_overlay_lineup(app: tauri::AppHandle, state: State<AppState>, id: Option<String>, order: Option<Vec<String>>, reveal: Option<bool>) -> CmdResult<()> {
+    let lineup = match id.clone() {
+        Some(id) => state.db.lock().unwrap().get(&id).map_err(err)?,
+        None => None,
+    };
+    if id.is_some() { *state.overlay_lineup.lock().unwrap() = id; }
+    let mut s = state.overlay.lock().unwrap();
+    if let Some(order) = order { s.set_lineup_order(order); }
+    if let Some(l) = lineup {
+        let required = required_for(&l);
+        s.set_view_lineup(&l, &required);
+        s.update_checklist(&l, &required, &[]);
+        if reveal.unwrap_or(false) && s.settings.enabled && s.visible { s.mode = OverlayMode::View; s.flipped = false; }
+    }
+    let _ = app.emit("lineuplab://overlay-changed", &*s); Ok(())
+}
+/// Create/Learn mode switch used when the editor opens (checklist) so browsing
+/// lineups afterwards does not leave the overlay stuck in Learn mode.
+#[tauri::command] pub fn set_overlay_mode(app: tauri::AppHandle, state: State<AppState>, mode: String) -> CmdResult<()> {
+    let mut s = state.overlay.lock().unwrap();
+    let next = if mode == "view" { OverlayMode::View } else { OverlayMode::Create };
+    if s.mode != next { s.mode = next; s.flipped = false; }
+    let _ = app.emit("lineuplab://overlay-changed", &*s); Ok(())
 }
 #[tauri::command] pub fn learn_lineup(app: tauri::AppHandle, state: State<AppState>, id: String) -> CmdResult<()> {
     let l = state.db.lock().unwrap().get(&id).map_err(err)?.ok_or_else(|| "Lineup not found".to_string())?;
     *state.overlay_lineup.lock().unwrap() = Some(id);
     let mut s = state.overlay.lock().unwrap();
-    s.mode = OverlayMode::View; s.visible = true; s.flipped = false; s.set_view_lineup(&l);
-    let required = ModeConfig::load().ok().and_then(|c| c.mode(&l.agent_id, &l.ability_slot, &l.mode).or_else(|| c.mode("*", &l.ability_slot, &l.mode))).map(|m| m.required_slots).unwrap_or_else(|| vec![Slot::Stand1, Slot::Aim1, Slot::Landing]);
+    s.mode = OverlayMode::View; s.visible = true; s.flipped = false;
+    let required = required_for(&l);
+    s.set_view_lineup(&l, &required);
     s.update_checklist(&l, &required, &[]);
+    if !s.lineup_order.iter().any(|x| x == &l.id) { let ids: Vec<String> = state.db.lock().unwrap().all(false).map_err(err)?.iter().map(|x| x.id.clone()).collect(); s.set_lineup_order(ids); }
     apply_overlay(&app, &s); let _ = app.emit("lineuplab://overlay-changed", &*s); Ok(())
 }
 #[tauri::command] pub fn overlay_action(app: tauri::AppHandle, state: State<AppState>, action: String) -> CmdResult<()> {
+    // Alt+Up/Alt+Down walk whole lineups (not images) and land in Learn mode.
+    if action == "lineup_next" || action == "lineup_prev" {
+        let current = state.overlay_lineup.lock().unwrap().clone();
+        if state.overlay.lock().unwrap().lineup_order.is_empty() {
+            let mut all = state.db.lock().unwrap().all(false).map_err(err)?;
+            all.sort_by(|a, b| b.updated_at.cmp(&a.updated_at).then(a.title.cmp(&b.title)));
+            let ids: Vec<String> = all.iter().map(|l| l.id.clone()).collect();
+            state.overlay.lock().unwrap().set_lineup_order(ids);
+        }
+        let next = state.overlay.lock().unwrap().step_lineup(current.as_deref(), action == "lineup_next");
+        let lineup = match next { Some(id) => state.db.lock().unwrap().get(&id).map_err(err)?, None => None };
+        let mut s = state.overlay.lock().unwrap();
+        if let Some(l) = lineup {
+            *state.overlay_lineup.lock().unwrap() = Some(l.id.clone());
+            let required = required_for(&l);
+            s.set_view_lineup(&l, &required);
+            s.update_checklist(&l, &required, &[]);
+            s.mode = OverlayMode::View; s.flipped = false;
+        }
+        apply_overlay(&app, &s); let _ = app.emit("lineuplab://overlay-changed", &*s); return Ok(());
+    }
     let mut s = state.overlay.lock().unwrap();
     match action.as_str() { "overlay_toggle" => s.toggle_visible(), "overlay_controls" => s.controls(), "overlay_mode" => s.toggle_mode(), "view_next" => s.view_next(), "view_prev" => s.view_prev(), "view_flip" => s.flip(), "checklist_toggle" => s.show_checklist = !s.show_checklist, _ => {} }
     apply_overlay(&app, &s); let _ = app.emit("lineuplab://overlay-changed", &*s); Ok(())

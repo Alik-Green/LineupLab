@@ -56,6 +56,8 @@ pub fn default_bindings() -> Vec<HotkeyBinding> {
         ("overlay_minimal", "Toggle minimal overlay", "Alt+I"),
         ("view_next", "Learn: next image", "Alt+Right"),
         ("view_prev", "Learn: previous image", "Alt+Left"),
+        ("lineup_next", "Learn: next lineup", "Alt+Down"),
+        ("lineup_prev", "Learn: previous lineup", "Alt+Up"),
         ("view_flip", "Learn: flip steps/map", "Alt+F"),
         ("checklist_toggle", "Create: toggle checklist", "Alt+H"),
     ];

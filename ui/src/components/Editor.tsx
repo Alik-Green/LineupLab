@@ -94,6 +94,9 @@ export function Editor({ adapter, lineupId, catalog, modes, lineups = [], onSave
     else if (a === 'next_slot' || a === 'prev_slot') { const i = visible.indexOf(active); const n = visible[(i + (a === 'next_slot' ? 1 : visible.length - 1)) % visible.length]; if (n) { setActive(n); setStep('capture'); } }
   };
   useEffect(() => { if (adapter.kind !== 'tauri') return; let live = true; let un: (() => void) | undefined; void listen<string>('lineuplab://hotkey', e => hotkeyHandler.current(e.payload)).then(f => { if (live) un = f; else f(); }); return () => { live = false; un?.(); }; }, [adapter]);
+  // Opening Create restores the capture checklist after Browse put the overlay
+  // into Learn mode. Alt+M still toggles manually while editing.
+  useEffect(() => { if (adapter.kind !== 'tauri' || !loaded) return; void adapter.setOverlayMode('create').catch(() => {}); }, [adapter, loaded]);
   // UI-only bridge: the overlay window shows the live draft checklist/thumbnails without changing core state or hotkeys.
   const overlaySnapshot = useRef<OverlayDraft>({ editing: false });
   overlaySnapshot.current = loaded ? { editing: true, lineup: l, activeSlot: active, requiredSlots: required } : { editing: false };

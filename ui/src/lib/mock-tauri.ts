@@ -6,7 +6,7 @@ import fixtureCatalog from '../fixtures/catalog.json';
 import type { Catalog, Lineup, SlotId } from '../types';
 import { SLOT_ORDER } from '../types';
 import { DEFAULT_HOTKEYS, rebindLocal } from './hotkeys';
-import { DEFAULT_OVERLAY, clampOverlay, overlayHeight, draftChecklist } from './overlay';
+import { DEFAULT_OVERLAY, clampOverlay, overlayHeight, draftChecklist, learnSlots } from './overlay';
 import abilityModes from '@data/ability_modes.json';
 
 declare global { interface Window { __TAURI_INTERNALS__: { invoke(cmd: string, args?: Record<string, unknown>): Promise<unknown>; convertFileSrc(path: string): string; transformCallback(cb: (e: unknown) => void, once?: boolean): number }; __TAURI_EVENT_PLUGIN_INTERNALS__: { unregisterListener(event: string, id: number): void }; __LL_MOCK_EMIT__(event: string, payload: unknown): void; __LL_MOCK_STATE__: Record<string, unknown> } }
@@ -59,9 +59,16 @@ if (params.has('malformed') && lineups[0]) {
   delete broken.bounces; delete broken.tags; delete broken.steps; delete broken.throws;
   broken.slots = { stand1: { image: 'fx-stand1-0' }, aim1: { image: 'fx-aim1-0' }, landing: { image: 'fx-landing-0' } };
 }
+// Legacy-pack shape: a single throw whose pack still carries a second stand that
+// repeats the first picture, plus a real double shock that shares its stand art.
+if (params.has('dupe-stand') && lineups.length > 1) {
+  lineups[0].slots.stand2.image = lineups[0].slots.stand1.image;
+  lineups[1].slots.aim2.image = 'fx-aim2-1';
+  lineups[1].slots.stand2.image = lineups[1].slots.stand1.image;
+}
 const mockDraft = lineups[0] ? structuredClone(lineups[0]) : null; if (mockDraft) { mockDraft.slots.landing.image = null; mockDraft.title = 'Mid Bend → B Site (draft)'; }
 let overlayLineup: Lineup | null = lineups[0] ?? null;
-const overlayState = { settings: { ...DEFAULT_OVERLAY, opacity: 0.92 }, visible: true, mode: params.get('overlayMode') === 'view' ? 'view' as const : 'create' as const, showChecklist: true, checklist: mockDraft ? draftChecklist(mockDraft, ['stand1', 'aim1', 'landing']) : [], viewSlots: ['stand1', 'aim1', 'landing'] as SlotId[], viewIndex: 1, flipped: params.has('flipped') };
+const overlayState = { settings: { ...DEFAULT_OVERLAY, opacity: 0.92 }, visible: true, mode: params.get('overlayMode') === 'view' ? 'view' as const : 'create' as const, showChecklist: true, checklist: mockDraft ? draftChecklist(mockDraft, ['stand1', 'aim1', 'landing']) : [], viewSlots: ['stand1', 'aim1', 'landing'] as SlotId[], viewIndex: 1, flipped: params.has('flipped'), lineupOrder: [] as string[] };
 const listeners = new Map<string, Set<number>>();
 let callbackId = 1; let eventId = 1;
 const callbacks = new Map<number, (e: unknown) => void>();
@@ -134,9 +141,10 @@ async function invoke(cmd: string, args: Record<string, unknown> = {}): Promise<
     case 'set_capture_settings': localStorage.setItem('mock.capture', JSON.stringify(args.settings)); return null;
     case 'get_overlay_view': { overlayState.settings = { ...overlayState.settings, ...clampOverlay({ ...DEFAULT_OVERLAY, ...JSON.parse(localStorage.getItem('mock.overlay') ?? '{}') }) }; return { state: overlayState, lineup: overlayState.mode === 'create' ? mockDraft : overlayLineup }; }
     case 'resize_overlay': { overlayState.settings.height = overlayHeight(overlayState.settings.width, Number(a.aspectRatio), Boolean(a.minimal), a.mode === 'create' ? 'create' : 'view'); return null; }
-    case 'overlay_action': { const s = overlayState; switch (a.action) { case 'overlay_toggle': s.visible = !s.visible; break; case 'overlay_controls': s.settings.clickThrough = !s.settings.clickThrough; s.visible = true; break; case 'overlay_mode': s.mode = s.mode === 'create' ? 'view' : 'create'; s.flipped = false; break; case 'view_next': s.viewIndex = (s.viewIndex + 1) % Math.max(1, s.viewSlots.length); break; case 'view_prev': s.viewIndex = (s.viewIndex + s.viewSlots.length - 1) % Math.max(1, s.viewSlots.length); break; case 'view_flip': s.flipped = !s.flipped; break; case 'checklist_toggle': s.showChecklist = !s.showChecklist; break; } emit('lineuplab://overlay-changed', s); return null; }
-    case 'learn_lineup': { overlayLineup = lineups.find(l => l.id === a.id) ?? null; overlayState.mode = 'view'; overlayState.visible = true; if (overlayLineup) { overlayState.viewSlots = SLOT_ORDER.filter(k => overlayLineup!.slots[k].image); overlayState.viewIndex = 0; } emit('lineuplab://overlay-changed', overlayState); return null; }
-    case 'set_overlay_lineup': { overlayLineup = lineups.find(l => l.id === a.id) ?? null; if (overlayLineup) { overlayState.viewSlots = SLOT_ORDER.filter(k => overlayLineup!.slots[k].image); overlayState.viewIndex = 0; overlayState.checklist = draftChecklist(overlayLineup, ['stand1', 'aim1', 'landing']); } emit('lineuplab://overlay-changed', overlayState); return null; }
+    case 'overlay_action': { const s = overlayState; switch (a.action) { case 'lineup_next': case 'lineup_prev': { const order = s.lineupOrder.length ? s.lineupOrder : lineups.filter(l => !l.deleted).map(l => l.id); if (!order.length) break; const i = overlayLineup ? order.indexOf(overlayLineup.id) : -1; const next = i < 0 ? (a.action === 'lineup_next' ? 0 : order.length - 1) : (i + (a.action === 'lineup_next' ? 1 : order.length - 1)) % order.length; overlayLineup = lineups.find(l => l.id === order[next]) ?? null; s.lineupOrder = order; s.mode = 'view'; s.flipped = false; if (overlayLineup) { s.viewSlots = learnSlots(overlayLineup); s.viewIndex = 0; s.checklist = draftChecklist(overlayLineup, ['stand1', 'aim1', 'landing']); } break; } case 'overlay_toggle': s.visible = !s.visible; break; case 'overlay_controls': s.settings.clickThrough = !s.settings.clickThrough; s.visible = true; break; case 'overlay_mode': s.mode = s.mode === 'create' ? 'view' : 'create'; s.flipped = false; break; case 'view_next': s.viewIndex = (s.viewIndex + 1) % Math.max(1, s.viewSlots.length); break; case 'view_prev': s.viewIndex = (s.viewIndex + s.viewSlots.length - 1) % Math.max(1, s.viewSlots.length); break; case 'view_flip': s.flipped = !s.flipped; break; case 'checklist_toggle': s.showChecklist = !s.showChecklist; break; } emit('lineuplab://overlay-changed', s); return null; }
+    case 'learn_lineup': { overlayLineup = lineups.find(l => l.id === a.id) ?? null; overlayState.mode = 'view'; overlayState.visible = true; overlayState.flipped = false; if (overlayLineup) { overlayState.viewSlots = learnSlots(overlayLineup); overlayState.viewIndex = 0; if (!overlayState.lineupOrder.includes(overlayLineup.id)) overlayState.lineupOrder = lineups.filter(l => !l.deleted).map(l => l.id); } emit('lineuplab://overlay-changed', overlayState); return null; }
+    case 'set_overlay_lineup': { if (Array.isArray(a.order)) overlayState.lineupOrder = [...new Set((a.order as string[]).filter(id => typeof id === 'string' && id.trim()))]; if (typeof a.id === 'string') { overlayLineup = lineups.find(l => l.id === a.id) ?? null; if (overlayLineup) { overlayState.viewSlots = learnSlots(overlayLineup); overlayState.viewIndex = 0; overlayState.checklist = draftChecklist(overlayLineup, ['stand1', 'aim1', 'landing']); if (a.reveal === true && overlayState.settings.enabled && overlayState.visible) { overlayState.mode = 'view'; overlayState.flipped = false; } } } emit('lineuplab://overlay-changed', overlayState); return null; }
+    case 'set_overlay_mode': { const mode = a.mode === 'view' ? 'view' : 'create'; if (overlayState.mode !== mode) { overlayState.mode = mode; overlayState.flipped = false; } emit('lineuplab://overlay-changed', overlayState); return null; }
     case 'start_sync_server': sharing = true; return { running: true, address: '192.168.1.20:8765', requiresCode: false };
     case 'stop_sync_server': sharing = false; return null;
     case 'get_sync_server_status': return sharing ? { running: true, address: '192.168.1.20:8765', requiresCode: false } : { running: false };
