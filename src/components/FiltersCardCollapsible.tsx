@@ -1,12 +1,12 @@
 import type { Importance, Difficulty } from "../types/lineup";
 
-function StarsIcon({ count, active }: { count: number; active?: boolean }) {
+function StarsIcon({ count }: { count: number }) {
   return (
     <span className="flex gap-0.5 items-center justify-center">
       {Array.from({ length: 3 }).map((_, i) => {
         const filled = i < count;
         return (
-          <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill={filled ? (active ? "#E8404F" : "currentColor") : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.5} className={filled ? (active ? "" : "text-accent") : "text-muted/60"}>
+          <svg key={i} width="18" height="18" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth={filled ? 0 : 1.4} className={filled ? "text-accent" : "text-muted/50"}>
             <path d="M12 2l2.4 7.2H22l-6.3 4.6 2.4 7.2L12 16.6 5.9 21l2.4-7.2L2 9.2h7.6z" />
           </svg>
         );
@@ -23,7 +23,7 @@ function DifficultyIcon({ kind }: { kind: Difficulty }) {
       {Array.from({ length: 3 }).map((_, i) => (
         <span
           key={i}
-          className="w-2.5 h-2.5 rounded-full"
+          className="w-3 h-3 rounded-full"
           style={{ background: i < dots ? color : "transparent", border: `2px solid ${i < dots ? color : "#475569"}` }}
         />
       ))}
@@ -58,9 +58,9 @@ export default function FiltersCardCollapsible({
                 onClick={() => onToggleImportance(id)}
                 aria-pressed={sel}
                 title={id}
-                className={`h-[48px] rounded-md border flex items-center justify-center transition-all ${sel ? "border-accent bg-accent/20" : "border-borderSubtle bg-tile opacity-60 hover:opacity-100"}`}
+                className={`h-[48px] rounded-md border flex items-center justify-center transition-all ${sel ? "border-accent" : "border-borderSubtle bg-tile opacity-60 hover:opacity-100"}`}
               >
-                <StarsIcon count={stars} active={sel} />
+                <StarsIcon count={stars} />
               </button>
             );
           })}
@@ -78,7 +78,7 @@ export default function FiltersCardCollapsible({
                 onClick={() => onToggleDifficulty(id)}
                 aria-pressed={sel}
                 title={id}
-                className={`h-[48px] rounded-md border flex items-center justify-center transition-all ${sel ? "border-accent bg-accent/20" : "border-borderSubtle bg-tile opacity-60 hover:opacity-100"}`}
+                className={`h-[48px] rounded-md border flex items-center justify-center transition-all ${sel ? "border-accent" : "border-borderSubtle bg-tile opacity-60 hover:opacity-100"}`}
               >
                 <DifficultyIcon kind={id} />
               </button>

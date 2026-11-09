@@ -1,56 +1,71 @@
-export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImport }: { activeTab: string; onTabChange: (t: any) => void; onOpenSettings: () => void; onImport: () => void }) {
-  const isTauri = typeof window !== "undefined" && (window as any).__TAURI__ !== undefined;
+import { useCallback } from "react";
 
-  const callWin = async (fn: (w: any) => Promise<any>) => {
-    if (!isTauri) return;
+export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImport, viewMode, onViewModeChange }: {
+  activeTab: string;
+  onTabChange: (t: any) => void;
+  onOpenSettings: () => void;
+  onImport: () => void;
+  viewMode?: "map" | "list";
+  onViewModeChange?: (m: "map" | "list") => void;
+}) {
+  const isTauriEnv = typeof window !== "undefined" && ((window as any).__TAURI__ !== undefined || (window as any).__TAURI_INTERNALS__ !== undefined);
+
+  const getWin = async () => {
+    // Try static import first (tree-shaken), fallback to dynamic
     try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const win = getCurrentWindow();
-      await fn(win);
-    } catch (err) {
-      console.warn("window op failed", err);
+      // @ts-ignore - dynamic for CSP
+      const mod = await import("@tauri-apps/api/window");
+      return mod.getCurrentWindow();
+    } catch {
+      // fallback via window.__TAURI__ direct invoke
+      const tauri = (window as any).__TAURI__ as any;
+      if (tauri?.window?.getCurrentWindow) return tauri.window.getCurrentWindow();
+      if (tauri?.core?.invoke) {
+        // fallback: use core invoke directly
+        return {
+          minimize: () => tauri.core.invoke("plugin:window|minimize", { label: "main" }),
+          maximize: () => tauri.core.invoke("plugin:window|maximize", { label: "main" }),
+          unmaximize: () => tauri.core.invoke("plugin:window|unmaximize", { label: "main" }),
+          isMaximized: () => tauri.core.invoke("plugin:window|isMaximized", { label: "main" }),
+          close: () => tauri.core.invoke("plugin:window|close", { label: "main" }),
+        } as any;
+      }
+      throw new Error("no window api");
     }
   };
 
-  const min = async (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    e?.preventDefault();
-    await callWin((w) => w.minimize());
-  };
-  const max = async (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    e?.preventDefault();
-    await callWin(async (w) => {
+  const doMin = useCallback(async (e?: React.MouseEvent) => {
+    e?.stopPropagation(); e?.preventDefault();
+    if (!isTauriEnv) return;
+    try { const w = await getWin(); await w.minimize(); } catch (err) { console.error("minimize failed", err); alert("Minimize failed: " + String(err)); }
+  }, [isTauriEnv]);
+  const doMax = useCallback(async (e?: React.MouseEvent) => {
+    e?.stopPropagation(); e?.preventDefault();
+    if (!isTauriEnv) return;
+    try {
+      const w = await getWin();
       const isMax = await w.isMaximized();
-      if (isMax) await w.unmaximize();
-      else await w.maximize();
-    });
-  };
-  const close = async (e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    e?.preventDefault();
-    if (!isTauri) {
-      // in browser preview just try to close tab (will be blocked) - do nothing
-      console.log("Close clicked (browser preview, no Tauri)");
-      return;
-    }
-    await callWin((w) => w.close());
-  };
+      if (isMax) await w.unmaximize(); else await w.maximize();
+    } catch (err) { console.error("maximize failed", err); alert("Maximize failed: " + String(err)); }
+  }, [isTauriEnv]);
+  const doClose = useCallback(async (e?: React.MouseEvent) => {
+    e?.stopPropagation(); e?.preventDefault();
+    if (!isTauriEnv) { console.log("Close in browser preview"); return; }
+    try { const w = await getWin(); await w.close(); } catch (err) { console.error("close failed", err); alert("Close failed: " + String(err)); }
+  }, [isTauriEnv]);
 
   return (
-    <header className="h-[56px] shrink-0 flex items-center bg-[#1B1B1F] border-b border-[#2A2B32] sticky top-0 z-30 select-none">
-      {/* draggable region — Tauri will handle dragging via data-tauri-drag-region */}
-      <div
-        data-tauri-drag-region
-        className="flex-1 flex items-center px-4 h-full gap-2"
-        style={{ WebkitAppRegion: "drag" } as any}
-      >
-        <div className="flex items-center gap-2 pointer-events-none" data-tauri-drag-region>
+    <header className="h-[56px] shrink-0 flex items-center bg-[#1B1B1F] border-b border-[#2A2B32] sticky top-0 z-30 select-none relative">
+      {/* drag handle behind content */}
+      <div data-tauri-drag-region className="absolute inset-0" style={{ WebkitAppRegion: "drag" } as any} aria-hidden />
+
+      <div className="relative flex-1 flex items-center px-4 h-full gap-2 z-10">
+        <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as any}>
           <div className="w-8 h-8 rounded bg-accent flex items-center justify-center text-white font-bold text-sm">LL</div>
           <span className="font-bold text-textPrimary text-[18px] tracking-tight">LineupLab</span>
           <span className="ml-2 px-2 py-0.5 rounded-md bg-tile text-muted text-xs">Demo data</span>
         </div>
-        <nav className="ml-8 flex gap-1" style={{ WebkitAppRegion: "no-drag" } as any}>
+        <nav className="ml-6 flex gap-1" style={{ WebkitAppRegion: "no-drag" } as any}>
           <button
             onClick={() => onTabChange("lineups")}
             className={`px-4 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${activeTab === "lineups" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}
@@ -65,20 +80,28 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
           >
             Create
           </button>
+          {activeTab === "lineups" && onViewModeChange && viewMode && (
+            <>
+              <div className="w-px bg-borderSubtle mx-2 self-center h-6" />
+              <button onClick={() => onViewModeChange("map")} className={`px-3 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${viewMode === "map" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}>Map</button>
+              <button onClick={() => onViewModeChange("list")} className={`px-3 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${viewMode === "list" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}>List</button>
+            </>
+          )}
         </nav>
         <div className="ml-auto flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as any}>
           <button onClick={onImport} className="min-h-[40px] px-3 rounded-md bg-accent text-white text-sm font-semibold hover:bg-accentHover">Import</button>
           <button onClick={onOpenSettings} className="min-h-[40px] px-3 rounded-md bg-panel text-muted hover:text-textPrimary text-sm border border-borderSubtle" aria-label="Open settings">⚙ Settings</button>
         </div>
       </div>
-      <div className="flex h-full shrink-0" style={{ WebkitAppRegion: "no-drag" } as any}>
-        <button onClick={min} className="w-12 h-full flex items-center justify-center text-muted hover:bg-white/10 hover:text-white" aria-label="Minimize">
+
+      <div className="relative flex h-full shrink-0 z-10" style={{ WebkitAppRegion: "no-drag" } as any}>
+        <button onClick={doMin} onMouseDown={e=>e.stopPropagation()} className="w-12 h-full flex items-center justify-center text-muted hover:bg-white/10 hover:text-white" aria-label="Minimize">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><rect x="1" y="5.5" width="10" height="1" fill="currentColor"/></svg>
         </button>
-        <button onClick={max} className="w-12 h-full flex items-center justify-center text-muted hover:bg-white/10 hover:text-white" aria-label="Maximize">
+        <button onClick={doMax} onMouseDown={e=>e.stopPropagation()} className="w-12 h-full flex items-center justify-center text-muted hover:bg-white/10 hover:text-white" aria-label="Maximize">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><rect x="1.5" y="1.5" width="9" height="9" stroke="currentColor" strokeWidth="1.2" fill="none"/><path d="M1.5 3.5 H10.5" stroke="currentColor" strokeWidth="1"/></svg>
         </button>
-        <button onClick={close} className="w-12 h-full flex items-center justify-center text-muted hover:bg-accent hover:text-white" aria-label="Close">
+        <button onClick={doClose} onMouseDown={e=>e.stopPropagation()} className="w-12 h-full flex items-center justify-center text-muted hover:bg-accent hover:text-white" aria-label="Close">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><path d="M1 1 L11 11 M11 1 L1 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
         </button>
       </div>

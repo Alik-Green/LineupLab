@@ -33,8 +33,8 @@ export default function AbilityBar({
               onClick={() => onToggle(ab.slot as AbilitySlot)}
               title={`${ab.displayName} (${ab.slot})`}
               aria-pressed={isSelected}
-              className={`relative h-[44px] rounded-md overflow-hidden border bg-tile flex items-center justify-center transition-all ${
-                isSelected ? "border-accent bg-accent/20" : "border-borderSubtle opacity-60 hover:opacity-100"
+              className={`relative h-[44px] rounded-md overflow-hidden border flex items-center justify-center transition-all ${
+                isSelected ? "border-accent" : "border-borderSubtle bg-tile opacity-60 hover:opacity-100"
               }`}
             >
               {ab.displayIcon ? (
@@ -42,7 +42,6 @@ export default function AbilityBar({
                   src={ab.displayIcon}
                   alt={ab.displayName}
                   className="w-7 h-7 object-contain"
-                  style={{ filter: isSelected ? "invert(29%) sepia(85%) saturate(2000%) hue-rotate(330deg) brightness(1.2)" : "none" }}
                 />
               ) : (
                 <span className="text-xs text-muted">{ab.slot}</span>

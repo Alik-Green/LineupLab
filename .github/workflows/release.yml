@@ -24,41 +24,33 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: npm ci
       - run: npm run build
-      - name: Build Tauri
+      - name: Build Tauri (no auto-release, we handle release in one job)
         id: tauri
-        continue-on-error: true
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "LineupLab ${{ github.ref_name }}"
-          releaseBody: "See assets below. Windows SmartScreen will warn for unsigned installers."
-          releaseDraft: true
-          prerelease: false
           args: ""
-      - name: Ensure Windows artifact
+      - name: Collect Windows artifact
         if: always()
         shell: bash
         run: |
           mkdir -p dist-windows
-          # Try to find real exe/msi from tauri build
-          find src-tauri/target -name "*.exe" -o -name "*.msi" | head -20
-          find src-tauri/target -name "*.exe" -exec cp {} dist-windows/ \; 2>/dev/null || true
+          # Tauri bundles go to src-tauri/target/release/bundle/nsis/*.exe and msi/*.msi
+          find src-tauri/target -type f \( -name "*.exe" -o -name "*.msi" \) | head -20
+          find src-tauri/target -type f -name "*.exe" -exec cp {} dist-windows/ \; 2>/dev/null || true
+          find src-tauri/target -type f -name "*.msi" -exec cp {} dist-windows/ \; 2>/dev/null || true
           ls -lh dist-windows/ || true
           if [ -z "$(ls -A dist-windows 2>/dev/null)" ]; then
-            echo "Tauri build not produced - creating placeholder exe for release (real build untested on Linux CI)"
-            printf "LineupLab placeholder Windows installer for %s\nThis is a placeholder - real NSIS build requires local Windows Tauri build.\n" "${{ github.ref_name }}" > dist-windows/LineupLab-placeholder-windows-setup.exe
-            # Also copy as expected name later
-            cp dist-windows/LineupLab-placeholder-windows-setup.exe dist-windows/LineupLab-${{ github.ref_name }}-windows-setup.exe 2>/dev/null || cp dist-windows/* dist-windows/LineupLab-placeholder.exe || true
+            echo "::error::Windows Tauri bundle not produced — failing job instead of publishing placeholder"
+            exit 1
           fi
           ls -lh dist-windows/
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: windows-exe
           path: dist-windows/*
-          if-no-files-found: warn
+          if-no-files-found: error
 
   android:
     runs-on: ubuntu-latest
@@ -73,17 +65,13 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Setup Android SDK
-        continue-on-error: true
         uses: android-actions/setup-android@v3
       - uses: dtolnay/rust-toolchain@stable
-        if: always()
         with:
           toolchain: stable
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
       - uses: Swatinem/rust-cache@v2
-        if: always()
       - name: Install Android targets & NDK
-        if: always()
         continue-on-error: true
         run: |
           rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android || true
@@ -97,9 +85,7 @@ jobs:
             npm run tauri android init -- --ci 2>&1 | head -20 || true
           fi
           ls -R src-tauri/gen/android 2>&1 | head -30 || true
-      - name: Build APK (signed if secrets present, else debug)
-        if: always()
-        continue-on-error: true
+      - name: Build APK
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -109,26 +95,22 @@ jobs:
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /tmp/keystore.jks
             echo "Using release keystore from secrets"
-            ls -lh /tmp/keystore.jks
           else
-            echo "WARNING: Android signing secrets not set, using debug keystore - APK will be debug-signed"
+            echo "No signing secrets — building debug APK"
           fi
-          npm run tauri android build -- --apk 2>&1 | tail -20 || npm run tauri build 2>&1 | tail -20 || echo "android build step completed with fallback"
-          ls -lh src-tauri/gen/android/app/build/outputs/apk/ 2>&1 | head -20 || true
+          npm run tauri android build -- --apk 2>&1 | tail -100
+          ls -lh src-tauri/gen/android/app/build/outputs/apk/ 2>&1 | head -30 || true
           find src-tauri/gen/android -name "*.apk" 2>&1 | head -20 || true
       - name: Collect APK
-        if: always()
         run: |
           mkdir -p dist-apk
           find src-tauri/gen/android -name "*.apk" -exec cp {} dist-apk/ \; 2>&1 | head -20 || echo "no apk from build"
           ls -lh dist-apk/ 2>&1 | head -20 || true
           if [ -z "$(ls -A dist-apk 2>/dev/null)" ]; then
-            echo "Creating placeholder APK for release (real build requires full Android SDK)"
-            printf "LineupLab placeholder APK for %s\n" "${{ github.ref_name }}" > dist-apk/placeholder.apk
-            # create minimal zip as apk placeholder (apk is zip)
-            (cd dist-apk && zip placeholder.apk placeholder.apk 2>/dev/null || cp placeholder.apk LineupLab-placeholder.apk)
-            ls -lh dist-apk/
+            echo "::warning::No APK produced — Android build failed, will skip Android asset in release (no placeholder)"
+            exit 0
           fi
+          ls -lh dist-apk/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -139,7 +121,7 @@ jobs:
   release:
     needs: [windows, android]
     runs-on: ubuntu-latest
-    if: always() && startsWith(github.ref, 'refs/tags/v')
+    if: always() && startsWith(github.ref, 'refs/tags/v') && needs.windows.result == 'success'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -150,23 +132,28 @@ jobs:
           VERSION=${GITHUB_REF_NAME#v}
           echo "Version $VERSION ref ${{ github.ref_name }}"
           mkdir -p release
-          # Find windows exe (real or placeholder)
-          find ./artifacts -type f -name "*.exe" | head -5
-          WIN=$(find ./artifacts -type f -name "*.exe" | head -1)
+          # Deduplicate Windows exe: Tauri produces LineupLab_0.2.5_x64-setup.exe style, we normalize to LineupLab-VERSION-windows-setup.exe as single file
+          find ./artifacts -type f \( -name "*.exe" -o -name "*.msi" \) | head -20
+          # Prefer _x64-setup.exe from bundle (real NSIS) over any other
+          WIN=$(find ./artifacts -type f -name "*_x64-setup.exe" | head -1)
+          if [ -z "$WIN" ]; then WIN=$(find ./artifacts -type f -name "*.exe" | head -1); fi
           if [ -n "$WIN" ]; then
             cp "$WIN" "release/LineupLab-${VERSION}-windows-setup.exe"
-            echo "Windows exe -> release/LineupLab-${VERSION}-windows-setup.exe"
+            echo "Windows exe -> release/LineupLab-${VERSION}-windows-setup.exe from $WIN"
+            # also include MSI if present as separate asset (optional)
+            MSI=$(find ./artifacts -type f -name "*.msi" | head -1)
+            if [ -n "$MSI" ]; then cp "$MSI" "release/LineupLab-${VERSION}-windows.msi"; fi
           else
-            echo "No windows exe found, creating placeholder"
-            echo "placeholder" > "release/LineupLab-${VERSION}-windows-setup.exe"
+            echo "::error::No Windows exe found"
+            exit 1
           fi
+          # APK is optional — only include if built, do NOT create placeholder
           APK=$(find ./artifacts -type f -name "*.apk" | head -1)
-          if [ -n "$APK" ]; then
+          if [ -n "$APK" ] && [ -s "$APK" ] && [ "$(stat -c%s "$APK")" -gt 1000 ]; then
             cp "$APK" "release/LineupLab-${VERSION}-android.apk"
-            echo "APK -> release/LineupLab-${VERSION}-android.apk"
+            echo "APK -> release/LineupLab-${VERSION}-android.apk ($APK size $(stat -c%s "$APK"))"
           else
-            echo "No apk found, creating placeholder"
-            echo "placeholder" > "release/LineupLab-${VERSION}-android.apk"
+            echo "No valid APK found (size too small or missing) — skipping Android asset, see android job logs"
           fi
           ls -lh release/
           cd release && sha256sum * > SHA256SUMS.txt
