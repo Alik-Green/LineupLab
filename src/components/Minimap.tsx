@@ -223,29 +223,7 @@ export default function Minimap({
         />
       </div>
 
-      <div
-        className="absolute top-4 right-4 flex rounded-md overflow-hidden border border-borderSubtle bg-panel shadow-lg z-20"
-        onMouseDown={(e) => e.stopPropagation()}
-        onTouchStart={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={(e) => { e.stopPropagation(); onZoom(zoomClamp(zoom - 0.2)); }}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="w-10 h-10 flex items-center justify-center text-textPrimary hover:bg-tile min-w-[40px] min-h-[40px]"
-          aria-label="Zoom out"
-        >
-          −
-        </button>
-        <div className="w-px bg-borderSubtle" />
-        <button
-          onClick={(e) => { e.stopPropagation(); onZoom(zoomClamp(zoom + 0.2)); }}
-          onMouseDown={(e) => e.stopPropagation()}
-          className="w-10 h-10 flex items-center justify-center text-textPrimary hover:bg-tile min-w-[40px] min-h-[40px]"
-          aria-label="Zoom in"
-        >
-          +
-        </button>
-      </div>
+      {/* zoom buttons removed — zoom via scroll wheel / pinch only */}
 
       {calloutsList.length > 0 && (
         <div

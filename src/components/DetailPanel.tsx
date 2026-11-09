@@ -3,7 +3,7 @@ import type { Lineup } from "../types/lineup";
 import AnnotatedImage from "./AnnotatedImage";
 import { useMediaResolver } from "../hooks/useMediaResolver";
 
-type ImageEntry = { src: string; circles: any[] };
+type ImageEntry = { src: string; circles: any[]; slot?: string; throwInfo?: any };
 
 function buildImageEntries(lineup: Lineup): ImageEntry[] {
   const entries: ImageEntry[] = [];
@@ -24,11 +24,21 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
     (lineup.legacy?.raw?.attributes?.projectiles) ??
     (lineup.legacy?.raw?.projectiles) ??
     [];
+
+  // aim index for throw linking
+  let aimIdx = 0;
+  const throws = (lineup as any).throws ?? [];
+
   for (const { key, fallback } of slotKeys) {
     const src = (lineup.slots as any)?.[key] ?? (fallback ? (lineup.media as any)?.[fallback] : undefined);
     if (!src) continue;
     const circles = (slotCirclesMap as any)[key] ?? [];
-    entries.push({ src, circles: [...circles] });
+    let throwInfo: any = undefined;
+    if (key.startsWith("aim") && throws[aimIdx]) {
+      throwInfo = throws[aimIdx];
+      aimIdx++;
+    }
+    entries.push({ src, circles: [...circles], slot: key, throwInfo });
   }
   if (Array.isArray(attrProjectiles)) {
     for (const p of attrProjectiles) {
@@ -47,12 +57,14 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
       }
       for (const imgSrc of pImages) {
         if (!imgSrc) continue;
-        entries.push({ src: imgSrc, circles: [...(pCircles ?? [])] });
+        // if p has throwType, link
+        const isAim = imgSrc.toLowerCase().includes("aim");
+        entries.push({ src: imgSrc, circles: [...(pCircles ?? [])], slot: isAim ? `aim${aimIdx + 1}` : undefined, throwInfo: isAim ? p : undefined });
       }
     }
   }
   for (const step of lineup.steps ?? []) {
-    if (step.image) entries.push({ src: step.image, circles: [...(step.circles ?? [])] });
+    if (step.image) entries.push({ src: step.image, circles: [...(step.circles ?? [])], slot: "step" });
   }
   if (entries.length === 0 && lineup.media) {
     const fallbackMedia = [lineup.media.standImage, lineup.media.aimImage, lineup.media.landingImage].filter(Boolean) as string[];
@@ -68,8 +80,10 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
         const id = (c as any).id ?? `${(c as any).x}-${(c as any).y}`;
         if (!byId.has(id)) existing.circles.push(c);
       }
+      // keep throwInfo if existing has none
+      if (!existing.throwInfo && e.throwInfo) existing.throwInfo = e.throwInfo;
     } else {
-      dedup.set(norm, { src: e.src, circles: [...e.circles] });
+      dedup.set(norm, { src: e.src, circles: [...e.circles], slot: e.slot, throwInfo: e.throwInfo });
     }
   }
   return Array.from(dedup.values());
@@ -115,6 +129,8 @@ export default function DetailPanel({
     return imageEntries.map((e, i) => ({
       src: resolved[i] ?? e.src,
       circles: e.circles,
+      slot: e.slot,
+      throwInfo: e.throwInfo,
     }));
   }, [imageEntries, resolved]);
 
@@ -131,7 +147,8 @@ export default function DetailPanel({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose, images.length]);
 
-  const currentCircles = images[idx]?.circles;
+  const current = images[idx];
+  const currentCircles = current?.circles;
   const ability = agent?.abilities?.find((a: any) => a.slot === lineup.abilitySlot);
 
   return (
@@ -140,7 +157,7 @@ export default function DetailPanel({
         className="bg-panel border border-borderSubtle rounded-card w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-4 border-b border-borderSubtle flex items-start justify-between shrink-0">
+        <div className="p-4 border-b border-borderSubtle flex items-start justify-between shrink-0 gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="text-[20px] font-extrabold text-textPrimary leading-tight">{lineup.title}</h3>
             <div className="flex gap-1.5 mt-2 flex-wrap">
@@ -149,12 +166,29 @@ export default function DetailPanel({
               <span className="px-2 py-1 rounded text-xs font-bold border" style={{ borderColor: lineup.importance === "essential" ? "#22C55E" : lineup.importance === "optional" ? "#E8404F" : "#EDEDED", color: lineup.importance === "essential" ? "#22C55E" : lineup.importance === "optional" ? "#E8404F" : "#EDEDED" }}>{lineup.importance}</span>
               <span className="px-2 py-1 rounded text-xs font-bold border border-borderSubtle text-muted">{lineup.difficulty}</span>
               {lineup.throwType && <span className="px-2 py-1 rounded bg-accent/20 border border-accent text-accent text-xs font-bold">{lineup.throwType}</span>}
-              {lineup.status && lineup.status !== "ok" && <span className="px-2 py-1 rounded bg-amber-500/20 border border-amber-500 text-amber-500 text-xs font-bold">{lineup.status}</span>}
             </div>
           </div>
-          <button onClick={onClose} className="ml-3 w-10 h-10 min-w-[40px] min-h-[40px] rounded bg-tile hover:bg-tileHover flex items-center justify-center text-muted" aria-label="Close detail">
-            ✕
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => { if (onEdit) onEdit(lineup.id); else alert("Edit coming soon — create/edit flow is being built."); }}
+              className="w-8 h-8 rounded bg-tile hover:bg-tileHover border border-borderSubtle flex items-center justify-center text-muted"
+              aria-label="Edit"
+              title="Edit"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L11 16l-4 1 1-4 10.5-10.5z"/></svg>
+            </button>
+            <button
+              onClick={() => { if (confirm(`Delete "${lineup.title}"?`)) onDelete?.(lineup.id); }}
+              className="w-8 h-8 rounded bg-tile hover:bg-red-500/20 border border-borderSubtle hover:border-red-500 flex items-center justify-center text-muted hover:text-red-500"
+              aria-label="Delete"
+              title="Delete"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+            <button onClick={onClose} className="w-8 h-8 rounded bg-tile hover:bg-tileHover border border-borderSubtle flex items-center justify-center text-muted" aria-label="Close detail">
+              ✕
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-auto overscroll-contain p-4 space-y-4 min-h-0 thin-scrollbar">
@@ -166,15 +200,22 @@ export default function DetailPanel({
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button onClick={()=>{ if(confirm(`Delete "${lineup.title}"? This cannot be undone.`)) onDelete?.(lineup.id); }} className="flex-1 h-10 rounded bg-red-600 hover:bg-red-700 text-white text-sm font-bold border border-red-700">Delete</button>
-            <button onClick={()=>{ if(onEdit) onEdit(lineup.id); else alert("Edit coming soon — create/edit flow is being built."); }} className="flex-1 h-10 rounded bg-tile hover:bg-tileHover border border-borderSubtle text-textPrimary text-sm font-bold">Edit</button>
-          </div>
           <div>
-            <p className="text-xs font-semibold text-muted mb-2">Preview ({images.length || "no images"})</p>
+            <p className="text-xs font-semibold text-muted mb-2">Preview {images.length ? `(${images.length})` : ""}</p>
             {images.length > 0 ? (
               <div className="relative">
-                <AnnotatedImage src={images[idx].src} circles={currentCircles} />
+                <AnnotatedImage src={current.src} circles={currentCircles} />
+                {current?.throwInfo && (
+                  <div className="absolute top-2 left-2 bg-accent text-white text-xs font-bold px-2 py-1 rounded shadow">
+                    {current.throwInfo.type ?? current.throwInfo.label ?? "Throw"} {current.throwInfo.note ? `• ${current.throwInfo.note}` : ""}
+                  </div>
+                )}
+                {current?.slot === "landing" && (
+                  <div className="absolute top-2 left-2 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded">Landing</div>
+                )}
+                {current?.slot?.startsWith("stand") && (
+                  <div className="absolute top-2 left-2 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded">Stand position</div>
+                )}
                 {images.length > 1 && (
                   <div className="flex items-center justify-between mt-2">
                     <button onClick={() => setIdx((i) => Math.max(0, i - 1))} className="px-3 py-1.5 rounded bg-tile text-sm text-textPrimary min-h-[40px] disabled:opacity-40" disabled={idx === 0}>‹ Prev</button>
@@ -184,12 +225,13 @@ export default function DetailPanel({
                 )}
                 <div className="flex gap-2 mt-2 overflow-auto overscroll-contain">
                   {images.map((imgEntry, i) => (
-                    <button key={i} onClick={() => setIdx(i)} className={`w-20 h-14 rounded overflow-hidden border-2 flex-shrink-0 bg-black ${i === idx ? "border-accent" : "border-transparent opacity-60"}`}>
+                    <button key={i} onClick={() => setIdx(i)} className={`relative w-20 h-14 rounded overflow-hidden border-2 flex-shrink-0 bg-black ${i === idx ? "border-accent" : "border-transparent opacity-60"}`}>
                       {imgEntry.src?.toLowerCase().endsWith(".mp4") || imgEntry.src?.toLowerCase().endsWith(".webm") ? (
                         <video src={imgEntry.src} className="w-full h-full object-cover" muted playsInline />
                       ) : (
                         <img src={imgEntry.src} alt="" className="w-full h-full object-cover" onError={(e)=>{(e.currentTarget as HTMLImageElement).style.opacity="0.3"}} />
                       )}
+                      {imgEntry.throwInfo && <span className="absolute bottom-0 left-0 right-0 bg-accent text-white text-[9px] font-bold text-center py-0.5 leading-none">{imgEntry.throwInfo.type ?? "Throw"}</span>}
                     </button>
                   ))}
                 </div>
@@ -198,22 +240,13 @@ export default function DetailPanel({
                 )}
               </div>
             ) : (
-              <div className="rounded-md bg-tile border border-borderSubtle h-[160px] flex flex-col items-center justify-center text-muted">
+              <div className="rounded-md bg-tile border border-borderSubtle h-[160px] flex flex-col items-center justify-center text-muted p-4 text-center">
                 <span className="text-2xl">🖼️</span>
                 <span className="text-sm mt-1">No preview images</span>
-                <span className="text-xs text-muted mt-1">Stand / Aim / Landing placeholders</span>
+                <span className="text-xs text-muted mt-1">This lineup has no stand / aim / landing images yet.</span>
               </div>
             )}
           </div>
-
-          {lineup.throws && lineup.throws.length > 0 && (
-            <div className="rounded-md bg-tile border border-borderSubtle p-3">
-              <p className="text-xs font-semibold text-muted mb-1">Throws</p>
-              <div className="flex flex-wrap gap-1">
-                {lineup.throws.map((t,i)=> <span key={i} className="px-2 py-1 bg-panel border border-borderSubtle rounded text-xs text-textPrimary">{t.type ?? `Throw ${i+1}`}{t.note?` • ${t.note}`:''}</span>)}
-              </div>
-            </div>
-          )}
 
           {lineup.steps && lineup.steps.length > 0 && (
             <div className="space-y-2">
@@ -222,7 +255,6 @@ export default function DetailPanel({
                 <div key={i} className="rounded-md bg-tile border border-borderSubtle p-3">
                   <p className="text-sm font-semibold text-textPrimary">{s.title ?? `Step ${i+1}`}</p>
                   {s.description && <p className="text-sm text-muted mt-1 whitespace-pre-wrap">{s.description}</p>}
-                  {s.circles && s.circles.length>0 && <p className="text-xs text-muted mt-1">{s.circles.length} pin{ s.circles.length>1?'s':''}</p>}
                 </div>
               ))}
             </div>
@@ -234,18 +266,6 @@ export default function DetailPanel({
               <p className="text-sm text-textPrimary leading-relaxed whitespace-pre-wrap">{lineup.notes}</p>
             </div>
           )}
-
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-tile rounded p-2 border border-borderSubtle">
-              <span className="text-muted">Start</span>
-              <p className="font-mono text-textPrimary">{lineup.start.x.toFixed(3)}, {lineup.start.y.toFixed(3)}</p>
-            </div>
-            <div className="bg-tile rounded p-2 border border-borderSubtle">
-              <span className="text-muted">End</span>
-              <p className="font-mono text-textPrimary">{lineup.end.x.toFixed(3)}, {lineup.end.y.toFixed(3)}</p>
-            </div>
-          </div>
-          {lineup.importBatchId && <p className="text-xs text-muted">Batch: {lineup.importBatchId}</p>}
         </div>
 
         <div className="p-3 border-t border-borderSubtle flex gap-2 shrink-0">

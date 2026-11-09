@@ -1,6 +1,6 @@
 [package]
 name = "lineuplab"
-version = "0.2.3"
+version = "0.2.5"
 description = "LineupLab - Valorant lineups browser"
 authors = ["LineupLab"]
 edition = "2021"
