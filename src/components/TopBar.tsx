@@ -8,7 +8,7 @@ export default function TopBar({ onOpenSettings }: { onOpenSettings: () => void 
       </div>
       <nav className="ml-8 flex gap-1">
         <button
-          className="px-4 py-2 rounded-md bg-panel text-textPrimary text-sm font-semibold border border-borderSubtle"
+          className="px-4 py-2 min-h-[40px] rounded-md bg-panel text-textPrimary text-sm font-semibold border border-borderSubtle"
           aria-current="page"
         >
           Lineups

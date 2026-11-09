@@ -45,7 +45,7 @@ export default function MapCard({
         ) : (
           <div className="absolute inset-0 bg-tile flex items-center justify-center text-muted">Select map</div>
         )}
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded bg-black/40 flex items-center justify-center text-white border border-white/10">
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 min-w-[40px] min-h-[40px] rounded bg-black/40 flex items-center justify-center text-white border border-white/10">
           ▾
         </span>
       </button>

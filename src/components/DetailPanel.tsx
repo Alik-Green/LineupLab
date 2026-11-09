@@ -45,7 +45,7 @@ export default function DetailPanel({
             {lineup.throwType && <span className="px-2 py-1 rounded bg-accent/20 border border-accent text-accent text-xs font-bold">{lineup.throwType}</span>}
           </div>
         </div>
-        <button onClick={onClose} className="ml-3 w-9 h-9 rounded bg-tile hover:bg-tileHover flex items-center justify-center text-muted" aria-label="Close detail">
+        <button onClick={onClose} className="ml-3 w-10 h-10 min-w-[40px] min-h-[40px] rounded bg-tile hover:bg-tileHover flex items-center justify-center text-muted" aria-label="Close detail">
           ✕
         </button>
       </div>

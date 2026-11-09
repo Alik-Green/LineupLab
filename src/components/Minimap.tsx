@@ -250,7 +250,7 @@ export default function Minimap({
                 }}
                 onFocus={() => setHoveredId(l.id)}
                 onBlur={() => setHoveredId(null)}
-                className="relative -translate-x-1/2 -translate-y-1/2 w-[32px] h-[32px] rounded-full bg-[#1A1A1E] border-[2.5px] flex items-center justify-center shadow-lg transition-opacity duration-150"
+                className="relative -translate-x-1/2 -translate-y-1/2 w-[40px] h-[40px] min-w-[40px] min-h-[40px] rounded-full bg-[#1A1A1E] border-[2.5px] flex items-center justify-center shadow-lg transition-opacity duration-150"
                 style={{
                   borderColor: ring,
                   opacity: isDimmed ? 0.3 : 1,

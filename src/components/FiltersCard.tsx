@@ -38,7 +38,7 @@ export default function FiltersCard({
                 key={o.id}
                 onClick={() => onToggleImportance(o.id)}
                 aria-pressed={selected}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 min-h-[40px] transition-colors ${
+                className={`px-3 py-2 h-10 min-h-[40px] min-w-[40px] rounded-full text-xs font-bold border-2 transition-colors ${
                   selected
                     ? o.id === "essential"
                       ? "bg-essential/20 border-essential text-essential"
@@ -65,7 +65,7 @@ export default function FiltersCard({
                 key={o.id}
                 onClick={() => onToggleDifficulty(o.id)}
                 aria-pressed={selected}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 min-h-[40px] transition-colors ${
+                className={`px-3 py-2 h-10 min-h-[40px] min-w-[40px] rounded-full text-xs font-bold border-2 transition-colors ${
                   selected
                     ? o.id === "easy"
                       ? "bg-essential/20 border-essential text-essential"
@@ -84,7 +84,7 @@ export default function FiltersCard({
 
       <button
         onClick={onReset}
-        className="mt-4 text-xs text-accent hover:text-accentHover underline underline-offset-2"
+        className="mt-4 text-xs text-accent hover:text-accentHover underline underline-offset-2 min-h-[40px] px-2"
       >
         Reset filters
       </button>
