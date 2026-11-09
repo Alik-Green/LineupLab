@@ -1,8 +1,101 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { Lineup } from "../types/lineup";
 import AnnotatedImage from "./AnnotatedImage";
 import { useMediaResolver } from "../hooks/useMediaResolver";
-import { getMediaUrl } from "../lib/indexedDBRepository";
+
+type ImageEntry = { src: string; circles: any[] };
+
+function buildImageEntries(lineup: Lineup): ImageEntry[] {
+  const entries: ImageEntry[] = [];
+
+  // Slot ordered keys with optional media fallback
+  const slotKeys: Array<{ key: string; fallback?: string }> = [
+    { key: "stand1", fallback: "standImage" },
+    { key: "aim1", fallback: "aimImage" },
+    { key: "stand2" },
+    { key: "aim2" },
+    { key: "landing", fallback: "landingImage" },
+  ];
+
+  const slotCirclesMap: Record<string, any[]> =
+    (lineup as any).slotCircles ??
+    lineup.attributes?.slotCircles ??
+    (lineup.legacy?.raw?.attributes?.slotCircles) ??
+    {};
+
+  const attrProjectiles: any[] =
+    lineup.attributes?.projectiles ??
+    (lineup.legacy?.raw?.attributes?.projectiles) ??
+    (lineup.legacy?.raw?.projectiles) ??
+    [];
+
+  for (const { key, fallback } of slotKeys) {
+    const src = (lineup.slots as any)?.[key] ?? (fallback ? (lineup.media as any)?.[fallback] : undefined);
+    if (!src) continue;
+    const circles = (slotCirclesMap as any)[key] ?? [];
+    entries.push({ src, circles: [...circles] });
+  }
+
+  // Projectiles images (double shock etc)
+  if (Array.isArray(attrProjectiles)) {
+    for (const p of attrProjectiles) {
+      const pCircles = p.focusCircles ?? p.circles ?? [];
+      const pImages: string[] = [];
+      if (p.standImage) pImages.push(p.standImage);
+      if (p.aimImage) pImages.push(p.aimImage);
+      if (p.landingImage) pImages.push(p.landingImage);
+      if (p.stand1) pImages.push(p.stand1);
+      if (p.aim1) pImages.push(p.aim1);
+      if (p.stand2) pImages.push(p.stand2);
+      if (p.aim2) pImages.push(p.aim2);
+      if (Array.isArray(p.images)) pImages.push(...p.images.filter((x: any) => typeof x === "string"));
+      // Fallback: some packs store images as media keys object
+      if (p.media && typeof p.media === "object") {
+        for (const v of Object.values(p.media)) if (typeof v === "string") pImages.push(v);
+      }
+      for (const imgSrc of pImages) {
+        if (!imgSrc) continue;
+        entries.push({ src: imgSrc, circles: [...(pCircles ?? [])] });
+      }
+    }
+  }
+
+  // Steps
+  for (const step of lineup.steps ?? []) {
+    if (step.image) entries.push({ src: step.image, circles: [...(step.circles ?? [])] });
+  }
+
+  // If no entries but lineup has single media fallback (edge case)
+  if (entries.length === 0 && lineup.media) {
+    const fallbackMedia = [lineup.media.standImage, lineup.media.aimImage, lineup.media.landingImage].filter(Boolean) as string[];
+    for (const src of fallbackMedia) entries.push({ src, circles: [] });
+  }
+
+  // Deduplicate by lowercased src, merging circles
+  const dedup = new Map<string, ImageEntry>();
+  for (const e of entries) {
+    const norm = e.src.toLowerCase();
+    const existing = dedup.get(norm);
+    if (existing) {
+      const byId = new Map(existing.circles.map((c: any) => c.id ?? `${c.x}-${c.y}`));
+      for (const c of e.circles) {
+        const id = (c as any).id ?? `${(c as any).x}-${(c as any).y}`;
+        if (!byId.has(id)) existing.circles.push(c);
+      }
+    } else {
+      dedup.set(norm, { src: e.src, circles: [...e.circles] });
+    }
+  }
+
+  const result = Array.from(dedup.values());
+
+  // If result has no circles but lineup.circles exists (legacy pack without per-image), distribute attempt:
+  // For older merged packs, we have no slotCircles mapping, but we can keep lineup.circles on first image only as fallback
+  // We will NOT assign all to first; instead we check if result circles all empty and lineup.circles non-empty:
+  // If single image, assign to it. If multiple images, leave empty to avoid wrong overlay.
+
+  return result;
+}
 
 export default function DetailPanel({
   lineup,
@@ -16,63 +109,25 @@ export default function DetailPanel({
   if (!lineup) return null;
   const ability = agent?.abilities?.find((a: any) => a.slot === lineup.abilitySlot);
 
-  // Collect all raw image refs
-  const rawSlotImages = [
-    lineup.slots?.stand1 ?? lineup.media.standImage,
-    lineup.slots?.aim1 ?? lineup.media.aimImage,
-    lineup.slots?.stand2,
-    lineup.slots?.aim2,
-    lineup.slots?.landing ?? lineup.media.landingImage,
-  ].filter(Boolean) as string[];
-  const rawStepImages = (lineup.steps ?? []).map((s) => s.image).filter(Boolean) as string[];
-  const rawImages = [...rawSlotImages, ...rawStepImages];
+  const imageEntries = useMemo(() => buildImageEntries(lineup), [lineup]);
+  const rawSources = useMemo(() => imageEntries.map((e) => e.src), [imageEntries]);
+  const resolved = useMediaResolver(rawSources);
 
-  const resolvedImages = useMediaResolver(rawImages);
+  const images = useMemo(() => {
+    return imageEntries.map((e, i) => ({
+      src: resolved[i] ?? e.src,
+      circles: e.circles,
+      originalSrc: e.src,
+    }));
+  }, [imageEntries, resolved]);
 
-  // Fallback: also try to resolve via lineupId media lookup for any that didn't resolve
-  const [fallbackMap, setFallbackMap] = useState<Record<string, string>>({});
-  useEffect(() => {
-    if (!lineup?.id) return;
-    (async () => {
-      const map: Record<string, string> = {};
-      for (const src of rawImages) {
-        if (!src) continue;
-        if (src.startsWith("http") || src.startsWith("blob:") || src.startsWith("data:")) continue;
-        // if already resolved to blob, skip
-        const alreadyBlob = resolvedImages.some((r) => r === src && r.startsWith("blob:"));
-        if (alreadyBlob) continue;
-        try {
-          const url = await getMediaUrl(src);
-          if (url) map[src] = url;
-          else {
-            const short = src.split("/").pop()!;
-            const url2 = await getMediaUrl(short);
-            if (url2) map[src] = url2;
-          }
-        } catch {}
-      }
-      if (Object.keys(map).length) setFallbackMap(map);
-    })();
-  }, [lineup.id, JSON.stringify(rawImages)]);
-
-  // Build final display images: use resolved blob URLs where available, else fallbackMap, else original
-  const images = rawImages.map((src, i) => {
-    const r = resolvedImages[i];
-    if (r && (r.startsWith("blob:") || r.startsWith("http") || r.startsWith("data:"))) return r;
-    if (fallbackMap[src]) return fallbackMap[src];
-    return src;
-  });
-
-  const circlesForIdx = (idx: number) => {
-    if (lineup.steps && lineup.steps[idx - rawSlotImages.length]?.circles) {
-      return lineup.steps[idx - rawSlotImages.length].circles;
-    }
-    if (idx === 0 && lineup.circles) return lineup.circles;
-    return undefined;
-  };
+  // If resolver didn't find blob (still media path), images will be original string which will 404 -> show dark
+  // The useMediaResolver already handles fallback to blob via getMediaUrl, but if it fails, we still show original
 
   const [idx, setIdx] = useState(0);
   useEffect(() => setIdx(0), [lineup.id]);
+
+  // Keyboard navigation
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -83,7 +138,7 @@ export default function DetailPanel({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose, images.length]);
 
-  const currentCircles = circlesForIdx(idx) as any;
+  const currentCircles = images[idx]?.circles;
 
   return (
     <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
@@ -121,7 +176,7 @@ export default function DetailPanel({
             <p className="text-xs font-semibold text-muted mb-2">Preview ({images.length || "no images"})</p>
             {images.length > 0 ? (
               <div className="relative">
-                <AnnotatedImage src={images[idx]!} circles={currentCircles} />
+                <AnnotatedImage src={images[idx].src} circles={currentCircles} />
                 {images.length > 1 && (
                   <div className="flex items-center justify-between mt-2">
                     <button onClick={() => setIdx((i) => Math.max(0, i - 1))} className="px-3 py-1.5 rounded bg-tile text-sm text-textPrimary min-h-[40px] disabled:opacity-40" disabled={idx === 0}>‹ Prev</button>
@@ -130,14 +185,18 @@ export default function DetailPanel({
                   </div>
                 )}
                 <div className="flex gap-2 mt-2 overflow-auto overscroll-contain">
-                  {images.map((src, i) => (
-                    <button key={i} onClick={() => setIdx(i)} className={`w-20 h-14 rounded overflow-hidden border-2 flex-shrink-0 ${i === idx ? "border-accent" : "border-transparent opacity-60"}`}>
-                      <img src={src} alt="" className="w-full h-full object-cover" onError={(e)=>{(e.currentTarget as HTMLImageElement).style.display="none"}} />
+                  {images.map((imgEntry, i) => (
+                    <button key={i} onClick={() => setIdx(i)} className={`w-20 h-14 rounded overflow-hidden border-2 flex-shrink-0 bg-black ${i === idx ? "border-accent" : "border-transparent opacity-60"}`}>
+                      {imgEntry.src.toLowerCase().endsWith(".mp4") || imgEntry.src.toLowerCase().endsWith(".webm") ? (
+                        <video src={imgEntry.src} className="w-full h-full object-cover" muted playsInline />
+                      ) : (
+                        <img src={imgEntry.src} alt="" className="w-full h-full object-cover" onError={(e)=>{(e.currentTarget as HTMLImageElement).style.display="none"}} />
+                      )}
                     </button>
                   ))}
                 </div>
-                {lineup.circles && lineup.circles.length > 0 && (
-                  <p className="text-xs text-muted mt-2">{lineup.circles.length} annotation{lineup.circles.length>1?'s':''} • hover image for zoom lens (no lens under 200px)</p>
+                {currentCircles && currentCircles.length > 0 && (
+                  <p className="text-xs text-muted mt-2">{currentCircles.length} annotation{currentCircles.length>1?'s':''} on this image • hover for zoom lens</p>
                 )}
               </div>
             ) : (

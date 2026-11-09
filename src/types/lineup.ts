@@ -36,6 +36,8 @@ export interface LineupAttributes {
   importance?: Importance;
   tags?: string[];
   requiresLineup?: boolean;
+  slotCircles?: Record<string, LineupCircle[]>;
+  projectiles?: any[];
   // any extra legacy attributes kept
   [key: string]: any;
 }
@@ -84,6 +86,7 @@ export interface Lineup {
   steps?: LineupStep[];
   attributes?: LineupAttributes;
   circles?: LineupCircle[]; // top-level deduped by id (B4)
+  slotCircles?: Record<string, LineupCircle[]>;
   source?: LineupSource;
   importBatchId?: string;
   legacy?: LineupLegacy;

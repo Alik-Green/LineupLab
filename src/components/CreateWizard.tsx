@@ -132,6 +132,7 @@ export default function CreateWizard({ agents, maps }: { agents: ValorantAgent[]
                   pan={pinPan}
                   onZoom={setPinZoom}
                   onPan={setPinPan}
+                  showEmpty={false}
                 />
               </div>
             </div>

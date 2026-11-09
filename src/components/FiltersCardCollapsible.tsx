@@ -1,5 +1,45 @@
-import { useState } from "react";
 import type { Importance, Difficulty } from "../types/lineup";
+
+function ImportanceIcon({ kind, active }: { kind: Importance; active?: boolean }) {
+  const color = kind === "essential" ? "#22C55E" : kind === "optional" ? "#E8404F" : "#CBD5E1";
+  if (kind === "essential") {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill={active ? color : "none"} stroke={color} strokeWidth="1.6">
+        <path d="M12 2l2.4 7.2H22l-6.3 4.6 2.4 7.2L12 16.6 5.9 21l2.4-7.2L2 9.2h7.6z" />
+      </svg>
+    );
+  }
+  if (kind === "useful") {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8">
+        <circle cx="12" cy="12" r="8" opacity={active ? 1 : 0.7} />
+        <path d="M12 4a8 8 0 0 1 8 8" strokeWidth="2" />
+      </svg>
+    );
+  }
+  // optional - diamond
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill={active ? color : "none"} stroke={color} strokeWidth="1.6">
+      <path d="M12 2l8 8-8 12-8-12z" />
+    </svg>
+  );
+}
+
+function DifficultyIcon({ kind, active }: { kind: Difficulty; active?: boolean }) {
+  const color = kind === "easy" ? "#22C55E" : kind === "hard" ? "#E8404F" : "#EAB308";
+  const dots = kind === "easy" ? 1 : kind === "normal" ? 2 : 3;
+  return (
+    <span className="flex items-center gap-0.5">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <span
+          key={i}
+          className="w-1.5 h-1.5 rounded-full"
+          style={{ background: i < dots ? color : "transparent", border: `1px solid ${i < dots ? color : "#475569"}`, opacity: active || i < dots ? 1 : 0.5 }}
+        />
+      ))}
+    </span>
+  );
+}
 
 export default function FiltersCardCollapsible({
   importance,
@@ -14,46 +54,49 @@ export default function FiltersCardCollapsible({
   onToggleDifficulty: (v: Difficulty) => void;
   onReset: () => void;
 }) {
-  const [open, setOpen] = useState(true);
   return (
-    <div className="rounded-card bg-panel border border-borderSubtle flex flex-col min-h-0 overflow-hidden">
-      <button onClick={() => setOpen((v) => !v)} className="flex items-center justify-between p-2 shrink-0 min-h-[40px]">
-        <h3 className="text-xs font-semibold text-textPrimary">Filters</h3>
-        <span className="text-muted text-xs">{open ? "▾" : "▸"}</span>
-      </button>
-      {open && (
-        <div className="px-2 pb-2 overflow-auto overscroll-contain thin-scrollbar flex-1 min-h-0">
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-[10px] font-semibold text-muted mb-1">Importance</p>
-              <div className="flex flex-col gap-1">
-                {(["essential", "useful", "optional"] as Importance[]).map((id) => {
-                  const sel = importance.has(id);
-                  return (
-                    <button key={id} onClick={() => onToggleImportance(id)} aria-pressed={sel} className={`h-8 min-h-[40px] md:min-h-[32px] px-2 rounded-md text-[11px] font-bold border flex items-center justify-center ${sel ? (id === "essential" ? "bg-essential/20 border-essential text-essential" : id === "optional" ? "bg-accent/20 border-accent text-accent" : "bg-white/10 border-white text-white") : "border-borderSubtle text-muted opacity-60"} `}>
-                      {id}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div>
-              <p className="text-[10px] font-semibold text-muted mb-1">Difficulty</p>
-              <div className="flex flex-col gap-1">
-                {(["easy", "normal", "hard"] as Difficulty[]).map((id) => {
-                  const sel = difficulty.has(id);
-                  return (
-                    <button key={id} onClick={() => onToggleDifficulty(id)} aria-pressed={sel} className={`h-8 min-h-[40px] md:min-h-[32px] px-2 rounded-md text-[11px] font-bold border flex items-center justify-center ${sel ? (id === "easy" ? "bg-essential/20 border-essential text-essential" : id === "hard" ? "bg-accent/20 border-accent text-accent" : "bg-[#EAB308]/20 border-[#EAB308] text-[#EAB308]") : "border-borderSubtle text-muted opacity-60"}`}>
-                      {id}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-          <button onClick={onReset} className="mt-2 text-xs text-accent underline min-h-[40px]">Reset filters</button>
+    <div className="flex flex-col gap-2">
+      <div className="rounded-card bg-panel border border-borderSubtle p-2">
+        <p className="text-[10px] font-bold tracking-widest text-muted mb-1.5">IMPORTANCE</p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {(["essential", "useful", "optional"] as Importance[]).map((id) => {
+            const sel = importance.has(id);
+            return (
+              <button
+                key={id}
+                onClick={() => onToggleImportance(id)}
+                aria-pressed={sel}
+                className={`h-[44px] rounded-md border flex flex-col items-center justify-center gap-1 ${sel ? "bg-tile border-accent" : "border-borderSubtle bg-transparent opacity-60 hover:opacity-100"}`}
+              >
+                <ImportanceIcon kind={id} active={sel} />
+                <span className={`text-[9px] font-bold capitalize ${sel ? "text-textPrimary" : "text-muted"}`}>{id}</span>
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
+
+      <div className="rounded-card bg-panel border border-borderSubtle p-2">
+        <p className="text-[10px] font-bold tracking-widest text-muted mb-1.5">DIFFICULTY</p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {(["easy", "normal", "hard"] as Difficulty[]).map((id) => {
+            const sel = difficulty.has(id);
+            return (
+              <button
+                key={id}
+                onClick={() => onToggleDifficulty(id)}
+                aria-pressed={sel}
+                className={`h-[44px] rounded-md border flex flex-col items-center justify-center gap-1 ${sel ? "bg-tile border-accent" : "border-borderSubtle bg-transparent opacity-60 hover:opacity-100"}`}
+              >
+                <DifficultyIcon kind={id} active={sel} />
+                <span className={`text-[9px] font-bold capitalize ${sel ? "text-textPrimary" : "text-muted"}`}>{id}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <button onClick={onReset} className="text-xs text-accent underline min-h-[40px] self-start px-1">Reset filters</button>
     </div>
   );
 }

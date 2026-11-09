@@ -1,5 +1,4 @@
 import { useState } from "react";
-import ValImage from "./ValImage";
 import type { ValorantMap } from "../types/lineup";
 
 export default function MapCard({
@@ -18,26 +17,27 @@ export default function MapCard({
       <div className="rounded-card bg-panel border border-borderSubtle overflow-hidden flex-1 flex flex-col">
         <button
           onClick={() => setOpen(true)}
-          className="relative w-full aspect-square overflow-hidden text-left group min-h-[88px]"
+          className="relative w-full aspect-square overflow-hidden text-left group min-h-[88px] bg-[#121212] flex flex-col items-center justify-center p-2"
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-label="Select map"
         >
           {selectedMap ? (
             <>
-              <ValImage
+              <img
                 src={selectedMap.listViewIcon ?? selectedMap.splash}
                 alt={selectedMap.displayName}
-                className="absolute inset-0"
+                className="w-full h-full object-contain p-1"
+                draggable={false}
+                onError={(e) => ((e.target as HTMLImageElement).src = selectedMap.splash)}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-2">
-                <div className="text-white font-extrabold text-sm leading-none drop-shadow truncate">{selectedMap.displayName}</div>
-                <div className="text-white/60 text-[10px] mt-0.5">Tap to change</div>
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2 pt-6">
+                <div className="text-white font-extrabold text-sm leading-none drop-shadow truncate text-center">{selectedMap.displayName}</div>
+                <div className="text-white/60 text-[10px] mt-0.5 text-center">Tap to change</div>
               </div>
             </>
           ) : (
-            <div className="absolute inset-0 bg-tile flex items-center justify-center text-muted text-xs">Select map</div>
+            <div className="w-full h-full flex items-center justify-center text-muted text-xs">Select map</div>
           )}
         </button>
       </div>
@@ -58,11 +58,15 @@ export default function MapCard({
                       onSelect(m.uuid);
                       setOpen(false);
                     }}
-                    className={`relative h-[110px] rounded-md overflow-hidden border-2 text-left ${selectedMap?.uuid === m.uuid ? "border-accent" : "border-transparent hover:border-borderSubtle"}`}
+                    className={`relative h-[110px] rounded-md overflow-hidden border-2 text-left bg-[#121212] flex flex-col items-center justify-center p-2 ${selectedMap?.uuid === m.uuid ? "border-accent" : "border-transparent hover:border-borderSubtle"}`}
                   >
-                    <ValImage src={m.splash} alt={m.displayName} className="absolute inset-0" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                    <span className="absolute bottom-1.5 left-2 text-white text-xs font-bold drop-shadow">{m.displayName}</span>
+                    <img
+                      src={m.listViewIcon ?? m.splash}
+                      alt={m.displayName}
+                      className="max-w-full max-h-[70px] object-contain"
+                      draggable={false}
+                    />
+                    <span className="mt-1 text-white text-xs font-bold drop-shadow text-center truncate w-full">{m.displayName}</span>
                   </button>
                 ))}
               </div>

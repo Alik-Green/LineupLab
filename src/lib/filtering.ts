@@ -18,8 +18,8 @@ export function filterLineups(
 ): Lineup[] {
   return lineups.filter((l) => {
     if (opts.mapUuid && l.mapUuid !== opts.mapUuid) return false;
-    // side filter: "both" matches any side, otherwise strict side matches or lineup side both
-    if (l.side !== "both" && l.side !== opts.side) return false;
+    // opts.side "both" = All shows everything; lineage "both" matches any filter
+    if (opts.side !== "both" && l.side !== "both" && l.side !== opts.side) return false;
     if (opts.agentUuid && l.agentUuid !== opts.agentUuid) return false;
     if (opts.abilitySlots && opts.abilitySlots.size > 0 && !opts.abilitySlots.has(l.abilitySlot as AbilitySlot)) return false;
     if (opts.abilitySlots && opts.abilitySlots.size === 0) return false;
@@ -40,7 +40,7 @@ export function hasLineupsForAgent(
   return lineups.some((l) => {
     if (l.agentUuid !== agentUuid) return false;
     if (mapUuid && l.mapUuid !== mapUuid) return false;
-    if (l.side !== "both" && l.side !== side) return false;
+    if (side !== "both" && l.side !== "both" && l.side !== side) return false;
     return true;
   });
 }

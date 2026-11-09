@@ -19,7 +19,7 @@ export default function AgentCard({
       <div className="rounded-card bg-panel border border-borderSubtle overflow-hidden flex-1 flex flex-col">
         <button
           onClick={() => setOpen(true)}
-          className="relative w-full aspect-square overflow-hidden text-left group min-h-[88px]"
+          className="relative w-full aspect-square overflow-hidden text-left group min-h-[88px] bg-tile"
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-label="Select agent"

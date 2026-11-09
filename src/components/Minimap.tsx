@@ -14,6 +14,7 @@ type Props = {
   pan: { x: number; y: number };
   onZoom: (z: number) => void;
   onPan: (p: { x: number; y: number }) => void;
+  showEmpty?: boolean;
 };
 
 function importanceRing(imp: string) {
@@ -24,10 +25,11 @@ function importanceRing(imp: string) {
 
 function calloutToNorm(c: any, map: ValorantMap): { x: number; y: number } | null {
   if (!c?.location || map.xMultiplier == null || map.yMultiplier == null) return null;
-  const x = c.location.x * (map.xMultiplier as number) + (map.xScalarToAdd as number);
-  const y = c.location.y * (map.yMultiplier as number) + (map.yScalarToAdd as number);
+  // Valorant API axes are swapped: world Y -> minimap X, world X -> minimap Y
+  const x = c.location.y * (map.xMultiplier as number) + (map.xScalarToAdd as number);
+  const y = c.location.x * (map.yMultiplier as number) + (map.yScalarToAdd as number);
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
-  if (x < -0.1 || x > 1.1 || y < -0.1 || y > 1.1) return null;
+  if (x < -0.2 || x > 1.2 || y < -0.2 || y > 1.2) return null;
   return { x, y };
 }
 
@@ -43,6 +45,7 @@ export default function Minimap({
   pan,
   onZoom,
   onPan,
+  showEmpty = true,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ w: 800, h: 600 });
@@ -70,7 +73,6 @@ export default function Minimap({
   const zoomClamp = (z: number) => Math.min(3, Math.max(0.6, z));
 
   const onMouseDown = (e: React.MouseEvent) => {
-    // Don't start pan if clicking a button/control
     if ((e.target as HTMLElement).closest("button")) return;
     setIsDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY, pan: { ...pan } };
@@ -178,7 +180,7 @@ export default function Minimap({
     );
   }
 
-  const empty = lineups.length === 0;
+  const empty = showEmpty && lineups.length === 0;
 
   return (
     <div
@@ -221,7 +223,6 @@ export default function Minimap({
         />
       </div>
 
-      {/* Controls - z-20 and stopPropagation to prevent pan */}
       <div
         className="absolute top-4 right-4 flex rounded-md overflow-hidden border border-borderSubtle bg-panel shadow-lg z-20"
         onMouseDown={(e) => e.stopPropagation()}
@@ -264,7 +265,6 @@ export default function Minimap({
       )}
 
       <div className="absolute inset-0 pointer-events-none">
-        {/* Callouts overlay */}
         {showCallouts &&
           calloutsList.map((c, i) => {
             const p = getMarkerPos(c.norm);
@@ -282,7 +282,6 @@ export default function Minimap({
           })}
       </div>
 
-      {/* Markers layer - pointer events enabled */}
       <div className="absolute inset-0">
         {lineups.map((l) => {
           const pos = getMarkerPos(l.end);

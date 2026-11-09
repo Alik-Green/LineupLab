@@ -282,6 +282,21 @@ export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): L
     }
     circles = Array.from(byId.values());
   }
+  const slotCirclesRaw = attrs.slotCircles ?? r.attributes?.slotCircles;
+  let slotCirclesMap: Record<string, LineupCircle[]> = {};
+  if (slotCirclesRaw && typeof slotCirclesRaw === "object") {
+    for (const key of Object.keys(slotCirclesRaw)) {
+      const arr = (slotCirclesRaw as any)[key];
+      if (Array.isArray(arr)) {
+        slotCirclesMap[key] = arr.map((c: any) => ({
+          id: String(c.id ?? `${c.x}-${c.y}`),
+          x: Number(c.x), y: Number(c.y),
+          r: c.r ?? c.radius,
+          color: c.color, label: c.label,
+        } as LineupCircle));
+      }
+    }
+  }
   const collectAllCircles = () => {
     const byId = new Map<string, LineupCircle>();
     circles.forEach(c=>byId.set(c.id, c));
@@ -291,10 +306,9 @@ export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): L
         if (!byId.has(String(idc))) byId.set(String(idc), { ...c, id: String(idc)} as LineupCircle);
       }
     }
-    const slotCircles = attrs.slotCircles ?? r.attributes?.slotCircles;
-    if (slotCircles && typeof slotCircles === "object") {
-      for (const key of Object.keys(slotCircles)) {
-        const arr = (slotCircles as any)[key];
+    if (slotCirclesRaw && typeof slotCirclesRaw === "object") {
+      for (const key of Object.keys(slotCirclesRaw)) {
+        const arr = (slotCirclesRaw as any)[key];
         if (Array.isArray(arr)) for (const c of arr) {
           const idc = (c as any).id ?? `${c.x}-${c.y}`;
           if (!byId.has(String(idc))) byId.set(String(idc), { id: String(idc), x: Number(c.x), y: Number(c.y), r: (c as any).r ?? (c as any).radius, color: (c as any).color, label: (c as any).label } as LineupCircle);
@@ -348,6 +362,7 @@ export function mapRawToLineup(raw: any, batchId: string, warnings: string[]): L
     steps,
     attributes: { side, site, difficulty, importance, tags, ...attrs },
     circles,
+    slotCircles: Object.keys(slotCirclesMap).length ? slotCirclesMap : undefined,
     source: "import",
     importBatchId: batchId,
     legacy: { raw: r, warnings: [] },
