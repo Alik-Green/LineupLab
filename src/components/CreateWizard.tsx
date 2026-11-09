@@ -1,73 +1,30 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { ValorantAgent, ValorantMap } from "../types/lineup";
-import ValImage from "./ValImage";
+import MapCard from "./MapCard";
+import AgentCard from "./AgentCard";
+import SideToggle from "./SideToggle";
+import Minimap from "./Minimap";
+import type { Side } from "../types/lineup";
 
 type TabId = "capture" | "pins" | "details";
-const TABS: { id: TabId; label: string }[] = [
-  { id: "capture", label: "CAPTURE" },
-  { id: "pins", label: "MAP PINS" },
-  { id: "details", label: "DETAILS" },
-];
-
-function IconSelect({
-  value,
-  onChange,
-  options,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  options: { uuid: string; label: string; icon: string | null; sublabel?: string }[];
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find((o) => o.uuid === value);
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="h-8 px-2 rounded-md bg-panel border border-borderSubtle flex items-center gap-2 min-w-[120px] text-left"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-      >
-        {selected?.icon ? (
-          <img src={selected.icon} alt="" className="w-6 h-6 rounded object-cover bg-tile shrink-0" />
-        ) : (
-          <span className="w-6 h-6 rounded bg-tile shrink-0" />
-        )}
-        <span className="text-textPrimary text-xs font-bold truncate flex-1">{selected?.label ?? "Select"}</span>
-        <span className="text-muted text-xs shrink-0">▾</span>
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 mt-1 w-[220px] max-h-[280px] overflow-auto thin-scrollbar bg-panel border border-borderSubtle rounded-md shadow-xl z-40 p-1">
-          {options.map((o) => (
-            <button
-              key={o.uuid}
-              onClick={() => {
-                onChange(o.uuid);
-                setOpen(false);
-              }}
-              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left hover:bg-tile ${value === o.uuid ? "bg-accent/20" : ""}`}
-            >
-              {o.icon ? (
-                <img src={o.icon} alt="" className="w-6 h-6 rounded object-cover bg-[#1B1B1F] border border-borderSubtle shrink-0" />
-              ) : (
-                <span className="w-6 h-6 rounded bg-tile shrink-0" />
-              )}
-              <span className="text-textPrimary text-xs font-semibold truncate">{o.label}</span>
-              {o.sublabel && <span className="text-muted text-[10px] truncate ml-auto">{o.sublabel}</span>}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function CreateWizard({ agents, maps }: { agents: ValorantAgent[]; maps: ValorantMap[] }) {
   const [active, setActive] = useState<TabId>("capture");
   const [selectedSlot, setSelectedSlot] = useState<"stand"|"aim"|"landing">("stand");
-  const [selectedMap, setSelectedMap] = useState<string>(maps[0]?.uuid ?? "");
-  const [selectedAgent, setSelectedAgent] = useState<string>(agents[0]?.uuid ?? "");
-  const agent = agents.find(a=>a.uuid===selectedAgent);
+  const [selectedMapUuid, setSelectedMapUuid] = useState<string>(maps[0]?.uuid ?? "");
+  const [selectedAgentUuid, setSelectedAgentUuid] = useState<string>(agents[0]?.uuid ?? "");
+  const [side, setSide] = useState<Side>("attack");
+  const [pinZoom, setPinZoom] = useState(1);
+  const [pinPan, setPinPan] = useState({ x: 0, y: 0 });
+
+  const selectedMap = useMemo(() => maps.find(m => m.uuid === selectedMapUuid), [maps, selectedMapUuid]);
+  const agent = useMemo(() => agents.find(a=>a.uuid===selectedAgentUuid), [agents, selectedAgentUuid]);
+
+  const agentsMap = useMemo(() => {
+    const m = new Map<string, any>();
+    agents.forEach(a => m.set(a.uuid, a));
+    return m;
+  }, [agents]);
 
   const toast = (msg: string) => {
     const el = document.createElement("div");
@@ -83,39 +40,33 @@ export default function CreateWizard({ agents, maps }: { agents: ValorantAgent[]
     { id: "landing" as const, label: "3. LANDING", hotkey: "ALT+3" },
   ];
 
-  const competitive = maps.filter(m=>["Abyss","Ascent","Bind","Breeze","Corrode","Fracture","Haven","Icebox","Lotus","Pearl","Split","Sunset"].includes(m.displayName)).slice(0,12);
-
   return (
     <div className="h-full flex flex-col overflow-hidden bg-[#0F1114]">
-      <div className="h-[56px] shrink-0 flex items-center px-3 gap-3 bg-[#1A1E24] border-b border-[#2A2B32]">
-        <div className="flex items-center gap-2">
-          <IconSelect
-            value={selectedMap}
-            onChange={setSelectedMap}
-            options={competitive.map(m => ({ uuid: m.uuid, label: m.displayName.toUpperCase(), icon: m.listViewIcon ?? m.splash, sublabel: undefined }))}
-          />
-          <IconSelect
-            value={selectedAgent}
-            onChange={setSelectedAgent}
-            options={agents.slice(0, 20).map(a => ({ uuid: a.uuid, label: a.displayName.toUpperCase(), icon: a.displayIconSmall ?? a.displayIcon, sublabel: a.role?.displayName }))}
-          />
-          <div className="flex gap-1 ml-1">
-            {(agent?.abilities.slice(0,4) ?? []).map((ab,i)=> (
-              <button key={i} onClick={()=>toast("Coming soon")} className={`w-8 h-8 rounded-md bg-tile border flex items-center justify-center ${i===1?"border-accent bg-accent/20":"border-borderSubtle"}`}>
-                {ab.displayIcon ? <img src={ab.displayIcon} alt="" className="w-5 h-5 object-contain" /> : <span className="text-[10px] text-muted">{ab.slot[0]}</span>}
-              </button>
-            ))}
-          </div>
+      {/* Top bar with shared selectors */}
+      <div className="shrink-0 flex items-center gap-2 px-3 py-2 bg-[#1A1E24] border-b border-[#2A2B32] flex-wrap">
+        <div className="w-[160px] flex gap-2">
+          <MapCard maps={maps} selectedMap={selectedMap} onSelect={setSelectedMapUuid} />
+          <AgentCard agents={agents} selectedAgent={agent as any} onSelect={(uuid) => setSelectedAgentUuid(uuid || (agents[0]?.uuid ?? ""))} />
         </div>
-        <div className="flex items-center gap-1 ml-6">
-          {TABS.map(t=> (
-            <button key={t.id} onClick={()=>setActive(t.id)} className={`h-8 px-4 rounded-md text-xs font-bold tracking-wide border ${active===t.id?"bg-accent border-accent text-white":"bg-tile border-borderSubtle text-muted hover:text-textPrimary"}`}>
-              {t.label}
+        <div className="w-[160px]">
+          <SideToggle side={side} onSideChange={setSide} />
+        </div>
+        <div className="flex gap-1">
+          {(agent?.abilities.slice(0,4) ?? []).map((ab,i)=> (
+            <button key={i} onClick={()=>toast("Coming soon")} className={`w-8 h-8 rounded-md bg-tile border flex items-center justify-center ${i===1?"border-accent bg-accent/20":"border-borderSubtle"}`}>
+              {ab.displayIcon ? <img src={ab.displayIcon} alt="" className="w-5 h-5 object-contain" /> : <span className="text-[10px] text-muted">{ab.slot[0]}</span>}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-1 ml-2">
+          {(["capture","pins","details"] as TabId[]).map(t=> (
+            <button key={t} onClick={()=>setActive(t)} className={`h-8 px-3 rounded-md text-xs font-bold tracking-wide border uppercase ${active===t?"bg-accent border-accent text-white":"bg-tile border-borderSubtle text-muted hover:text-textPrimary"}`}>
+              {t}
             </button>
           ))}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <button onClick={()=>toast("Coming soon")} className="h-8 px-3 rounded-md bg-tile border border-borderSubtle text-textPrimary text-xs font-bold flex items-center gap-1">✦ SAVE + NEXT</button>
+          <button onClick={()=>toast("Coming soon")} className="h-8 px-3 rounded-md bg-tile border border-borderSubtle text-textPrimary text-xs font-bold">✦ SAVE + NEXT</button>
           <button onClick={()=>toast("Coming soon — save will store to IndexedDB in next release")} className="h-8 px-4 rounded-md bg-accent text-white text-xs font-bold">SAVE</button>
         </div>
       </div>
@@ -163,11 +114,26 @@ export default function CreateWizard({ agents, maps }: { agents: ValorantAgent[]
             </div>
           )}
           {active==="pins" && (
-            <div className="flex-1 rounded-md border border-borderSubtle bg-panel p-4 flex flex-col gap-3 overflow-auto thin-scrollbar">
-              <h3 className="text-sm font-bold text-textPrimary">Map Pins</h3>
-              <p className="text-xs text-muted">Place start, end and bounces on the minimap.</p>
-              <div className="h-[300px] rounded-md bg-[#07080A] border border-borderSubtle flex items-center justify-center text-muted">Minimap pin editor — Coming soon</div>
-              <button onClick={()=>toast("Coming soon")} className="w-full min-h-[48px] rounded-md bg-accent text-white font-bold">Add pin (Coming soon)</button>
+            <div className="flex-1 rounded-md border border-borderSubtle bg-panel overflow-hidden flex flex-col min-h-0">
+              <div className="p-3 border-b border-borderSubtle">
+                <h3 className="text-sm font-bold text-textPrimary">Map Pins</h3>
+                <p className="text-xs text-muted">Place start, end and bounces on the minimap.</p>
+              </div>
+              <div className="flex-1 min-h-[300px] relative bg-[#131315] overflow-hidden flex flex-col">
+                <Minimap
+                  map={selectedMap}
+                  lineups={[]}
+                  agentsMap={agentsMap}
+                  hoveredId={null}
+                  setHoveredId={() => {}}
+                  selectedId={null}
+                  onSelect={() => {}}
+                  zoom={pinZoom}
+                  pan={pinPan}
+                  onZoom={setPinZoom}
+                  onPan={setPinPan}
+                />
+              </div>
             </div>
           )}
           {active==="details" && (

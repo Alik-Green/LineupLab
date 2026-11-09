@@ -1,10 +1,8 @@
 export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImport }: { activeTab: string; onTabChange: (t: any) => void; onOpenSettings: () => void; onImport: () => void }) {
   const getWin = () => {
     try {
-      // @ts-ignore - optional tauri dep, only in desktop
       const w = (window as any).__TAURI__?.window?.getCurrentWindow?.();
       if (w) return w;
-      // fallback dynamic import if available
       return null;
     } catch { return null; }
   };
@@ -28,9 +26,12 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
   };
 
   return (
-    <header className="h-[56px] shrink-0 flex items-center bg-[#1B1B1F] border-b border-[#2A2B32] sticky top-0 z-30 select-none">
-      <div data-tauri-drag-region className="flex-1 flex items-center px-4 h-full">
-        <div className="flex items-center gap-2">
+    <header
+      data-tauri-drag-region
+      className="h-[56px] shrink-0 flex items-center bg-[#1B1B1F] border-b border-[#2A2B32] sticky top-0 z-30 select-none"
+    >
+      <div data-tauri-drag-region className="flex-1 flex items-center px-4 h-full gap-2">
+        <div data-tauri-drag-region className="flex items-center gap-2">
           <div className="w-8 h-8 rounded bg-accent flex items-center justify-center text-white font-bold text-sm">LL</div>
           <span className="font-bold text-textPrimary text-[18px] tracking-tight">LineupLab</span>
           <span className="ml-2 px-2 py-0.5 rounded-md bg-tile text-muted text-xs">Demo data</span>
@@ -57,9 +58,15 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
         </div>
       </div>
       <div className="flex h-full shrink-0">
-        <button onClick={min} className="w-12 flex items-center justify-center text-muted hover:bg-white/10 hover:text-white" aria-label="Minimize">─</button>
-        <button onClick={max} className="w-12 flex items-center justify-center text-muted hover:bg-white/10 hover:text-white" aria-label="Maximize">□</button>
-        <button onClick={close} className="w-12 flex items-center justify-center text-muted hover:bg-accent hover:text-white" aria-label="Close">✕</button>
+        <button onClick={min} className="w-12 h-full flex items-center justify-center text-muted hover:bg-white/10 hover:text-white" aria-label="Minimize">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><rect x="1" y="5.5" width="10" height="1" fill="currentColor"/></svg>
+        </button>
+        <button onClick={max} className="w-12 h-full flex items-center justify-center text-muted hover:bg-white/10 hover:text-white" aria-label="Maximize">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><rect x="1.5" y="1.5" width="9" height="9" stroke="currentColor" strokeWidth="1.2" fill="none"/><rect x="1.5" y="1.5" width="9" height="2" fill="currentColor" opacity="0.0"/><path d="M1.5 3.5 H10.5" stroke="currentColor" strokeWidth="1"/></svg>
+        </button>
+        <button onClick={close} className="w-12 h-full flex items-center justify-center text-muted hover:bg-accent hover:text-white" aria-label="Close">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden><path d="M1 1 L11 11 M11 1 L1 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+        </button>
       </div>
     </header>
   );

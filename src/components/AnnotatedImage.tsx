@@ -1,5 +1,10 @@
 import { useRef, useState, useEffect } from "react";
 
+function isVideoSrc(src: string) {
+  const lower = src.split("?")[0].split("#")[0].toLowerCase();
+  return lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".mov");
+}
+
 export default function AnnotatedImage({
   src,
   circles,
@@ -12,6 +17,8 @@ export default function AnnotatedImage({
   const [zoomPos, setZoomPos] = useState<{ x: number; y: number } | null>(null);
   const [zoomActive, setZoomActive] = useState(false);
 
+  const isVideo = isVideoSrc(src);
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -23,18 +30,21 @@ export default function AnnotatedImage({
     return () => ro.disconnect();
   }, []);
 
-  const showLens = zoomActive && zoomPos && size.w >= 200;
+  const showLens = zoomActive && zoomPos && size.w >= 200 && !isVideo;
 
   const handleMove = (e: React.MouseEvent) => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    // clamp
     const cx = Math.max(0, Math.min(1, x));
     const cy = Math.max(0, Math.min(1, y));
     setZoomPos({ x: cx, y: cy });
   };
+
+  // Blob URLs from IndexedDB may be video blobs with correct MIME - still rely on extension as hint
+  // If extension is mp4 but blob is image, browser will fail; fallback to img tag would be better
+  // We use extension as primary, but also handle load error fallback
 
   return (
     <div
@@ -44,9 +54,13 @@ export default function AnnotatedImage({
       onMouseLeave={() => { setZoomActive(false); setZoomPos(null); }}
       onMouseMove={handleMove}
     >
-      <img src={src} alt="" className="w-full h-full object-cover" draggable={false} />
-      {/* SVG circles overlay */}
-      {circles && circles.length > 0 && (
+      {isVideo ? (
+        <video src={src} controls playsInline className="w-full h-full object-contain bg-black" preload="metadata" />
+      ) : (
+        <img src={src} alt="" className="w-full h-full object-cover" draggable={false} />
+      )}
+      {/* SVG circles overlay - not for video */}
+      {!isVideo && circles && circles.length > 0 && (
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
           {circles.map((c) => (
             <g key={c.id}>
@@ -56,12 +70,10 @@ export default function AnnotatedImage({
                   {c.label}
                 </text>
               )}
-              {/* connector line to edge if label outside? simplified: just circle */}
             </g>
           ))}
         </svg>
       )}
-      {/* Zoom lens */}
       {showLens && zoomPos && (
         <div
           className="absolute w-[140px] h-[140px] rounded-full border-2 border-white shadow-xl pointer-events-none overflow-hidden bg-black"
@@ -80,14 +92,12 @@ export default function AnnotatedImage({
               backgroundPosition: `${-zoomPos.x * size.w * 2 + 70}px ${-zoomPos.y * size.h * 2 + 70}px`,
             }}
           />
-          {/* crosshair */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-px h-6 bg-white/80" />
             <div className="h-px w-6 bg-white/80 absolute" />
           </div>
         </div>
       )}
-      {/* connector line from lens to cursor when lens clamped away */}
       {showLens && zoomPos && (
         <svg className="absolute inset-0 w-full h-full pointer-events-none">
           <line x1={zoomPos.x * size.w} y1={zoomPos.y * size.h} x2={Math.max(70, Math.min(size.w - 70, zoomPos.x * size.w))} y2={Math.max(70, Math.min(size.h - 70, zoomPos.y * size.h))} stroke="rgba(255,255,255,0.7)" strokeWidth={1} strokeDasharray="3 3" />

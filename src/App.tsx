@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import TopBar from "./components/TopBar";
 import MapCard from "./components/MapCard";
 import AgentCard from "./components/AgentCard";
-import AgentGridCompact from "./components/AgentGridCompact";
+import SideToggle from "./components/SideToggle";
 import AbilityBar from "./components/AbilityBar";
 import FiltersCardCollapsible from "./components/FiltersCardCollapsible";
 import Minimap from "./components/Minimap";
@@ -12,11 +12,10 @@ import CreateWizard from "./components/CreateWizard";
 import ImportDialog from "./components/ImportDialog";
 import { useValorantData } from "./hooks/useValorantData";
 import { useAppStore } from "./stores/appStore";
-import { getAllLineups, getLineupCount, isDemoData, removeDemoData, seedDemoIfEmpty } from "./lib/indexedDBRepository";
-import { filterLineups, hasLineupsForAgent } from "./lib/filtering";
-import type { Lineup, AbilitySlot } from "./types/lineup";
+import { getAllLineups, isDemoData, removeDemoData, seedDemoIfEmpty } from "./lib/indexedDBRepository";
+import { filterLineups } from "./lib/filtering";
+import type { Lineup } from "./types/lineup";
 
-// Simple tab state
 type Tab = "lineups" | "create";
 
 export default function App() {
@@ -40,7 +39,6 @@ export default function App() {
     return () => window.removeEventListener("reset-filters", handler as any);
   }, []);
 
-  // Load lineups from IndexedDB (with demo fallback)
   const refreshLineups = async () => {
     try {
       await seedDemoIfEmpty();
@@ -51,7 +49,6 @@ export default function App() {
     }
   };
   useEffect(() => { refreshLineups(); }, []);
-  // Also refresh when import closes
   useEffect(() => { if (!importOpen) refreshLineups(); }, [importOpen]);
 
   useEffect(() => {
@@ -84,7 +81,6 @@ export default function App() {
 
   const selectedLineup = useMemo(() => filtered.find((l) => l.id === selectedId) ?? lineups?.find((l) => l.id === selectedId) ?? null, [filtered, lineups, selectedId]);
 
-  // Prevent body scroll lock when dialogs open
   useEffect(() => {
     if (settingsOpen || importOpen || mobileFiltersOpen || selectedLineup) {
       document.body.style.overflow = "hidden";
@@ -139,19 +135,15 @@ export default function App() {
         </div>
       ) : (
         <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-          {/* Left panel - no page scroll, internal fit */}
           <aside className="hidden md:flex w-[350px] shrink-0 flex flex-col gap-2 p-2 bg-[#1B1B1F] border-r border-borderSubtle min-h-0 overflow-hidden">
             <div className="shrink-0 flex gap-2">
-              <MapCard maps={maps} selectedMap={selectedMap} onSelect={(uuid) => store.setMap(uuid)} side={store.side} onSideChange={(s) => store.setSide(s)} />
-              <AgentCard agents={agents} selectedAgent={selectedAgent} onSelect={(uuid) => store.setAgent(uuid)} />
+              <MapCard maps={maps} selectedMap={selectedMap} onSelect={(uuid) => store.setMap(uuid)} />
+              <AgentCard agents={agents} selectedAgent={selectedAgent} onSelect={(uuid) => { if (!uuid) store.setAgent(null); else store.setAgent(uuid); }} />
+            </div>
+            <div className="shrink-0">
+              <SideToggle side={store.side} onSideChange={(s) => store.setSide(s)} />
             </div>
             <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden">
-              <AgentGridCompact
-                agents={agents}
-                selectedAgentUuid={store.selectedAgentUuid}
-                onSelect={(uuid) => store.setAgent(uuid)}
-                hasLineups={(agentUuid) => hasLineupsForAgent(lineups ?? [], agentUuid, store.selectedMapUuid, store.side)}
-              />
               <AbilityBar agent={selectedAgent} selected={store.selectedAbilities} onToggle={(slot) => store.toggleAbility(slot)} />
               <FiltersCardCollapsible
                 importance={store.importance}
@@ -164,30 +156,14 @@ export default function App() {
             <div className="shrink-0 text-muted text-[10px] text-center py-1">Demo data • {lineups?.length ?? 0} lineups</div>
           </aside>
 
-          {/* Mobile strips */}
-          <div className="md:hidden bg-pageBg border-b border-borderSubtle shrink-0">
-            <div className="p-2">
-              <MapCard maps={maps} selectedMap={selectedMap} onSelect={(uuid) => store.setMap(uuid)} side={store.side} onSideChange={(s) => store.setSide(s)} />
-            </div>
-            <div className="px-2 pb-2">
-              <div className="rounded-card bg-panel border border-borderSubtle p-2">
-                <p className="text-xs font-semibold text-muted mb-2">Agents</p>
-                <div className="flex gap-2 overflow-auto pb-1 overscroll-contain">
-                  {[...agents].sort((a,b)=>a.displayName.localeCompare(b.displayName)).map((agent) => {
-                    const isSelected = store.selectedAgentUuid === agent.uuid;
-                    const has = hasLineupsForAgent(lineups ?? [], agent.uuid, store.selectedMapUuid, store.side);
-                    return (
-                      <button key={agent.uuid} onClick={() => store.setAgent(isSelected ? null : agent.uuid)} className={`shrink-0 w-[48px] h-[48px] rounded-md overflow-hidden bg-tile border-2 ${isSelected ? "border-accent" : "border-transparent"} ${!has ? "opacity-40" : ""} min-w-[48px] min-h-[48px]`}>
-                        <img src={agent.displayIcon} alt={agent.displayName} className="w-full h-full object-cover" />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+          <div className="md:hidden bg-pageBg border-b border-borderSubtle shrink-0 p-2 flex gap-2">
+            <MapCard maps={maps} selectedMap={selectedMap} onSelect={(uuid) => store.setMap(uuid)} />
+            <AgentCard agents={agents} selectedAgent={selectedAgent} onSelect={(uuid) => { if (!uuid) store.setAgent(null); else store.setAgent(uuid); }} />
+          </div>
+          <div className="md:hidden px-2 pb-2 bg-pageBg border-b border-borderSubtle">
+            <SideToggle side={store.side} onSideChange={(s) => store.setSide(s)} />
           </div>
 
-          {/* Map area */}
           <div className="flex-1 flex flex-col min-h-0 min-w-0 relative bg-[#131315] overflow-hidden" style={{ touchAction: "none" }}>
             <Minimap
               map={selectedMap}

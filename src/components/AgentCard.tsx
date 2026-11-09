@@ -15,52 +15,64 @@ export default function AgentCard({
   const sorted = [...agents].sort((a, b) => a.displayName.localeCompare(b.displayName));
 
   return (
-    <div className="rounded-card bg-panel border border-borderSubtle overflow-hidden flex-1">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="relative w-full h-[68px] overflow-hidden text-left flex items-center gap-2 px-2 bg-tile hover:bg-tileHover"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-label="Select agent"
-      >
-        {selectedAgent ? (
-          <>
-            <div className="w-10 h-10 rounded-md overflow-hidden bg-[#1B1B1F] border border-borderSubtle shrink-0">
-              <ValImage src={selectedAgent.displayIconSmall ?? selectedAgent.displayIcon} alt={selectedAgent.displayName} className="w-full h-full object-cover" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-white font-bold text-xs leading-none truncate">{selectedAgent.displayName}</div>
-              <div className="text-white/60 text-[10px] mt-0.5">{selectedAgent.role?.displayName ?? "Agent"}</div>
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 text-muted text-xs">Select agent</div>
-        )}
-        <span className="w-8 h-8 rounded bg-black/40 flex items-center justify-center text-white border border-white/10 text-xs shrink-0">
-          ▾
-        </span>
-      </button>
+    <>
+      <div className="rounded-card bg-panel border border-borderSubtle overflow-hidden flex-1 flex flex-col">
+        <button
+          onClick={() => setOpen(true)}
+          className="relative w-full aspect-square overflow-hidden text-left group min-h-[88px]"
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          aria-label="Select agent"
+        >
+          {selectedAgent ? (
+            <>
+              <ValImage src={selectedAgent.displayIcon} alt={selectedAgent.displayName} className="absolute inset-0" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-2">
+                <div className="text-white font-bold text-xs leading-none truncate">{selectedAgent.displayName}</div>
+                <div className="text-white/60 text-[10px] mt-0.5 truncate">{selectedAgent.role?.displayName ?? "Agent"}</div>
+              </div>
+            </>
+          ) : (
+            <div className="absolute inset-0 bg-tile flex items-center justify-center text-muted text-xs">Select agent</div>
+          )}
+        </button>
+      </div>
 
       {open && (
-        <div className="p-2 bg-panel border-t border-borderSubtle max-h-[320px] overflow-auto thin-scrollbar">
-          <div className="grid grid-cols-4 gap-1.5">
-            {sorted.map((ag) => (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+          <div className="bg-panel border border-borderSubtle rounded-card w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-borderSubtle flex items-center justify-between shrink-0">
+              <h3 className="text-textPrimary font-bold">Select agent</h3>
+              <button onClick={() => setOpen(false)} className="w-10 h-10 rounded bg-tile hover:bg-tileHover flex items-center justify-center text-muted">✕</button>
+            </div>
+            <div className="p-3 overflow-auto thin-scrollbar flex-1">
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                {sorted.map((ag) => (
+                  <button
+                    key={ag.uuid}
+                    onClick={() => {
+                      onSelect(ag.uuid);
+                      setOpen(false);
+                    }}
+                    className={`relative rounded-md overflow-hidden aspect-square bg-tile border-2 flex flex-col items-center justify-end ${selectedAgent?.uuid === ag.uuid ? "border-accent" : "border-transparent hover:border-borderSubtle"}`}
+                    title={ag.displayName}
+                  >
+                    <ValImage src={ag.displayIcon} alt={ag.displayName} className="absolute inset-0" />
+                    <span className="relative z-10 w-full bg-black/70 text-white text-[8px] font-semibold text-center leading-3 py-0.5 truncate px-1">{ag.displayName}</span>
+                  </button>
+                ))}
+              </div>
               <button
-                key={ag.uuid}
-                onClick={() => {
-                  onSelect(ag.uuid);
-                  setOpen(false);
-                }}
-                className={`relative rounded-md overflow-hidden h-[52px] bg-tile border-2 flex flex-col items-center justify-end ${selectedAgent?.uuid === ag.uuid ? "border-accent bg-accent/20" : "border-transparent hover:border-borderSubtle"}`}
-                title={ag.displayName}
+                onClick={() => { onSelect(""); setOpen(false); }}
+                className="mt-3 w-full min-h-[44px] rounded bg-tile hover:bg-tileHover text-muted text-sm border border-borderSubtle"
               >
-                <ValImage src={ag.displayIcon} alt={ag.displayName} className="absolute inset-0 object-cover" />
-                <span className="relative z-10 w-full bg-black/70 text-white text-[8px] font-semibold text-center leading-3 py-0.5 truncate px-1">{ag.displayName}</span>
+                Clear selection
               </button>
-            ))}
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

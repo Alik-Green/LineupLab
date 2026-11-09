@@ -70,6 +70,8 @@ export default function Minimap({
   const zoomClamp = (z: number) => Math.min(3, Math.max(0.6, z));
 
   const onMouseDown = (e: React.MouseEvent) => {
+    // Don't start pan if clicking a button/control
+    if ((e.target as HTMLElement).closest("button")) return;
     setIsDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY, pan: { ...pan } };
   };
@@ -115,6 +117,7 @@ export default function Minimap({
 
   const touchState = useRef<{ dist: number; zoom: number } | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest("button")) return;
     if (e.touches.length === 2) {
       const dx = e.touches[0].clientX - e.touches[1].clientX;
       const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -155,25 +158,6 @@ export default function Minimap({
 
   const hovered = lineups.find((l) => l.id === hoveredId) ?? null;
 
-  // Derive attacker/defender spawn normalized positions from callouts if available, else defaults
-  const spawnNorms = useMemo(() => {
-    if (map && (map as any).callouts && Array.isArray((map as any).callouts)) {
-      const callouts: any[] = (map as any).callouts;
-      const atk = callouts.filter((c) => c.superRegionName === "Attacker Side" || c.superRegionName === "Attacker");
-      const def = callouts.filter((c) => c.superRegionName === "Defender Side" || c.superRegionName === "Defender");
-      const avgNorm = (list: any[]) => {
-        const pts = list.map((c) => calloutToNorm(c, map)).filter(Boolean) as { x: number; y: number }[];
-        if (pts.length === 0) return null;
-        return { x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length };
-      };
-      const atkNorm = avgNorm(atk);
-      const defNorm = avgNorm(def);
-      return { atk: atkNorm, def: defNorm };
-    }
-    return { atk: null, def: null };
-  }, [map]);
-
-  // Callouts list for rendering
   const calloutsList = useMemo(() => {
     if (!map || !(map as any).callouts || !Array.isArray((map as any).callouts)) return [];
     const list: any[] = (map as any).callouts;
@@ -195,8 +179,6 @@ export default function Minimap({
   }
 
   const empty = lineups.length === 0;
-  const atkPos = spawnNorms.atk ? getMarkerPos(spawnNorms.atk) : getMarkerPos({ x: 0.5, y: 0.88 });
-  const defPos = spawnNorms.def ? getMarkerPos(spawnNorms.def) : getMarkerPos({ x: 0.5, y: 0.12 });
 
   return (
     <div
@@ -239,9 +221,15 @@ export default function Minimap({
         />
       </div>
 
-      <div className="absolute top-4 right-4 flex rounded-md overflow-hidden border border-borderSubtle bg-panel shadow-lg">
+      {/* Controls - z-20 and stopPropagation to prevent pan */}
+      <div
+        className="absolute top-4 right-4 flex rounded-md overflow-hidden border border-borderSubtle bg-panel shadow-lg z-20"
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+      >
         <button
-          onClick={() => onZoom(zoomClamp(zoom - 0.2))}
+          onClick={(e) => { e.stopPropagation(); onZoom(zoomClamp(zoom - 0.2)); }}
+          onMouseDown={(e) => e.stopPropagation()}
           className="w-10 h-10 flex items-center justify-center text-textPrimary hover:bg-tile min-w-[40px] min-h-[40px]"
           aria-label="Zoom out"
         >
@@ -249,7 +237,8 @@ export default function Minimap({
         </button>
         <div className="w-px bg-borderSubtle" />
         <button
-          onClick={() => onZoom(zoomClamp(zoom + 0.2))}
+          onClick={(e) => { e.stopPropagation(); onZoom(zoomClamp(zoom + 0.2)); }}
+          onMouseDown={(e) => e.stopPropagation()}
           className="w-10 h-10 flex items-center justify-center text-textPrimary hover:bg-tile min-w-[40px] min-h-[40px]"
           aria-label="Zoom in"
         >
@@ -258,9 +247,14 @@ export default function Minimap({
       </div>
 
       {calloutsList.length > 0 && (
-        <div className="absolute top-4 left-4 flex rounded-md overflow-hidden border border-borderSubtle bg-panel shadow-lg">
+        <div
+          className="absolute top-4 left-4 flex rounded-md overflow-hidden border border-borderSubtle bg-panel shadow-lg z-20"
+          onMouseDown={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+        >
           <button
-            onClick={() => setShowCallouts((v) => !v)}
+            onClick={(e) => { e.stopPropagation(); setShowCallouts((v) => !v); }}
+            onMouseDown={(e) => e.stopPropagation()}
             className={`px-3 h-10 flex items-center justify-center text-xs font-bold min-h-[40px] ${showCallouts ? "bg-accent text-white" : "text-textPrimary hover:bg-tile"}`}
             aria-pressed={showCallouts}
           >
@@ -269,21 +263,7 @@ export default function Minimap({
         </div>
       )}
 
-      <div className="absolute inset-0">
-        {/* Spawn labels that move with minimap */}
-        <div
-          className="absolute px-3 py-1 rounded bg-[#0F2A27] border border-[#3DD6B6]/30 text-[#3DD6B6] text-xs font-bold tracking-widest -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-          style={{ left: defPos.x, top: defPos.y }}
-        >
-          Defenders
-        </div>
-        <div
-          className="absolute px-3 py-1 rounded bg-[#2A1B1F] border border-[#E8404F]/30 text-[#E8404F] text-xs font-bold tracking-widest -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-          style={{ left: atkPos.x, top: atkPos.y }}
-        >
-          Attackers
-        </div>
-
+      <div className="absolute inset-0 pointer-events-none">
         {/* Callouts overlay */}
         {showCallouts &&
           calloutsList.map((c, i) => {
@@ -300,7 +280,10 @@ export default function Minimap({
               </div>
             );
           })}
+      </div>
 
+      {/* Markers layer - pointer events enabled */}
+      <div className="absolute inset-0">
         {lineups.map((l) => {
           const pos = getMarkerPos(l.end);
           const isHovered = hoveredId === l.id;
@@ -311,6 +294,7 @@ export default function Minimap({
           return (
             <div key={l.id} style={{ position: "absolute", left: pos.x, top: pos.y, zIndex: isHovered ? 20 : 5 }}>
               <button
+                onMouseDown={(e) => e.stopPropagation()}
                 onMouseEnter={() => {
                   setHoveredId(l.id);
                   setTooltipPos({ x: pos.x, y: pos.y });
@@ -461,7 +445,9 @@ export default function Minimap({
             <p className="text-textPrimary font-semibold">No lineups match your filters</p>
             <p className="text-muted text-sm mt-1">Try adjusting ability or importance filters</p>
             <button
-              onClick={() => {
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
                 const evt = new CustomEvent("reset-filters");
                 window.dispatchEvent(evt);
               }}
