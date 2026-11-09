@@ -2,69 +2,64 @@
 
 ## Stack
 
-- **Tauri 2 + React + TypeScript + Vite + Tailwind** as required. Chose Zustand for tiny global state (persisted to localStorage via custom `persist()` helper instead of middleware, to keep shape explicit and avoid hydration flicker).
-- No Rust logic: only default Tauri plugin_shell. All game logic in React.
-- Preferences in `localStorage` keyed `lineuplab_prefs_v1`.
+- **Tauri 2 + React + TypeScript + Vite + Tailwind** as required. Zustand for global state persisted to localStorage `lineuplab_prefs_v1`; data in IndexedDB via `idb` (DB `lineuplab` v2: stores `lineups`, `media`, `importHistory`, `meta`).
+- No Rust logic beyond `main.rs` `windows_subsystem="windows"` + default Tauri `shell`.
+- `zod` for tolerant pack validation, `fflate` for safe unzip (no `jszip` heavy dep).
 
 ## Valorant API / CSP
 
-- Endpoints: `v1/agents?isPlayableCharacter=true`, `v1/maps`, `v1/version`. All fetched at runtime.
-- Images from `media.valorant-api.com` and `valorant-api.com` allowed via Tauri `security.csp`:
-  `img-src 'self' asset: http://asset.localhost https://media.valorant-api.com https://valorant-api.com data: blob:`
-  and `connect-src` for API.
-- Single `<ValImage>` component: skeleton, retry once with cache-bust, graceful fallback (initials), `console.warn` on failure.
-- Caching: JSON stored in localStorage keyed by version (`lineuplab_agents_cache`, `lineuplab_maps_cache`). Fallback JSON snapshots in `src/data/fallback*.json` for offline/demo.
-- Verified via build and manual dev run (media loads when outbound allowed).
+- Endpoints `v1/agents`, `v1/maps`, `v1/version` cached by version key, fallback `src/data/fallback*.json`.
+- CSP in `tauri.conf.json` fixed to allow Tauri fetch: `default-src 'self' ipc: http://ipc.localhost https://tauri.localhost http://tauri.localhost` + `connect-src ... https://tauri.localhost ...` + `img-src asset: ...` — resolves `Failed to fetch /lineups.json` on `https://tauri.localhost`.
+- `<ValImage>`: skeleton + retry once with cache-bust.
 
-## Layout / Design Tokens
+## Layout / No-Scroll (v0.2.0 Part A)
 
-- Tokens in `src/tokens.css` and Tailwind extend: `pageBg #1B1B1F`, `panel #2A2B32`, `tile #34353D`, `accent #E8404F`, etc. Rounded 6-8px, 120-150ms transitions.
-- Top bar: `Lineups` active tab, future tabs placeholder.
-- Left panel 350px fixed, scrolls. Right minimap flex-1.
-- Map card: splash with gradient, dropdown grid of image tiles (not text list), Attack/Defense segmented toggle (attack red `#E8404F`).
-- Agent grid: 5-col, single selection, bright if has lineups for map+side else dimmed+desaturated, still clickable.
-- Abilities: show selected agent's lineup-able slots, tinted red when active, tooltip, all selected initially.
-- Filters: Importance (Essential green outline, Useful white, Optional red) and Difficulty (Easy green, Normal amber, Hard red). All selected initially, pill buttons.
+- Shell: `html,body,#root {height:100%;overflow:hidden;overscroll-behavior:none}` + `#root {height:100dvh;display:flex;flex-direction:column}`.
+- `App.tsx`: top `h-[100dvh] h-screen flex flex-col overflow-hidden`, header 56px `shrink-0`, footer 28px, center `flex-1 min-h-0 overflow-hidden flex flex-col md:flex-row`.
+- Left panel `w-[350px] shrink-0 flex flex-col gap-2 p-2 overflow-hidden`; inner `flex-1 min-h-0 overflow-hidden flex flex-col gap-2`.
+- `AgentGridCompact`: `ResizeObserver` measures container width → 5 cols <300px, 6 cols <340px, 7 cols ≥340px; tiles `min-h-[40px]`, thin-scrollbar `overflow-auto overscroll-contain`.
+- `FiltersCardCollapsible`: button collapses inner `overflow-auto`; thin scrollbar last resort.
+- `AbilityBar` (kept) + vertical variant for future; all controls 40px desktop / 48px mobile.
+- Minimap: `wheel` via `addEventListener("wheel", handler, {passive:false})` + `preventDefault` so document never scrolls; `touch-action:none` via inline style + `touch-none` class; pinch zoom via two-touch distance.
+- Overlays (Import, Detail, Settings): `max-height: calc(100dvh-2rem)` `overflow-auto overscroll-contain`.
+- Mobile: `md:hidden` bottom sheet `fixed bottom-0 max-h-[80vh] rounded-t-xl` with handle + safe-area insets.
+- Verified via Playwright `tests/no-scroll.spec.ts` at 1100×650/390×640/1440×900/1920×1080 + wheel test asserts `scrollY===0` and `scrollHeight<=innerHeight`.
 
-## Minimap
+## Pack Import (v0.2.0 Part B)
 
-- Backdrop: blurred splash at 20% opacity.
-- Minimap image (`displayIcon`) centered, size `min(container*0.82, 680px)`.
-- Zoom: `+/-` buttons, wheel, drag, double-click reset, pinch-zoom (two-touch distance). Zoom clamped 0.6–3.
-- Pan: mouse drag, touch drag.
-- Markers: landing position, dark circle + coloured ring (importance), ability icon tinted red (`filter: invert…`). Constant 32px regardless of zoom.
-- Hover: SVG path from `start → bounces → end` with arrowhead, bounce dots amber, start pin white/red with label, other markers dim 30%, tooltip card with title/chips. 150ms draw.
-- Detail panel: slide-in from right (desktop) / bottom sheet (mobile), carousel for `stand/aim/landing`, notes, close via Esc/button, focus rings, back button closes panel.
-- Empty state: "No lineups match your filters" + Reset.
-- Performance: markers are DOM buttons (45 demo, memoised). For 1k+ would switch to canvas/R-tree; current is fine.
-- Accessibility: tooltips on icons, 40px desktop/48px mobile min, colours supplemented by labels/chips, keyboard reachable.
+- **Zip parsing**: `parsePackZip` with limits 100MB/2000 files, reject `..`/`/`, json <2MB, `fflate` `unzipSync` + `strFromU8`.
+- **Manifest**: `ManifestSchema` passthrough, aliases `title/packName→name`, `desc→description`, `version→formatVersion`.
+- **Lineups**: `PackLineupSchema` passthrough, supports single or array per file, inline `manifest.lineups`; tolerant side/difficulty/importance/abilitySlot normalization (`medium→normal`, `must→essential`, etc.).
+- **Mapping** `mapRawToLineup`: fills `Lineup` extended fields `slots{stand1,aim1,stand2,aim2,landing}`, `throws[]`, `steps`, `attributes`, `circles` deduped by `id` (B4); handles `projectiles`, legacy `media` keys, `start/end` as `[x,y]` or `{x,y}`, clamps 0..1; sets `source:"import"`, `importBatchId`, `legacy`, `status`, `isSeedPlaceholder`.
+- **Storage**: `db.ts` creates `lineups` (indexes by-map/by-agent/by-batch), `media` (by-lineup/by-sha), `importHistory`; `sha256Bytes` via `crypto.subtle`; `putLineups` transactional.
+- **Media deduplication**: `storeMediaBatch` checks `by-sha` index, skips duplicate SHA (never re-encodes original Blob); thumbnail via `createImageBitmap` + canvas 240px JPEG separate.
+- **Preview**: `buildPreview` computes per-id status New/Identical/Pack newer/Local newer/Error; duplicate pack warning via `importHistory` lookup; `isSeedPlaceholder` banner and unchecked default.
+- **Conflicts**: UI `Skip/Overwrite/Copy` (copy → `${id}-copy-${timestamp}`).
+- **Progress/report/Undo/history**: `ImportDialog` progress bar, report grid, warnings, `addImportHistory`, undo deletes `insertedIds`.
 
-## Data
+## Detail Panel (B4+)
 
-- `Lineup` type matches spec, compatible with older pack format.
-- `LineupRepository` interface (`JsonLineupRepository` loads `/lineups.json`). Settings menu lets user load a local `lineups.json` array via FileReader.
-- Demo data: `scripts/generate-demo.ts` fetches real UUIDs if network available else fallback snapshots. Generates ~45 lineups covering all maps/sides/difficulties/importances, 12 with bounces, all tagged `demo` + badge. Plausible fake points normalized 0..1.
+- `DetailPanel` v2 uses `AnnotatedImage`:
+  - SVG circles viewBox 0..100 (normalized), dashed, color/label, connector placeholder.
+  - Zoom lens 140px circle 2× magnified, clamped via `clamp()` inside image, connector line to cursor, hidden if `size.w <200`.
+  - Shows throws/steps/circles counts, batch id.
 
-## Android / Responsive
+## Create Wizard (Part C)
 
-- Breakpoint ~900px (`md:` = 768px, adjusted to spec). Below: minimap on top full-width, filters bottom sheet, map/agent horizontal strips, 48px touch targets, safe-area insets via `viewport-fit=cover`.
-- `minSdkVersion 26`, portrait+landscape work.
-- Android workflow: full `src-tauri/gen/android` placeholder (init requires Rust/NDK; documented as manually completed via CI).
+- `CreateWizard` skeleton only (no persistence):
+  - Tab `lineups|create` in `TopBar`.
+  - Stepper 5 numbered pills clickable, `active` vs `done` colors.
+  - Steps Setup/Capture/Pins/Details/Review each fit viewport `flex-1 min-h-0 overflow-auto p-4`; controls min 40/48px; "Coming soon" toasts via DOM div 2.5s.
+  - Next/Back navigation.
 
 ## Build / Release
 
-- `ci.yml` lint+typecheck+test+build on push/PR.
-- `release.yml` on `v*` tags + manual_dispatch: windows job (tauri-action), android job (Java17, SDK/NDK, Rust targets, APK), release job attaches `LineupLab-<version>-windows-setup.exe` + `-android.apk` + SHA256. Secrets `ANDROID_KEYSTORE_*` used, fallback debug keystore with warning.
-- Pinned actions, cached Rust/npm/Gradle.
-
-## Alternatives considered
-
-- Radix Popover for map dropdown → custom div for simplicity.
-- Zustand persist middleware → manual to allow Set serialization.
-- Canvas for minimap → SVG/DOM for easier hover/tooltip; can migrate if needed.
-- Self-host Inter via Google Fonts CDN → local stub files + system fallback for offline.
+- `package.json` 0.2.0, `src-tauri/Cargo.toml` 0.2.0, `tauri.conf.json` `build.beforeBuildCommand = "npm run build"`.
+- Windows fix: `src-tauri/src/main.rs` `#![cfg_attr(not(debug_assertions), windows_subsystem="windows")]` hides console; release.yml restores real exe detection (no placeholder on success).
+- `docs/PACK_FORMAT.md` spec + `docs/WINDOWS_TEST_PLAN.md` manual steps.
+- Screenshots via `@sparticuz/chromium` + `al2023.tar.br` libs.
 
 ## Verification gaps
 
-- `cargo check` not run locally (Rust unavailable in sandbox) → noted in README.
-- Playwright browser download blocked (cdn.playwright.dev not in egress allowlist) → screenshots generated via fallback synthetic images; real browser QA documented as untested.
+- `cargo check` not in sandbox (Rust unavailable) — relied on CI `cargo check` equivalent via `tauri build`.
+- Playwright browsers via `@sparticuz/chromium` self-contained (cdn.playwright.dev blocked).

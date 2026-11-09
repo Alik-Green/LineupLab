@@ -75,11 +75,18 @@ export default function Minimap({
   };
   const onMouseUp = () => setIsDragging(false);
 
-  const onWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.08 : 0.08;
-    onZoom(zoomClamp(zoom + delta));
-  };
+  // wheel isolated: passive:false + preventDefault so document never scrolls
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.08 : 0.08;
+      onZoom(zoomClamp(zoom + delta));
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler as any);
+  }, [zoom, onZoom]);
 
   // touch pinch
   const touchState = useRef<{ dist: number; zoom: number } | null>(null);
@@ -143,7 +150,6 @@ export default function Minimap({
       onMouseMove={onMouseMove}
       onMouseUp={onMouseUp}
       onMouseLeave={() => setIsDragging(false)}
-      onWheel={onWheel}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -151,7 +157,7 @@ export default function Minimap({
         onZoom(1);
         onPan({ x: 0, y: 0 });
       }}
-      style={{ cursor: isDragging ? "grabbing" : "grab" }}
+      style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" } as any}
     >
       {/* blurred backdrop */}
       <div className="absolute inset-0">

@@ -3,8 +3,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Self-hosted Inter - loaded via Google Fonts CDN with fallback to system. 
-   For offline, we include a local WOFF2 if present. */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -22,10 +20,36 @@
 
 html, body, #root {
   height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+html {
+  overscroll-behavior: none;
 }
 body {
   background: var(--color-page-bg);
   color: var(--color-text);
   font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+#root {
+  height: 100dvh;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #3A3B44 transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: #3A3B44;
+  border-radius: 6px;
 }
