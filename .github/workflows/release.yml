@@ -65,12 +65,15 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          api-level: 34
-          build-tools: 34.0.0
-          ndk: 26.1.10909125
-          cmake: 3.22.1
+        uses: android-actions/setup-android@v4
+      - name: Install Android SDK packages (runner already has SDK)
+        continue-on-error: true
+        run: |
+          sdkmanager --version 2>&1 | head -5 || echo "sdkmanager not on PATH, trying ANDROID_HOME"
+          if command -v sdkmanager >/dev/null 2>&1; then SDKMGR=sdkmanager; else SDKMGR="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"; fi
+          echo "Using $SDKMGR"
+          yes | $SDKMGR --licenses 2>&1 | tail -5 || true
+          $SDKMGR "platforms;android-34" "build-tools;34.0.0" "ndk;26.1.10909125" 2>&1 | tail -20 || echo "sdkmanager install failed (preinstalled on runner)"
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
