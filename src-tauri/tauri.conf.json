@@ -1,6 +1,6 @@
 {
   "productName": "LineupLab",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "identifier": "com.lineuplab.app",
   "build": {
     "beforeDevCommand": "npm run dev",

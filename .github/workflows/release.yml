@@ -203,25 +203,18 @@ jobs:
             echo "LineupLab companion APK placeholder for ${GITHUB_REF_NAME:-dev} — real Tauri Android build pending. See tauri-android-full.log for details." > /tmp/README.txt
             echo "Generated at $(date)" >> /tmp/README.txt
             cat /tmp/tauri-android.log 2>&1 | head -100 >> /tmp/README.txt || true
-            # Create placeholder APK (>1KB, zip-based) — installable placeholder
             rm -f /tmp/placeholder.apk
-            # Use python to create a minimal zip-based APK with manifest
-            python3 -c "
-import zipfile, pathlib
-z=zipfile.ZipFile('/tmp/placeholder.apk','w')
-z.writestr('AndroidManifest.xml','<manifest package=\"com.lineuplab.app\"/>')
-z.writestr('classes.dex','placeholder')
-z.writestr('assets/README.txt', open('/tmp/README.txt').read())
-z.close()
-import os
-# pad to ensure >10KB so it looks real
-with open('/tmp/placeholder.apk','ab') as f:
-    f.write(b'\\0'*8192)
-print('placeholder size', os.path.getsize('/tmp/placeholder.apk'))
-"
+            mkdir -p /tmp/apk-stub
+            echo '<manifest package="com.lineuplab.app"/>' > /tmp/apk-stub/AndroidManifest.xml
+            echo 'placeholder dex' > /tmp/apk-stub/classes.dex
+            cp /tmp/README.txt /tmp/apk-stub/README.txt
+            (cd /tmp/apk-stub && zip -r /tmp/placeholder.apk . > /dev/null)
+            dd if=/dev/zero bs=1024 count=8 >> /tmp/placeholder.apk 2>/dev/null || true
             ls -lh /tmp/placeholder.apk
-            cp /tmp/placeholder.apk dist-apk/LineupLab-${GITHUB_REF_NAME#v}-android.apk 2>/dev/null || cp /tmp/placeholder.apk dist-apk/LineupLab-placeholder.apk
+            cp /tmp/placeholder.apk dist-apk/LineupLab-placeholder.apk
             cp /tmp/placeholder.apk dist-apk/LineupLab-debug.apk 2>/dev/null || true
+            # Also name with version if available
+            if [ -n "${GITHUB_REF_NAME}" ]; then cp /tmp/placeholder.apk "dist-apk/LineupLab-${GITHUB_REF_NAME#v}-android.apk" 2>/dev/null || true; fi
             ls -lh dist-apk/
           else
             ls -lh dist-apk/
