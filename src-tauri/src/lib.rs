@@ -1,11 +1,11 @@
 #[tauri::command]
 fn is_valorant_running() -> bool {
-  use sysinfo::{System, ProcessesToUpdate};
+  use sysinfo::{System, SystemExt};
   let mut sys = System::new_all();
-  sys.refresh_processes_specifics(ProcessesToUpdate::All, true);
+  sys.refresh_all();
   for (_, proc) in sys.processes() {
-    let name = proc.name().to_string_lossy().to_lowercase();
-    if name.contains("valorant") || name.contains("valorant-win64-shipping") {
+    let name = format!("{:?}", proc.name()).to_lowercase();
+    if name.contains("valorant") {
       return true;
     }
   }
