@@ -84,17 +84,22 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Install Android targets
         run: rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --locked 2>&1 | tail -20 || cargo install cargo-ndk 2>&1 | tail -20
       - name: Install dependencies
         run: npm ci
       - name: Init Android project if missing
         run: |
           set -x
           ls -lh src-tauri/gen/android 2>&1 | head -20 || echo "no gen yet"
-          if [ ! -f "src-tauri/gen/android/app/build.gradle.kts" ] && [ ! -f "src-tauri/gen/android/build.gradle.kts" ]; then
+          if [ ! -f "src-tauri/gen/android/app/build.gradle.kts" ] && [ ! -f "src-tauri/gen/android/build.gradle.kts" ] && [ ! -f "src-tauri/gen/android/app/build.gradle" ]; then
             echo "Init Android project..."
-            npx tauri android init 2>&1 | tail -50
+            npx tauri android init 2>&1 | tee /tmp/tauri-init.log | tail -100
+            echo "Init exit: ${PIPESTATUS[0]}"
+            cat /tmp/tauri-init.log | tail -50
             echo "Init done, listing gen:"
-            ls -R src-tauri/gen/android 2>&1 | head -100 || true
+            ls -R src-tauri/gen/android 2>&1 | head -200 || true
+            cat src-tauri/gen/android/app/build.gradle.kts 2>&1 | head -100 || cat src-tauri/gen/android/app/build.gradle 2>&1 | head -100 || true
           else
             echo "Android project already exists"
             ls -R src-tauri/gen/android 2>&1 | head -100 || true
@@ -114,9 +119,16 @@ jobs:
           else
             echo "No signing secrets — building debug APK"
           fi
+          echo "=== Env for Android build ==="
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
+          echo "NDK_HOME=$NDK_HOME"
+          ls -lh $ANDROID_HOME/ndk/* 2>&1 | head -30 || true
+          cargo ndk --version 2>&1 || echo "cargo ndk not found"
+          rustup target list --installed 2>&1 | head -20
           echo "=== Tauri Android build ==="
           # Try tauri build with verbose output, log to file
-          npx tauri android build 2>&1 | tee /tmp/tauri-android.log | tail -200
+          npx tauri android build 2>&1 | tee /tmp/tauri-android.log | tail -300
           TAURI_EXIT=${PIPESTATUS[0]}
           echo "Tauri android build exit: $TAURI_EXIT"
           cat /tmp/tauri-android.log | tail -100
