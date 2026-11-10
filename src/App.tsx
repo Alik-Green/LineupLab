@@ -14,6 +14,9 @@ import ImportDialog from "./components/ImportDialog";
 import ExportDialog from "./components/ExportDialog";
 import LANShare from "./components/LANShare";
 import OverlayHost from "./components/OverlayHost";
+import OverlayWindow from "./components/OverlayWindow";
+import OverlayControls from "./components/OverlayControls";
+import { useTauriOverlay } from "./hooks/useTauriOverlay";
 import { useValorantData } from "./hooks/useValorantData";
 import { useAppStore } from "./stores/appStore";
 import { getAllLineups, removeDemoData, seedDemoIfEmpty, deleteLineup } from "./lib/indexedDBRepository";
@@ -22,7 +25,7 @@ import type { Lineup } from "./types/lineup";
 
 type Tab = "lineups" | "create";
 
-function LeftSidebar({ maps, agents, selectedMap, selectedAgent, store, lineupsCount, singleSelect }: any) {
+function LeftSidebar({ maps, agents, selectedMap, selectedAgent, store, lineupsCount, singleSelect, overlayProps }: any) {
   const onAbilityToggle = singleSelect ? (slot: any) => store.setSingleAbility(slot) : (slot: any) => store.toggleAbility(slot);
   const onImpToggle = singleSelect ? (v: any) => store.setSingleImportance(v) : (v: any) => store.toggleImportance(v);
   const onDiffToggle = singleSelect ? (v: any) => store.setSingleDifficulty(v) : (v: any) => store.toggleDifficulty(v);
@@ -35,7 +38,7 @@ function LeftSidebar({ maps, agents, selectedMap, selectedAgent, store, lineupsC
       <div className="shrink-0">
         <SideToggle side={store.side} onSideChange={(s: any) => store.setSide(s)} />
       </div>
-      <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden">
+      <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-auto thin-scrollbar">
         <AbilityBar agent={selectedAgent} selected={store.selectedAbilities} onToggle={onAbilityToggle} singleSelect={singleSelect} />
         <FiltersCardCollapsible
           importance={store.importance}
@@ -44,6 +47,11 @@ function LeftSidebar({ maps, agents, selectedMap, selectedAgent, store, lineupsC
           onToggleDifficulty={onDiffToggle}
           onReset={() => store.resetFilters()}
         />
+        {overlayProps?.isTauri && !singleSelect && (
+          <div className="shrink-0">
+            <OverlayControls {...overlayProps} />
+          </div>
+        )}
       </div>
       <div className="shrink-0 text-muted text-[10px] text-center py-1">{lineupsCount} lineups</div>
     </>
@@ -67,6 +75,7 @@ export default function App() {
   const [lanOpen, setLanOpen] = useState(false);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlayIdx, setOverlayIdx] = useState(0);
+  const tauriOverlay = useTauriOverlay();
 
   const store = useAppStore();
 
@@ -144,37 +153,55 @@ export default function App() {
   const selectedLineup = useMemo(() => filtered.find((l) => l.id === selectedId) ?? lineups?.find((l) => l.id === selectedId) ?? null, [filtered, lineups, selectedId]);
 
   useEffect(() => {
-    if (settingsOpen || importOpen || mobileFiltersOpen || selectedLineup || shareOpen || exportOpen || lanOpen || overlayOpen) document.body.style.overflow = "hidden";
+    if (settingsOpen || importOpen || mobileFiltersOpen || selectedLineup || shareOpen || exportOpen || lanOpen || overlayOpen || tauriOverlay.overlayOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
-  }, [settingsOpen, importOpen, mobileFiltersOpen, selectedLineup, shareOpen, exportOpen, lanOpen, overlayOpen]);
+  }, [settingsOpen, importOpen, mobileFiltersOpen, selectedLineup, shareOpen, exportOpen, lanOpen, overlayOpen, tauriOverlay.overlayOpen]);
 
-  // global Alt+O for overlay, Alt+E for export
+  // global Alt+O for overlay, Alt+E for export — Tauri overlay window when available
   useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if (e.altKey && e.key.toLowerCase() === "o") { e.preventDefault(); if (selectedLineup || filtered.length>0) setOverlayOpen(v=>!v); }
+    const h = async (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === "o") {
+        e.preventDefault();
+        const lineup = selectedLineup ?? filtered[0] ?? null;
+        if (!lineup) return;
+        // Prefer Tauri separate window
+        if (tauriOverlay.isTauri) {
+          if (tauriOverlay.overlayOpen) await tauriOverlay.closeOverlay();
+          else await tauriOverlay.openOverlay(lineup as any);
+        } else {
+          if (selectedLineup || filtered.length>0) setOverlayOpen(v=>!v);
+        }
+      }
       if (e.altKey && e.key.toLowerCase() === "e" && !e.ctrlKey) { e.preventDefault(); setExportOpen(true); }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, [selectedLineup, filtered]);
+  }, [selectedLineup, filtered, tauriOverlay]);
 
-  // Pip window mode: ?pip=1 in Tauri secondary window — show minimal pip view
+  // Keep overlay window in sync when selected lineup changes
+  useEffect(() => {
+    if (tauriOverlay.overlayOpen && selectedLineup) {
+      tauriOverlay.updateOverlayLineup(selectedLineup as any).catch(()=>{});
+    }
+  }, [selectedLineup?.id]);
+
+  // Overlay window mode: ?overlay=1 (true separate always-on-top window, frameless, no title bar)
+  const isOverlayWindow = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("overlay") === "1";
+  if (isOverlayWindow) {
+    const overlayLineup = filtered[0] ?? lineups?.[0] ?? null;
+    return (
+      <div className="h-screen w-screen bg-transparent overflow-hidden">
+        <OverlayWindow lineup={overlayLineup} />
+      </div>
+    );
+  }
+  // Legacy ?pip=1 still supported
   const isPipWindow = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("pip") === "1";
   if (isPipWindow) {
     const pipLineup = filtered[0] ?? lineups?.[0] ?? null;
-    if (!pipLineup) return <div className="h-screen flex items-center justify-center bg-[#0B0E14] text-muted text-sm p-4 text-center">No lineup — open a lineup in main window first.<br/>This PiP stays always-on-top above Valorant.</div>;
     return (
-      <div className="h-screen flex flex-col bg-[#0B0E14] text-textPrimary overflow-hidden">
-        <div className="h-8 shrink-0 flex items-center justify-between px-2 bg-[#1B1B1F] border-b border-borderSubtle" data-tauri-drag-region>
-          <span className="text-xs font-bold truncate">{pipLineup.title}</span>
-          <button onClick={()=>{ const w=(window as any).__TAURI__?.window?.getCurrentWindow?.(); w?.close?.(); window.close(); }} className="w-6 h-6 rounded bg-tile flex items-center justify-center text-muted">✕</button>
-        </div>
-        <div className="flex-1 bg-[#131315] flex items-center justify-center p-2">
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-xs text-muted">PiP active — use main window to change lineup (Alt+O)</span>
-          </div>
-        </div>
-        <div className="shrink-0 p-2 bg-panel border-t border-borderSubtle text-[10px] text-muted text-center">LineupLab PiP • Always on top • Drag title bar to move</div>
+      <div className="h-screen w-screen bg-transparent overflow-hidden">
+        <OverlayWindow lineup={pipLineup} />
       </div>
     );
   }
@@ -189,7 +216,16 @@ export default function App() {
         onTabChange={setActiveTab}
         onOpenSettings={() => setSettingsOpen((v) => !v)}
         onImport={() => setShareOpen(true)}
-        onOverlay={() => setOverlayOpen(v=>!v)}
+        onOverlay={async () => {
+          const lineup = selectedLineup ?? filtered[0] ?? null;
+          if (!lineup) return;
+          if (tauriOverlay.isTauri) {
+            if (tauriOverlay.overlayOpen) await tauriOverlay.closeOverlay();
+            else await tauriOverlay.openOverlay(lineup as any);
+          } else {
+            setOverlayOpen(v=>!v);
+          }
+        }}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         createMode={createMode}
@@ -228,7 +264,8 @@ export default function App() {
       )}
       {exportOpen && <ExportDialog filtered={filtered} onClose={()=>setExportOpen(false)} />}
       {lanOpen && <LANShare onClose={()=>setLanOpen(false)} />}
-      {overlayOpen && (
+      {/* In-app fallback overlay for browser (Tauri uses separate window) */}
+      {overlayOpen && !tauriOverlay.isTauri && (
         <OverlayHost
           lineup={selectedLineup ?? filtered[overlayIdx % Math.max(1,filtered.length)] as any ?? lineups?.[0] as any ?? null}
           onClose={()=>setOverlayOpen(false)}
@@ -236,13 +273,19 @@ export default function App() {
           onNextLineup={()=> setOverlayIdx(i=> Math.min(filtered.length-1,i+1))}
         />
       )}
+      {/* Tauri separate overlay window controls — visible in main app */}
+      {tauriOverlay.isTauri && (
+        <div className="hidden">
+          {/* keep tauriOverlay state alive */}
+        </div>
+      )}
       {settingsOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSettingsOpen(false)}>
           <div className="bg-panel border border-borderSubtle rounded-card p-5 w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-auto space-y-3" onClick={(e)=>e.stopPropagation()}>
             <h3 className="text-textPrimary font-bold text-lg">Settings</h3>
             <div className="rounded-md bg-tile border border-borderSubtle p-3">
               <p className="text-xs font-bold tracking-widest text-muted">APP</p>
-              <p className="text-sm text-textPrimary mt-1">LineupLab v0.3.5 • Overlay PiP • LAN Share • Capture</p>
+              <p className="text-sm text-textPrimary mt-1">LineupLab v0.3.11 • Overlay PiP • LAN Share • Capture</p>
               <p className="text-xs text-muted mt-1">Data stored locally in IndexedDB. Export for backup.</p>
               <div className="mt-2 flex gap-2">
                 <button onClick={()=>{ setSettingsOpen(false); setExportOpen(true); }} className="px-3 py-1.5 rounded bg-accent text-white text-xs font-bold">Export backup</button>
@@ -250,9 +293,19 @@ export default function App() {
               </div>
             </div>
             <div className="rounded-md bg-tile border border-borderSubtle p-3">
-              <p className="text-xs font-bold tracking-widest text-muted">OVERLAY</p>
-              <p className="text-xs text-muted mt-1">Always-on-top PiP stays above Valorant. Alt+O toggle, Alt+M minimal, Alt+Q/E cycle.</p>
-              <button onClick={()=>{ setSettingsOpen(false); if (filtered.length>0) setOverlayOpen(true); }} className="mt-2 w-full py-2 rounded bg-panel border border-borderSubtle text-xs font-bold text-textPrimary">Open Overlay</button>
+              <p className="text-xs font-bold tracking-widest text-muted">OVERLAY — SEPARATE WINDOW</p>
+              <p className="text-xs text-muted mt-1">Frameless, always on top of Valorant. No title bar. Control corner/size here.</p>
+              <button onClick={async ()=>{
+                const lineup = selectedLineup ?? filtered[0];
+                if (!lineup) return;
+                if (tauriOverlay.isTauri) {
+                  if (tauriOverlay.overlayOpen) await tauriOverlay.closeOverlay();
+                  else await tauriOverlay.openOverlay(lineup as any);
+                } else {
+                  setOverlayOpen(true);
+                }
+                setSettingsOpen(false);
+              }} className="mt-2 w-full py-2 rounded bg-accent text-white text-xs font-bold"> {tauriOverlay.overlayOpen ? "Close Overlay" : "Open Overlay (Separate Window)"} </button>
             </div>
             <div className="rounded-md bg-tile border border-borderSubtle p-3">
               <p className="text-xs font-bold tracking-widest text-muted">LAN / COMPANION</p>
@@ -271,7 +324,19 @@ export default function App() {
       <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
         {/* Shared left sidebar — matches lineups tabs left bar */}
         <aside className="hidden md:flex w-[350px] shrink-0 flex flex-col gap-2 p-2 bg-[#1B1B1F] border-r border-borderSubtle min-h-0 overflow-hidden">
-          <LeftSidebar maps={maps} agents={agents} selectedMap={selectedMap} selectedAgent={selectedAgent} store={store} lineupsCount={lineups?.length ?? 0} singleSelect={activeTab === "create"} />
+          <LeftSidebar maps={maps} agents={agents} selectedMap={selectedMap} selectedAgent={selectedAgent} store={store} lineupsCount={lineups?.length ?? 0} singleSelect={activeTab === "create"} overlayProps={{
+            lineup: (selectedLineup ?? filtered[0] ?? null) as any,
+            isOpen: tauriOverlay.overlayOpen,
+            corner: tauriOverlay.corner,
+            size: tauriOverlay.size,
+            opacity: tauriOverlay.opacity,
+            isTauri: tauriOverlay.isTauri,
+            onOpen: () => { const l = (selectedLineup ?? filtered[0] ?? null) as any; if (l) tauriOverlay.openOverlay(l); },
+            onClose: () => tauriOverlay.closeOverlay(),
+            onCornerChange: (c:any) => tauriOverlay.setCorner(c),
+            onSizeChange: (s:any) => tauriOverlay.setSize(s),
+            onOpacityChange: (o:number) => tauriOverlay.setOpacity(o),
+          }} />
         </aside>
 
         {/* Mobile selectors */}
@@ -297,7 +362,7 @@ export default function App() {
             )}
             <button onClick={() => setMobileFiltersOpen(true)} className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 rounded-md bg-panel border border-borderSubtle text-textPrimary font-bold shadow-xl min-h-[48px]">Filters • {filtered.length}</button>
             {selectedLineup && (
-              <DetailPanel lineup={selectedLineup as any} agent={agentsMap.get(selectedLineup.agentUuid)} onClose={() => setSelectedId(null)} onDelete={async (id) => { await deleteLineup(id); await refreshLineups(); setSelectedId(null); }} onEdit={() => { setActiveTab("create"); setSelectedId(null); }} onOverlay={() => setOverlayOpen(true)} />
+              <DetailPanel lineup={selectedLineup as any} agent={agentsMap.get(selectedLineup.agentUuid)} onClose={() => setSelectedId(null)} onDelete={async (id) => { await deleteLineup(id); await refreshLineups(); setSelectedId(null); }} onEdit={() => { setActiveTab("create"); setSelectedId(null); }} onOverlay={async () => { const l = selectedLineup as any; if (!l) return; if (tauriOverlay.isTauri) { if (tauriOverlay.overlayOpen) await tauriOverlay.closeOverlay(); else await tauriOverlay.openOverlay(l); } else setOverlayOpen(true); }} />
             )}
           </div>
         )}
