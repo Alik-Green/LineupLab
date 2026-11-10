@@ -32,7 +32,7 @@ type State = {
   hydrateFromStorage: () => void;
 };
 
-const DEFAULT_IMPORTANCE: Importance[] = ["essential", "useful", "optional"];
+const DEFAULT_IMPORTANCE: Importance[] = ["optional"];
 const DEFAULT_DIFFICULTY: Difficulty[] = ["easy", "normal", "hard"];
 const DEFAULT_ABILITIES: AbilitySlot[] = ["Ability1", "Ability2", "Grenade", "Ultimate"];
 

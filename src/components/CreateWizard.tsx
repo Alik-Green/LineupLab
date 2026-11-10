@@ -104,24 +104,12 @@ export default function CreateWizard({
   };
 
   const captureScreen = async () => {
-    try {
-      if (!navigator.mediaDevices?.getDisplayMedia) {
-        toast("Screen capture not supported");
-        return;
-      }
-      const valorantRunning = await detectValorant();
-      const displaySurface = valorantRunning ? "window" : "monitor";
-      if (valorantRunning) toast("Valorant detected — select Valorant window");
-      else toast("Valorant not running — capturing entire screen");
-
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { displaySurface } as any,
-        audio: false,
-      } as any);
+    const doCaptureFromStream = async (stream: MediaStream) => {
       const video = document.createElement("video");
       video.srcObject = stream;
+      // @ts-ignore
       await video.play();
-      await new Promise(r => setTimeout(r, 250));
+      await new Promise(r => setTimeout(r, 200));
       const canvas = document.createElement("canvas");
       canvas.width = video.videoWidth || 1920;
       canvas.height = video.videoHeight || 1080;
@@ -134,6 +122,40 @@ export default function CreateWizard({
       }
       stream.getTracks().forEach(t => t.stop());
       video.remove();
+    };
+    try {
+      // 1) Tauri native capture if available — captures currently focused window/monitor without picker
+      try {
+        const tauri: any = (window as any).__TAURI__;
+        const invoke: any = tauri?.core?.invoke ?? tauri?.invoke;
+        if (invoke) {
+          // try native capture (rust side: screenshots/xcap)
+          const b64: string | null = await invoke("capture_screen").catch(()=>null);
+          if (b64 && typeof b64 === "string" && b64.length > 100) {
+            // b64 is base64 png without prefix
+            const blob = await (async () => {
+              const res = await fetch(`data:image/png;base64,${b64}`);
+              return await res.blob();
+            })();
+            if (blob && blob.size > 500) {
+              setSlotBlob(selectedSlot, blob);
+              toast("Captured focused window");
+              return;
+            }
+          }
+        }
+      } catch {}
+      // 2) Browser fallback — capture currently focused screen (no displaySurface hint, no asking to choose)
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        toast("Screen capture not supported");
+        return;
+      }
+      toast("Capturing focused screen…");
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      } as any);
+      await doCaptureFromStream(stream);
     } catch (e: any) {
       if (e?.name === "NotAllowedError" || e?.name === "AbortError") toast("Capture cancelled");
       else toast("Capture failed: " + String(e?.message ?? e));
@@ -230,7 +252,7 @@ export default function CreateWizard({
     if (!effectiveMap || !effectiveAgent) { toast("Map and agent required"); return; }
     if (!startPin || !endPin) { toast("Place both start and end pins on map"); return; }
     const abilitySlot = Array.from(store.selectedAbilities)[0] as any ?? "Ability1";
-    const importance = Array.from(store.importance)[0] as any ?? "useful";
+    const importance = Array.from(store.importance)[0] as any ?? "optional";
     const difficulty = Array.from(store.difficulty)[0] as any ?? "normal";
     const lineupId = `user-${Date.now().toString(36)}`;
     const newLineup: any = {

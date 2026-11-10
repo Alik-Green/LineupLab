@@ -158,6 +158,27 @@ export default function App() {
     return () => window.removeEventListener("keydown", h);
   }, [selectedLineup, filtered]);
 
+  // Pip window mode: ?pip=1 in Tauri secondary window — show minimal pip view
+  const isPipWindow = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("pip") === "1";
+  if (isPipWindow) {
+    const pipLineup = filtered[0] ?? lineups?.[0] ?? null;
+    if (!pipLineup) return <div className="h-screen flex items-center justify-center bg-[#0B0E14] text-muted text-sm p-4 text-center">No lineup — open a lineup in main window first.<br/>This PiP stays always-on-top above Valorant.</div>;
+    return (
+      <div className="h-screen flex flex-col bg-[#0B0E14] text-textPrimary overflow-hidden">
+        <div className="h-8 shrink-0 flex items-center justify-between px-2 bg-[#1B1B1F] border-b border-borderSubtle" data-tauri-drag-region>
+          <span className="text-xs font-bold truncate">{pipLineup.title}</span>
+          <button onClick={()=>{ const w=(window as any).__TAURI__?.window?.getCurrentWindow?.(); w?.close?.(); window.close(); }} className="w-6 h-6 rounded bg-tile flex items-center justify-center text-muted">✕</button>
+        </div>
+        <div className="flex-1 bg-[#131315] flex items-center justify-center p-2">
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-xs text-muted">PiP active — use main window to change lineup (Alt+O)</span>
+          </div>
+        </div>
+        <div className="shrink-0 p-2 bg-panel border-t border-borderSubtle text-[10px] text-muted text-center">LineupLab PiP • Always on top • Drag title bar to move</div>
+      </div>
+    );
+  }
+
   if (loading || !maps || !agents) return <LoadingScreen error={error} onRetry={retry} />;
   const showLineupsErrorBanner = !!lineupsError;
 
@@ -217,11 +238,32 @@ export default function App() {
       )}
       {settingsOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSettingsOpen(false)}>
-          <div className="bg-panel border border-borderSubtle rounded-card p-5 w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-auto" onClick={(e)=>e.stopPropagation()}>
+          <div className="bg-panel border border-borderSubtle rounded-card p-5 w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-auto space-y-3" onClick={(e)=>e.stopPropagation()}>
             <h3 className="text-textPrimary font-bold text-lg">Settings</h3>
-            <div className="mt-3 text-sm text-muted">Import history.</div>
-            <button onClick={async () => { await removeDemoData(); await refreshLineups(); setSettingsOpen(false); }} className="mt-4 w-full min-h-[40px] rounded bg-tile hover:bg-tileHover text-textPrimary text-sm border border-borderSubtle\">Clear all lineups</button>
-            <div className="mt-4 flex justify-end"><button onClick={() => setSettingsOpen(false)} className="px-4 py-2 rounded bg-tile text-textPrimary min-h-[40px]">Close</button></div>
+            <div className="rounded-md bg-tile border border-borderSubtle p-3">
+              <p className="text-xs font-bold tracking-widest text-muted">APP</p>
+              <p className="text-sm text-textPrimary mt-1">LineupLab v0.3.5 • Overlay PiP • LAN Share • Capture</p>
+              <p className="text-xs text-muted mt-1">Data stored locally in IndexedDB. Export for backup.</p>
+              <div className="mt-2 flex gap-2">
+                <button onClick={()=>{ setSettingsOpen(false); setExportOpen(true); }} className="px-3 py-1.5 rounded bg-accent text-white text-xs font-bold">Export backup</button>
+                <button onClick={()=>{ setSettingsOpen(false); setImportOpen(true); }} className="px-3 py-1.5 rounded bg-tile border border-borderSubtle text-xs font-bold text-textPrimary">Import pack</button>
+              </div>
+            </div>
+            <div className="rounded-md bg-tile border border-borderSubtle p-3">
+              <p className="text-xs font-bold tracking-widest text-muted">OVERLAY</p>
+              <p className="text-xs text-muted mt-1">Always-on-top PiP stays above Valorant. Alt+O toggle, Alt+M minimal, Alt+Q/E cycle.</p>
+              <button onClick={()=>{ setSettingsOpen(false); if (filtered.length>0) setOverlayOpen(true); }} className="mt-2 w-full py-2 rounded bg-panel border border-borderSubtle text-xs font-bold text-textPrimary">Open Overlay</button>
+            </div>
+            <div className="rounded-md bg-tile border border-borderSubtle p-3">
+              <p className="text-xs font-bold tracking-widest text-muted">LAN / COMPANION</p>
+              <p className="text-xs text-muted mt-1">Host on desktop, scan QR with Android companion (same Wi-Fi). APK in Releases.</p>
+              <button onClick={()=>{ setSettingsOpen(false); setLanOpen(true); }} className="mt-2 w-full py-2 rounded bg-panel border border-borderSubtle text-xs font-bold text-textPrimary">Open LAN Share</button>
+            </div>
+            <div className="rounded-md bg-pageBg border border-borderSubtle p-3">
+              <p className="text-xs font-bold tracking-widest text-muted">DANGER ZONE</p>
+              <button onClick={async () => { if (!confirm(`Delete all ${lineups?.length ?? 0} lineups?`)) return; await removeDemoData(); await refreshLineups(); setSettingsOpen(false); }} className="mt-2 w-full min-h-[40px] rounded bg-accent/20 hover:bg-accent/30 text-accent text-sm border border-accent/30 font-bold">Clear all lineups ({lineups?.length ?? 0})</button>
+            </div>
+            <div className="flex justify-end"><button onClick={() => setSettingsOpen(false)} className="px-4 py-2 rounded bg-tile text-textPrimary min-h-[40px]">Close</button></div>
           </div>
         </div>
       )}

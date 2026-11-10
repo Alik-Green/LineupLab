@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Lineup } from "../types/lineup";
 import AnnotatedImage from "./AnnotatedImage";
+import PipOverlay from "./PipOverlay";
 
 type Mode = "normal" | "minimal";
 
@@ -30,11 +31,13 @@ export default function GameOverlay({ lineup, images, onClose, onPrev, onNext, i
     return () => window.removeEventListener("keydown", handler);
   }, [onPrev, onNext, onClose]);
 
+  const [pip, setPip] = useState(false);
   if (!lineup || images.length===0) return null;
   const cur = images[idx];
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/85 backdrop-blur-sm flex flex-col" onClick={onClose}>
+      {pip && <PipOverlay lineup={lineup} onClose={()=>setPip(false)} />}
       <div className="flex-1 relative flex items-center justify-center p-4" onClick={e=>e.stopPropagation()}>
         <div className="relative w-full h-full max-w-[90vw] max-h-[85vh] flex items-center justify-center">
           <AnnotatedImage src={cur.src} circles={cur.circles} />
@@ -75,6 +78,7 @@ export default function GameOverlay({ lineup, images, onClose, onPrev, onNext, i
         )}
 
         <button onClick={onClose} className="absolute top-3 right-3 w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center">✕</button>
+        <button onClick={()=>setPip(v=>!v)} className="absolute top-3 right-14 px-3 h-10 rounded-full bg-accent border border-accent text-white text-xs font-bold flex items-center justify-center" title="Always-on-top PiP — stays above Valorant">{pip ? "Exit PiP" : "PiP ↗"}</button>
         <button onClick={onPrev} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center disabled:opacity-30" disabled={idx===0}>‹</button>
         <button onClick={onNext} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 border border-white/20 text-white flex items-center justify-center disabled:opacity-30" disabled={idx===total-1}>›</button>
       </div>
