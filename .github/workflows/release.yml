@@ -160,6 +160,11 @@ jobs:
           ls -lh $ANDROID_HOME/ndk/* 2>&1 | head -30 || true
           cargo ndk --version 2>&1 || echo "cargo ndk not found"
           rustup target list --installed 2>&1 | head -20
+          echo "=== Test cargo-ndk direct build (diagnostics) ==="
+          cargo ndk --help 2>&1 | head -20 || true
+          # Try direct cargo ndk build for one target to verify NDK setup (allow failure, just diagnostic)
+          cargo ndk -t aarch64-linux-android -o /tmp/ndk-test --platform 34 build --manifest-path src-tauri/Cargo.toml 2>&1 | tail -50 || echo "cargo-ndk direct build failed (expected if tauri template not yet built)"
+          ls -lh /tmp/ndk-test 2>&1 | head -20 || true
           echo "=== Tauri Android build (verbose) ==="
           # Tauri android build with verbose; ensure NDK env exported
           npx tauri android build --verbose 2>&1 | tee /tmp/tauri-android.log | tail -400
@@ -325,6 +330,15 @@ jobs:
             cat ./artifacts/android-apk/NO_APK.txt 2>&1 || true
           fi
           ls -lh release/
+          # Include build logs for diagnostics (helps debug 9KB placeholder)
+          if [ -f ./artifacts/android-apk/tauri-android-full.log ]; then cp ./artifacts/android-apk/tauri-android-full.log release/tauri-android-full.log 2>/dev/null || true; fi
+          if [ -f ./artifacts/android-apk/tauri-init.log ]; then cp ./artifacts/android-apk/tauri-init.log release/tauri-init.log 2>/dev/null || true; fi
+          # Also write a README if APK is placeholder (<1MB)
+          APK_SIZE_CHECK=$(stat -c%s "release/LineupLab-${VERSION}-android.apk" 2>/dev/null || stat -f%z "release/LineupLab-${VERSION}-android.apk" 2>/dev/null || echo 0)
+          if [ "$APK_SIZE_CHECK" -lt 1000000 ]; then
+            echo "APK is placeholder ($APK_SIZE_CHECK bytes <1MB) — real Tauri Android build did not produce APK. See tauri-android-full.log in release assets. To obtain real APK: ensure NDK 26.1.10909125 installed, cargo-ndk available, and src-tauri/gen/android generated via 'tauri android init --ci' with local.properties sdk.dir." > release/README-ANDROID-PLACEHOLDER.txt
+            cat release/README-ANDROID-PLACEHOLDER.txt
+          fi
           cd release && sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
       - name: Create GitHub Release
