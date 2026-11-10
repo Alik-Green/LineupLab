@@ -21,11 +21,7 @@ function DifficultyIcon({ kind }: { kind: Difficulty }) {
   return (
     <span className="flex items-center gap-1">
       {Array.from({ length: 3 }).map((_, i) => (
-        <span
-          key={i}
-          className="w-3 h-3 rounded-full"
-          style={{ background: i < dots ? color : "transparent", border: `2px solid ${i < dots ? color : "#475569"}` }}
-        />
+        <span key={i} className="w-3 h-3 rounded-full" style={{ background: i < dots ? color : "transparent", border: `2px solid ${i < dots ? color : "#475569"}` }} />
       ))}
     </span>
   );
@@ -53,13 +49,7 @@ export default function FiltersCardCollapsible({
             const sel = importance.has(id);
             const stars = id === "essential" ? 3 : id === "useful" ? 2 : 1;
             return (
-              <button
-                key={id}
-                onClick={() => onToggleImportance(id)}
-                aria-pressed={sel}
-                title={id}
-                className={`h-[48px] rounded-md border flex items-center justify-center transition-all ${sel ? "border-accent" : "border-borderSubtle bg-tile opacity-60 hover:opacity-100"}`}
-              >
+              <button key={id} onClick={() => onToggleImportance(id)} aria-pressed={sel} title={id} className={`h-[48px] rounded-md border flex items-center justify-center transition-all ${sel ? "border-accent" : "border-borderSubtle bg-tile opacity-60 hover:opacity-100"}`}>
                 <StarsIcon count={stars} />
               </button>
             );
@@ -73,13 +63,7 @@ export default function FiltersCardCollapsible({
           {(["easy", "normal", "hard"] as Difficulty[]).map((id) => {
             const sel = difficulty.has(id);
             return (
-              <button
-                key={id}
-                onClick={() => onToggleDifficulty(id)}
-                aria-pressed={sel}
-                title={id}
-                className={`h-[48px] rounded-md border flex items-center justify-center transition-all ${sel ? "border-accent" : "border-borderSubtle bg-tile opacity-60 hover:opacity-100"}`}
-              >
+              <button key={id} onClick={() => onToggleDifficulty(id)} aria-pressed={sel} title={id} className={`h-[48px] rounded-md border flex items-center justify-center transition-all ${sel ? "border-accent" : "border-borderSubtle bg-tile opacity-60 hover:opacity-100"}`}>
                 <DifficultyIcon kind={id} />
               </button>
             );

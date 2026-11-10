@@ -70,7 +70,20 @@ export default function Minimap({
     return { w: s, h: s };
   }, [containerSize]);
 
-  const zoomClamp = (z: number) => Math.min(3, Math.max(0.6, z));
+  const zoomClamp = (z: number) => Math.min(4, Math.max(1, z));
+  const clampPan = (p: { x: number; y: number }, z: number = zoom) => {
+    // keep map roughly within viewport: max pan scales with zoom, but never lets image disappear
+    // at zoom 1, max pan ~ 0.25*baseSize; at zoom 4, max pan ~ baseSize*zoom*0.5
+    const imgW = baseImageSize.w * z;
+    const imgH = baseImageSize.h * z;
+    // Allow panning until image edge is near container edge
+    const maxX = Math.max(imgW * 0.5, containerSize.w * 0.45);
+    const maxY = Math.max(imgH * 0.5, containerSize.h * 0.45);
+    return {
+      x: Math.max(-maxX, Math.min(maxX, p.x)),
+      y: Math.max(-maxY, Math.min(maxY, p.y)),
+    };
+  };
 
   const onMouseDown = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;
@@ -81,7 +94,7 @@ export default function Minimap({
     if (isDragging && dragStart.current) {
       const dx = e.clientX - dragStart.current.x;
       const dy = e.clientY - dragStart.current.y;
-      onPan({ x: dragStart.current.pan.x + dx, y: dragStart.current.pan.y + dy });
+      onPan(clampPan({ x: dragStart.current.pan.x + dx, y: dragStart.current.pan.y + dy }));
     }
   };
   const onMouseUp = () => setIsDragging(false);
@@ -91,7 +104,7 @@ export default function Minimap({
     if (!el) return;
     const handler = (e: WheelEvent) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.08 : 0.08;
+      const delta = e.deltaY > 0 ? -0.12 : 0.12;
       const newZoom = zoomClamp(zoom + delta);
       if (newZoom === zoom) return;
       const rect = el.getBoundingClientRect();
@@ -110,7 +123,7 @@ export default function Minimap({
       const newCenterX = cx - (normX - 0.5) * newImgW;
       const newCenterY = cy - (normY - 0.5) * newImgH;
       const newPan = { x: newCenterX - containerSize.w / 2, y: newCenterY - containerSize.h / 2 };
-      onPan(newPan);
+      onPan(clampPan(newPan, newZoom));
       onZoom(newZoom);
     };
     el.addEventListener("wheel", handler, { passive: false });
@@ -140,7 +153,7 @@ export default function Minimap({
     } else if (e.touches.length === 1 && isDragging && dragStart.current) {
       const dx = e.touches[0].clientX - dragStart.current.x;
       const dy = e.touches[0].clientY - dragStart.current.y;
-      onPan({ x: dragStart.current.pan.x + dx, y: dragStart.current.pan.y + dy });
+      onPan(clampPan({ x: dragStart.current.pan.x + dx, y: dragStart.current.pan.y + dy }));
     }
   };
   const onTouchEnd = () => {
@@ -195,7 +208,7 @@ export default function Minimap({
       onTouchEnd={onTouchEnd}
       onDoubleClick={() => {
         onZoom(1);
-        onPan({ x: 0, y: 0 });
+        onPan(clampPan({ x: 0, y: 0 }, 1));
       }}
       style={{ cursor: isDragging ? "grabbing" : "grab", touchAction: "none" } as any}
     >

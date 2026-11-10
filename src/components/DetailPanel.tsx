@@ -84,7 +84,9 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
 
   const dedup = new Map<string, ImageEntry>();
   for (const e of entries) {
-    const norm = e.src.toLowerCase();
+    // dedup by basename lowercased (handles media/asset.jpg vs asset.jpg vs http url variants)
+    const base = e.src.split("/").pop()!.split("?")[0].split("#")[0].toLowerCase();
+    const norm = base;
     const existing = dedup.get(norm);
     if (existing) {
       const byId = new Map(existing.circles.map((c: any) => c.id ?? `${c.x}-${c.y}`));
@@ -188,8 +190,6 @@ export default function DetailPanel({
           <div className="flex-1 min-w-0">
             <h3 className="text-[20px] font-extrabold text-textPrimary leading-tight">{lineup.title}</h3>
             <div className="flex gap-1.5 mt-2 flex-wrap">
-              <span className="px-2 py-1 rounded bg-tile border border-borderSubtle text-xs font-bold text-textPrimary">{lineup.side}</span>
-              {lineup.site && <span className="px-2 py-1 rounded bg-tile border border-borderSubtle text-xs font-bold text-textPrimary">Site {lineup.site}</span>}
               <span className="px-2 py-1 rounded text-xs font-bold border" style={{ borderColor: lineup.importance === "essential" ? "#22C55E" : lineup.importance === "optional" ? "#E8404F" : "#EDEDED", color: lineup.importance === "essential" ? "#22C55E" : lineup.importance === "optional" ? "#E8404F" : "#EDEDED" }}>{lineup.importance}</span>
               <span className="px-2 py-1 rounded text-xs font-bold border border-borderSubtle text-muted">{lineup.difficulty}</span>
               {lineup.throwType && <span className="px-2 py-1 rounded bg-accent/20 border border-accent text-accent text-xs font-bold">{lineup.throwType}</span>}
@@ -207,16 +207,7 @@ export default function DetailPanel({
         </div>
 
         <div className="flex-1 overflow-auto overscroll-contain p-4 space-y-4 min-h-0 thin-scrollbar">
-          <div className="flex items-center gap-3 bg-tile rounded-md p-3 border border-borderSubtle">
-            {ability?.displayIcon && <img src={ability.displayIcon} alt="" className="w-10 h-10 object-contain" />}
-            <div>
-              <p className="text-sm font-bold text-textPrimary">{ability?.displayName ?? lineup.abilitySlot}</p>
-              <p className="text-xs text-muted">{agent?.displayName ?? "Agent"} • {lineup.abilitySlot}</p>
-            </div>
-          </div>
-
           <div>
-            <p className="text-xs font-semibold text-muted mb-2">Preview {allImages.length ? `(${allImages.length})` : ""}</p>
             {allImages.length > 0 ? (
               <div className="relative">
                 <AnnotatedImage src={current.src} circles={currentCircles} />

@@ -19,7 +19,10 @@ import type { Lineup } from "./types/lineup";
 
 type Tab = "lineups" | "create";
 
-function LeftSidebar({ maps, agents, selectedMap, selectedAgent, store, lineupsCount }: any) {
+function LeftSidebar({ maps, agents, selectedMap, selectedAgent, store, lineupsCount, singleSelect }: any) {
+  const onAbilityToggle = singleSelect ? (slot: any) => store.setSingleAbility(slot) : (slot: any) => store.toggleAbility(slot);
+  const onImpToggle = singleSelect ? (v: any) => store.setSingleImportance(v) : (v: any) => store.toggleImportance(v);
+  const onDiffToggle = singleSelect ? (v: any) => store.setSingleDifficulty(v) : (v: any) => store.toggleDifficulty(v);
   return (
     <>
       <div className="shrink-0 flex gap-2">
@@ -30,12 +33,12 @@ function LeftSidebar({ maps, agents, selectedMap, selectedAgent, store, lineupsC
         <SideToggle side={store.side} onSideChange={(s: any) => store.setSide(s)} />
       </div>
       <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-hidden">
-        <AbilityBar agent={selectedAgent} selected={store.selectedAbilities} onToggle={(slot: any) => store.toggleAbility(slot)} />
+        <AbilityBar agent={selectedAgent} selected={store.selectedAbilities} onToggle={onAbilityToggle} singleSelect={singleSelect} />
         <FiltersCardCollapsible
           importance={store.importance}
           difficulty={store.difficulty}
-          onToggleImportance={(v: any) => store.toggleImportance(v)}
-          onToggleDifficulty={(v: any) => store.toggleDifficulty(v)}
+          onToggleImportance={onImpToggle}
+          onToggleDifficulty={onDiffToggle}
           onReset={() => store.resetFilters()}
         />
       </div>
@@ -139,7 +142,7 @@ export default function App() {
       <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
         {/* Shared left sidebar — matches lineups tabs left bar */}
         <aside className="hidden md:flex w-[350px] shrink-0 flex flex-col gap-2 p-2 bg-[#1B1B1F] border-r border-borderSubtle min-h-0 overflow-hidden">
-          <LeftSidebar maps={maps} agents={agents} selectedMap={selectedMap} selectedAgent={selectedAgent} store={store} lineupsCount={lineups?.length ?? 0} />
+          <LeftSidebar maps={maps} agents={agents} selectedMap={selectedMap} selectedAgent={selectedAgent} store={store} lineupsCount={lineups?.length ?? 0} singleSelect={activeTab === "create"} />
         </aside>
 
         {/* Mobile selectors */}

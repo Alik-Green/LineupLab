@@ -29,8 +29,7 @@ export default function AgentCard({
               <ValImage src={selectedAgent.displayIcon} alt={selectedAgent.displayName} className="absolute inset-0" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-2">
-                <div className="text-white font-bold text-xs leading-none truncate">{selectedAgent.displayName}</div>
-                <div className="text-white/60 text-[10px] mt-0.5 truncate">{selectedAgent.role?.displayName ?? "Agent"}</div>
+                <div className="text-white font-extrabold text-[13px] leading-none truncate text-center">{selectedAgent.displayName}</div>
               </div>
             </>
           ) : (
@@ -59,7 +58,8 @@ export default function AgentCard({
                     title={ag.displayName}
                   >
                     <ValImage src={ag.displayIcon} alt={ag.displayName} className="absolute inset-0" />
-                    <span className="relative z-10 w-full bg-black/70 text-white text-[8px] font-semibold text-center leading-3 py-0.5 truncate px-1">{ag.displayName}</span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
+                    <span className="relative z-10 w-full text-white text-[11px] font-bold text-center leading-3 py-1.5 truncate px-1">{ag.displayName}</span>
                   </button>
                 ))}
               </div>

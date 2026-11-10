@@ -5,10 +5,12 @@ export default function AbilityBar({
   agent,
   selected,
   onToggle,
+  singleSelect,
 }: {
   agent: ValorantAgent | null | undefined;
   selected: Set<AbilitySlot>;
   onToggle: (slot: AbilitySlot) => void;
+  singleSelect?: boolean;
 }) {
   if (!agent) {
     return (
@@ -38,11 +40,7 @@ export default function AbilityBar({
               }`}
             >
               {ab.displayIcon ? (
-                <img
-                  src={ab.displayIcon}
-                  alt={ab.displayName}
-                  className="w-7 h-7 object-contain"
-                />
+                <img src={ab.displayIcon} alt={ab.displayName} className="w-7 h-7 object-contain" />
               ) : (
                 <span className="text-xs text-muted">{ab.slot}</span>
               )}

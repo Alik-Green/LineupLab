@@ -30,10 +30,9 @@ export default function MapCard({
                 className="absolute inset-0 w-full h-full object-cover object-center scale-[1.45]"
                 draggable={false}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-2">
-                <div className="text-white font-extrabold text-sm leading-none drop-shadow truncate text-center">{selectedMap.displayName}</div>
-                <div className="text-white/70 text-[10px] mt-0.5 text-center">Tap to change</div>
+                <div className="text-white font-extrabold text-[13px] leading-none drop-shadow truncate text-center">{selectedMap.displayName}</div>
               </div>
             </>
           ) : (
@@ -62,7 +61,7 @@ export default function MapCard({
                   >
                     <img src={m.splash} alt={m.displayName} className="absolute inset-0 w-full h-full object-cover object-center scale-[1.35]" draggable={false} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
-                    <span className="absolute bottom-0 left-0 right-0 p-3 text-white text-sm font-bold drop-shadow text-left">{m.displayName}</span>
+                    <span className="absolute bottom-0 left-0 right-0 p-3 text-white text-[13px] font-bold drop-shadow truncate text-center">{m.displayName}</span>
                     {selectedMap?.uuid === m.uuid && <span className="absolute top-2 right-2 w-6 h-6 rounded-full bg-accent flex items-center justify-center text-white text-xs">✓</span>}
                   </button>
                 ))}
