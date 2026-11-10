@@ -42,7 +42,7 @@ function LeftSidebar({ maps, agents, selectedMap, selectedAgent, store, lineupsC
           onReset={() => store.resetFilters()}
         />
       </div>
-      <div className="shrink-0 text-muted text-[10px] text-center py-1">Demo data • {lineupsCount} lineups</div>
+      <div className="shrink-0 text-muted text-[10px] text-center py-1">{lineupsCount} lineups</div>
     </>
   );
 }
@@ -58,6 +58,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<Tab>("lineups");
   const [importOpen, setImportOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
+  const [createMode, setCreateMode] = useState<"capture" | "setup">("capture");
 
   const store = useAppStore();
 
@@ -84,6 +85,24 @@ export default function App() {
       store.setMap((corrode ?? maps[0]).uuid);
     }
   }, [maps]);
+
+  // When entering create, enforce single-select: collapse multi-selects to last selected (or first)
+  useEffect(() => {
+    if (activeTab === "create") {
+      if (store.selectedAbilities.size > 1) {
+        const arr = Array.from(store.selectedAbilities);
+        store.setSingleAbility(arr[arr.length - 1] as any);
+      }
+      if (store.importance.size > 1) {
+        const arr = Array.from(store.importance);
+        store.setSingleImportance(arr[arr.length - 1] as any);
+      }
+      if (store.difficulty.size > 1) {
+        const arr = Array.from(store.difficulty);
+        store.setSingleDifficulty(arr[arr.length - 1] as any);
+      }
+    }
+  }, [activeTab]);
 
   const selectedMap = useMemo(() => maps?.find((m) => m.uuid === store.selectedMapUuid), [maps, store.selectedMapUuid]);
   const selectedAgent = useMemo(() => agents?.find((a) => a.uuid === store.selectedAgentUuid), [agents, store.selectedAgentUuid]);
@@ -120,6 +139,8 @@ export default function App() {
         onImport={() => setImportOpen(true)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        createMode={createMode}
+        onCreateModeChange={setCreateMode}
       />
       {showLineupsErrorBanner && (
         <div className="mx-3 mt-2 p-2 rounded bg-accent/20 border border-accent text-accent text-xs flex items-center justify-between shrink-0">
@@ -132,8 +153,8 @@ export default function App() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSettingsOpen(false)}>
           <div className="bg-panel border border-borderSubtle rounded-card p-5 w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-auto" onClick={(e)=>e.stopPropagation()}>
             <h3 className="text-textPrimary font-bold text-lg">Settings</h3>
-            <div className="mt-3 text-sm text-muted">Import history, demo data controls.</div>
-            <button onClick={async () => { await removeDemoData(); await refreshLineups(); setSettingsOpen(false); }} className="mt-4 w-full min-h-[40px] rounded bg-tile hover:bg-tileHover text-textPrimary text-sm border border-borderSubtle">Remove demo data</button>
+            <div className="mt-3 text-sm text-muted">Import history.</div>
+            <button onClick={async () => { await removeDemoData(); await refreshLineups(); setSettingsOpen(false); }} className="mt-4 w-full min-h-[40px] rounded bg-tile hover:bg-tileHover text-textPrimary text-sm border border-borderSubtle\">Clear all lineups</button>
             <div className="mt-4 flex justify-end"><button onClick={() => setSettingsOpen(false)} className="px-4 py-2 rounded bg-tile text-textPrimary min-h-[40px]">Close</button></div>
           </div>
         </div>
@@ -157,7 +178,7 @@ export default function App() {
         {/* Right content */}
         {activeTab === "create" ? (
           <div className="flex-1 min-h-0 overflow-hidden bg-[#0F1114]">
-            <CreateWizard agents={agents} maps={maps} hideChrome selectedMapOverride={selectedMap} selectedAgentOverride={selectedAgent} sideOverride={store.side} />
+            <CreateWizard agents={agents} maps={maps} createMode={createMode} onCreateModeChange={setCreateMode} selectedMapOverride={selectedMap} selectedAgentOverride={selectedAgent} sideOverride={store.side} onCreated={refreshLineups} />
           </div>
         ) : (
           <div className="flex-1 flex flex-col min-h-0 min-w-0 relative bg-[#131315] overflow-hidden" style={{ touchAction: viewMode === "map" ? "none" as const : undefined }}>

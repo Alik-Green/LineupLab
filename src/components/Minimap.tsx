@@ -15,6 +15,7 @@ type Props = {
   onZoom: (z: number) => void;
   onPan: (p: { x: number; y: number }) => void;
   showEmpty?: boolean;
+  onMapClick?: (pt: { x: number; y: number }) => void;
 };
 
 function importanceRing(imp: string) {
@@ -46,6 +47,7 @@ export default function Minimap({
   onZoom,
   onPan,
   showEmpty = true,
+  onMapClick,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ w: 800, h: 600 });
@@ -70,15 +72,13 @@ export default function Minimap({
     return { w: s, h: s };
   }, [containerSize]);
 
-  const zoomClamp = (z: number) => Math.min(4, Math.max(1, z));
+  const zoomClamp = (z: number) => Math.min(5.5, Math.max(1, z));
   const clampPan = (p: { x: number; y: number }, z: number = zoom) => {
-    // keep map roughly within viewport: max pan scales with zoom, but never lets image disappear
-    // at zoom 1, max pan ~ 0.25*baseSize; at zoom 4, max pan ~ baseSize*zoom*0.5
     const imgW = baseImageSize.w * z;
     const imgH = baseImageSize.h * z;
-    // Allow panning until image edge is near container edge
-    const maxX = Math.max(imgW * 0.5, containerSize.w * 0.45);
-    const maxY = Math.max(imgH * 0.5, containerSize.h * 0.45);
+    // tighter cap: keep map centre within ~30% of container, scales modestly with zoom
+    const maxX = Math.min(containerSize.w * 0.32, imgW * 0.28);
+    const maxY = Math.min(containerSize.h * 0.32, imgH * 0.28);
     return {
       x: Math.max(-maxX, Math.min(maxX, p.x)),
       y: Math.max(-maxY, Math.min(maxY, p.y)),
@@ -104,7 +104,7 @@ export default function Minimap({
     if (!el) return;
     const handler = (e: WheelEvent) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.12 : 0.12;
+      const delta = e.deltaY > 0 ? -0.18 : 0.18;
       const newZoom = zoomClamp(zoom + delta);
       if (newZoom === zoom) return;
       const rect = el.getBoundingClientRect();
@@ -206,6 +206,25 @@ export default function Minimap({
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("button")) return;
+        if (!onMapClick) return;
+        // only handle clicks that are not drags
+        if (isDragging) return;
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const cx = e.clientX - rect.left;
+        const cy = e.clientY - rect.top;
+        const centerX = containerSize.w / 2 + pan.x;
+        const centerY = containerSize.h / 2 + pan.y;
+        const imgW = baseImageSize.w * zoom;
+        const imgH = baseImageSize.h * zoom;
+        // convert pixel to normalized 0..1
+        const nx = (cx - centerX) / imgW + 0.5;
+        const ny = (cy - centerY) / imgH + 0.5;
+        if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return;
+        onMapClick({ x: nx, y: ny });
+      }}
       onDoubleClick={() => {
         onZoom(1);
         onPan(clampPan({ x: 0, y: 0 }, 1));

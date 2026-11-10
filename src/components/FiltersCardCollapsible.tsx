@@ -45,7 +45,7 @@ export default function FiltersCardCollapsible({
       <div className="rounded-card bg-panel border border-borderSubtle p-2">
         <p className="text-[10px] font-bold tracking-widest text-muted mb-1.5 text-center">IMPORTANCE</p>
         <div className="grid grid-cols-3 gap-1.5">
-          {(["essential", "useful", "optional"] as Importance[]).map((id) => {
+          {(["optional", "useful", "essential"] as Importance[]).map((id) => {
             const sel = importance.has(id);
             const stars = id === "essential" ? 3 : id === "useful" ? 2 : 1;
             return (

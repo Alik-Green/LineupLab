@@ -1,12 +1,14 @@
 import { useCallback } from "react";
 
-export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImport, viewMode, onViewModeChange }: {
+export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImport, viewMode, onViewModeChange, createMode, onCreateModeChange }: {
   activeTab: string;
   onTabChange: (t: any) => void;
   onOpenSettings: () => void;
   onImport: () => void;
   viewMode?: "map" | "list";
   onViewModeChange?: (m: "map" | "list") => void;
+  createMode?: "capture" | "setup";
+  onCreateModeChange?: (m: "capture" | "setup") => void;
 }) {
   const isTauriEnv = typeof window !== "undefined" && ((window as any).__TAURI__ !== undefined || (window as any).__TAURI_INTERNALS__ !== undefined);
 
@@ -63,7 +65,7 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
         <div className="flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as any}>
           <div className="w-8 h-8 rounded bg-accent flex items-center justify-center text-white font-bold text-sm">LL</div>
           <span className="font-bold text-textPrimary text-[18px] tracking-tight">LineupLab</span>
-          <span className="ml-2 px-2 py-0.5 rounded-md bg-tile text-muted text-xs">Demo data</span>
+          <span className="ml-2 px-2 py-0.5 rounded-md bg-tile text-muted text-xs">{/* demo badge removed */}</span>
         </div>
         <nav className="ml-6 flex gap-1" style={{ WebkitAppRegion: "no-drag" } as any}>
           <button
@@ -85,6 +87,13 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
               <div className="w-px bg-borderSubtle mx-2 self-center h-6" />
               <button onClick={() => onViewModeChange("map")} className={`px-3 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${viewMode === "map" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}>Map</button>
               <button onClick={() => onViewModeChange("list")} className={`px-3 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${viewMode === "list" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}>List</button>
+            </>
+          )}
+          {activeTab === "create" && onCreateModeChange && createMode && (
+            <>
+              <div className="w-px bg-borderSubtle mx-2 self-center h-6" />
+              <button onClick={() => onCreateModeChange("capture")} className={`px-3 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${createMode === "capture" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}>Capture</button>
+              <button onClick={() => onCreateModeChange("setup")} className={`px-3 py-2 min-h-[40px] rounded-md text-sm font-semibold border ${createMode === "setup" ? "bg-panel text-textPrimary border-borderSubtle" : "bg-transparent text-muted border-transparent hover:text-textPrimary"}`}>Setup</button>
             </>
           )}
         </nav>

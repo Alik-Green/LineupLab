@@ -165,7 +165,21 @@ export default function DetailPanel({
     return vals.map(([k, url]) => ({ src: url, circles: [], slot: k.includes("landing") ? "landing" : k.includes("aim") ? "aim1" : "stand1", throwInfo: undefined }));
   }, [images.length, lineupMediaMap]);
 
-  const allImages = images.length > 0 ? images : fallbackMediaImages;
+  const allImagesRaw = images.length > 0 ? images : fallbackMediaImages;
+  // final dedup by basename (handles blob urls that still map to same file, and double entries from slots+projectiles)
+  const allImages = useMemo(() => {
+    const seen = new Set<string>();
+    const out: typeof allImagesRaw = [];
+    for (const it of allImagesRaw) {
+      const key = it.src.split("/").pop()?.split("?")[0].split("#")[0].toLowerCase().trim() ?? it.src.toLowerCase();
+      // for blob urls, use full url as key but they are unique per blob creation; use slot+throw as fallback
+      // instead dedup blob urls by their original basename if available via slot, otherwise by url
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(it);
+    }
+    return out;
+  }, [allImagesRaw]);
 
   const [idx, setIdx] = useState(0);
   useEffect(() => setIdx(0), [lineup.id]);
@@ -189,11 +203,6 @@ export default function DetailPanel({
         <div className="p-4 border-b border-borderSubtle flex items-start justify-between shrink-0 gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="text-[20px] font-extrabold text-textPrimary leading-tight">{lineup.title}</h3>
-            <div className="flex gap-1.5 mt-2 flex-wrap">
-              <span className="px-2 py-1 rounded text-xs font-bold border" style={{ borderColor: lineup.importance === "essential" ? "#22C55E" : lineup.importance === "optional" ? "#E8404F" : "#EDEDED", color: lineup.importance === "essential" ? "#22C55E" : lineup.importance === "optional" ? "#E8404F" : "#EDEDED" }}>{lineup.importance}</span>
-              <span className="px-2 py-1 rounded text-xs font-bold border border-borderSubtle text-muted">{lineup.difficulty}</span>
-              {lineup.throwType && <span className="px-2 py-1 rounded bg-accent/20 border border-accent text-accent text-xs font-bold">{lineup.throwType}</span>}
-            </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <button onClick={() => { if (onEdit) onEdit(lineup.id); else alert("Edit coming soon."); }} className="w-8 h-8 rounded bg-tile hover:bg-tileHover border border-borderSubtle flex items-center justify-center text-muted" aria-label="Edit" title="Edit">
