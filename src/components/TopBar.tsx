@@ -1,10 +1,11 @@
 import { useCallback } from "react";
 
-export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImport, viewMode, onViewModeChange, createMode, onCreateModeChange }: {
+export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImport, onOverlay, viewMode, onViewModeChange, createMode, onCreateModeChange }: {
   activeTab: string;
   onTabChange: (t: any) => void;
   onOpenSettings: () => void;
   onImport: () => void;
+  onOverlay?: () => void;
   viewMode?: "map" | "list";
   onViewModeChange?: (m: "map" | "list") => void;
   createMode?: "capture" | "setup";
@@ -94,7 +95,17 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
           )}
         </nav>
         <div className="ml-auto flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as any}>
-          <button onClick={onImport} aria-label="Share" className="w-10 h-10 rounded-md bg-panel border border-borderSubtle text-muted hover:text-textPrimary flex items-center justify-center">
+          <button onClick={onOverlay} aria-label="Overlay" className="w-10 h-10 rounded-md bg-panel border border-borderSubtle text-muted hover:text-textPrimary flex items-center justify-center" title="Overlay (Alt+O) • Game overlay with Normal/Minimal modes">
+            {/* overlay: monitor + eye */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <path d="M8 21h8" />
+              <path d="M12 17v4" />
+              <circle cx="12" cy="10" r="3" />
+              <path d="M12 10a3 3 0 0 0 3-3" opacity="0.5"/>
+            </svg>
+          </button>
+          <button onClick={onImport} aria-label="Share" className="w-10 h-10 rounded-md bg-panel border border-borderSubtle text-muted hover:text-textPrimary flex items-center justify-center" title="Share • Import / Export / LAN">
             {/* share: upload arrow out of box */}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />

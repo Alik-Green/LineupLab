@@ -168,6 +168,7 @@ export default function App() {
         onTabChange={setActiveTab}
         onOpenSettings={() => setSettingsOpen((v) => !v)}
         onImport={() => setShareOpen(true)}
+        onOverlay={() => setOverlayOpen(v=>!v)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         createMode={createMode}
