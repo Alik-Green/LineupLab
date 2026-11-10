@@ -283,7 +283,7 @@ export default function App() {
             <h3 className="text-textPrimary font-bold text-lg">Settings</h3>
             <div className="rounded-md bg-tile border border-borderSubtle p-3">
               <p className="text-xs font-bold tracking-widest text-muted">APP</p>
-              <p className="text-sm text-textPrimary mt-1">LineupLab v0.3.16 • Separate Overlay (always on top, no chrome) • LAN Share • Capture</p>
+              <p className="text-sm text-textPrimary mt-1">LineupLab v0.3.17 • Separate Overlay (always on top, no chrome) • LAN Share • Capture</p>
               <p className="text-xs text-muted mt-1">Data stored locally in IndexedDB. Export for backup.</p>
               <div className="mt-2 flex gap-2">
                 <button onClick={()=>{ setSettingsOpen(false); setExportOpen(true); }} className="px-3 py-1.5 rounded bg-accent text-white text-xs font-bold">Export backup</button>
