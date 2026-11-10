@@ -93,15 +93,29 @@ jobs:
           set -x
           ls -lh src-tauri/gen/android 2>&1 | head -20 || echo "no gen yet"
           if [ ! -f "src-tauri/gen/android/app/build.gradle.kts" ] && [ ! -f "src-tauri/gen/android/build.gradle.kts" ] && [ ! -f "src-tauri/gen/android/app/build.gradle" ]; then
-            echo "Init Android project..."
-            npx tauri android init 2>&1 | tee /tmp/tauri-init.log | tail -100
+            echo "Init Android project with --ci..."
+            # Prefer --ci to avoid any prompt; stdin not a TTY in GH Actions auto-skips but be explicit
+            npx tauri android init --ci 2>&1 | tee /tmp/tauri-init.log | tail -100
             echo "Init exit: ${PIPESTATUS[0]}"
-            cat /tmp/tauri-init.log | tail -50
+            cat /tmp/tauri-init.log | tail -80
             echo "Init done, listing gen:"
             ls -R src-tauri/gen/android 2>&1 | head -200 || true
+            # Ensure local.properties points to correct SDK/NDK (Tauri init may not set correctly in CI)
+            NDK_PATH=$(ls -d $ANDROID_HOME/ndk/* 2>/dev/null | head -1)
+            echo "Detected NDK: $NDK_PATH"
+            echo "sdk.dir=$ANDROID_HOME" > src-tauri/gen/android/local.properties
+            if [ -n "$NDK_PATH" ]; then echo "ndk.dir=$NDK_PATH" >> src-tauri/gen/android/local.properties; fi
+            cat src-tauri/gen/android/local.properties
             cat src-tauri/gen/android/app/build.gradle.kts 2>&1 | head -100 || cat src-tauri/gen/android/app/build.gradle 2>&1 | head -100 || true
           else
             echo "Android project already exists"
+            # Ensure local.properties is correct even when project existed
+            NDK_PATH=$(ls -d $ANDROID_HOME/ndk/* 2>/dev/null | head -1)
+            if [ ! -f src-tauri/gen/android/local.properties ]; then
+              echo "sdk.dir=$ANDROID_HOME" > src-tauri/gen/android/local.properties
+              if [ -n "$NDK_PATH" ]; then echo "ndk.dir=$NDK_PATH" >> src-tauri/gen/android/local.properties; fi
+            fi
+            cat src-tauri/gen/android/local.properties 2>&1 | head -20 || true
             ls -R src-tauri/gen/android 2>&1 | head -100 || true
           fi
       - name: Build APK
@@ -114,17 +128,24 @@ jobs:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
           NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+          CI: true
         run: |
           set -x
-          # Ensure NDK env is set for both Tauri and Gradle
+          # Ensure NDK env is set for both Tauri and Gradle — detect actual NDK folder
           export ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}
           export ANDROID_SDK_ROOT=$ANDROID_HOME
-          export ANDROID_NDK_HOME=${ANDROID_NDK_HOME:-$ANDROID_HOME/ndk/26.1.10909125}
+          NDK_DETECTED=$(ls -d $ANDROID_HOME/ndk/* 2>/dev/null | head -1)
+          export ANDROID_NDK_HOME=${ANDROID_NDK_HOME:-$NDK_DETECTED}
+          if [ -z "$ANDROID_NDK_HOME" ]; then export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/26.1.10909125"; fi
           export NDK_HOME=$ANDROID_NDK_HOME
           echo "NDK_HOME=$NDK_HOME"
           echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME (detected: $NDK_DETECTED)"
           ls -lh $NDK_HOME 2>&1 | head -20 || true
+          # Ensure local.properties is set for Gradle
+          echo "sdk.dir=$ANDROID_HOME" > src-tauri/gen/android/local.properties
+          if [ -n "$NDK_HOME" ]; then echo "ndk.dir=$NDK_HOME" >> src-tauri/gen/android/local.properties; fi
+          cat src-tauri/gen/android/local.properties
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /tmp/keystore.jks
             echo "Using release keystore from secrets"
@@ -139,12 +160,12 @@ jobs:
           ls -lh $ANDROID_HOME/ndk/* 2>&1 | head -30 || true
           cargo ndk --version 2>&1 || echo "cargo ndk not found"
           rustup target list --installed 2>&1 | head -20
-          echo "=== Tauri Android build ==="
-          # Try tauri build with verbose output, log to file
-          npx tauri android build 2>&1 | tee /tmp/tauri-android.log | tail -300
+          echo "=== Tauri Android build (verbose) ==="
+          # Tauri android build with verbose; ensure NDK env exported
+          npx tauri android build --verbose 2>&1 | tee /tmp/tauri-android.log | tail -400
           TAURI_EXIT=${PIPESTATUS[0]}
           echo "Tauri android build exit: $TAURI_EXIT"
-          cat /tmp/tauri-android.log | tail -100
+          cat /tmp/tauri-android.log | tail -150
           echo "=== Listing gen after tauri build ==="
           ls -lh src-tauri/gen/android/app/build/outputs/ 2>&1 | head -100 || true
           find src-tauri/gen/android -maxdepth 5 -type f -name "*.apk" -o -name "*.aab" 2>&1 | head -20 || true
@@ -152,18 +173,27 @@ jobs:
           APK_COUNT=$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | wc -l)
           echo "APK count after tauri: $APK_COUNT"
           if [ "$APK_COUNT" -eq 0 ]; then
-            echo "=== Fallback: gradle assembleDebug ==="
+            echo "=== Fallback: gradle :app:assembleDebug ==="
             export ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}
             export NDK_HOME=$ANDROID_NDK_HOME
             cd src-tauri/gen/android
             chmod +x ./gradlew 2>&1 | head -5 || true
-            ./gradlew assembleDebug --stacktrace 2>&1 | tail -200
+            ./gradlew :app:assembleDebug --stacktrace --info 2>&1 | tail -300
             GRADLE_EXIT=$?
-            echo "Gradle assembleDebug exit: $GRADLE_EXIT"
+            echo "Gradle :app:assembleDebug exit: $GRADLE_EXIT"
             cd -
             find src-tauri/gen/android -maxdepth 6 -type f \( -name "*.apk" -o -name "*.aab" \) 2>&1 | head -20 || true
+            # try root assembleDebug as second fallback
+            if [ "$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | wc -l)" -eq 0 ]; then
+              echo "=== Try gradle assembleDebug (root) ==="
+              cd src-tauri/gen/android
+              ./gradlew assembleDebug --stacktrace 2>&1 | tail -200
+              echo "Gradle assembleDebug (root) exit: $?"
+              cd -
+              find src-tauri/gen/android -maxdepth 6 -type f \( -name "*.apk" -o -name "*.aab" \) 2>&1 | head -20 || true
+            fi
             # try universal
-            if [ "$APK_COUNT" -eq 0 ]; then
+            if [ "$(find src-tauri/gen/android -name "*.apk" 2>/dev/null | wc -l)" -eq 0 ]; then
               echo "=== Try assembleUniversalDebug ==="
               cd src-tauri/gen/android
               ./gradlew assembleUniversalDebug 2>&1 | tail -100 || true
@@ -181,9 +211,12 @@ jobs:
           if [ "$APK_COUNT2" -eq 0 ]; then
             echo "::warning::No APK after all attempts — check logs above"
             echo "tauri-android.log tail:"
-            tail -50 /tmp/tauri-android.log || true
-            ls -R src-tauri/gen/android/app 2>&1 | head -200 || true
+            tail -100 /tmp/tauri-android.log || true
+            ls -R src-tauri/gen/android/app 2>&1 | head -300 || true
             # Don't fail job — let release collect warn, but print clearly
+          else
+            echo "APK produced successfully — size check:"
+            find src-tauri/gen/android -type f -name "*.apk" -exec ls -lh {} \; 2>&1 | head -20 || true
           fi
       - name: Collect APK
         run: |
@@ -195,14 +228,22 @@ jobs:
           # also copy AAB if present
           find src-tauri/gen -type f -name "*.aab" -exec cp {} dist-apk/ \; 2>&1 | head -20 || true
           ls -lh dist-apk/ 2>&1 | head -30 || true
-          # Always preserve full build log for diagnostics
+          # Always preserve full build log for diagnostics (visible in summary even if artifact DL blocked)
           if [ -f /tmp/tauri-android.log ]; then cp /tmp/tauri-android.log dist-apk/tauri-android-full.log 2>/dev/null || true; fi
           if [ -f /tmp/tauri-init.log ]; then cp /tmp/tauri-init.log dist-apk/tauri-init.log 2>/dev/null || true; fi
+          # Also copy gradle logs if present
+          if [ -f src-tauri/gen/android/build.log ]; then cp src-tauri/gen/android/build.log dist-apk/ 2>/dev/null || true; fi
           if [ -z "$(ls -A dist-apk 2>/dev/null | grep -E '\.apk|\.aab')" ]; then
-            echo "::warning::No APK/AAB produced — generating placeholder APK so release has an APK artifact"
+            echo "::warning::No APK/AAB produced — generating placeholder APK so release has an APK artifact (see tauri-android-full.log)"
             echo "LineupLab companion APK placeholder for ${GITHUB_REF_NAME:-dev} — real Tauri Android build pending. See tauri-android-full.log for details." > /tmp/README.txt
             echo "Generated at $(date)" >> /tmp/README.txt
-            cat /tmp/tauri-android.log 2>&1 | head -100 >> /tmp/README.txt || true
+            echo "" >> /tmp/README.txt
+            echo "Diagnostics:" >> /tmp/README.txt
+            echo "NDK_HOME=$NDK_HOME" >> /tmp/README.txt
+            echo "ANDROID_HOME=$ANDROID_HOME" >> /tmp/README.txt
+            cat /tmp/tauri-android.log 2>&1 | head -200 >> /tmp/README.txt || true
+            echo "" >> /tmp/README.txt
+            echo "To fix: ensure src-tauri/gen/android is generated via 'tauri android init --ci' and local.properties points to SDK/NDK; gradle :app:assembleDebug should produce APK." >> /tmp/README.txt
             rm -f /tmp/placeholder.apk
             mkdir -p /tmp/apk-stub
             echo '<manifest package="com.lineuplab.app"/>' > /tmp/apk-stub/AndroidManifest.xml
@@ -216,10 +257,17 @@ jobs:
             # Also name with version if available
             if [ -n "${GITHUB_REF_NAME}" ]; then cp /tmp/placeholder.apk "dist-apk/LineupLab-${GITHUB_REF_NAME#v}-android.apk" 2>/dev/null || true; fi
             ls -lh dist-apk/
+            echo "PLACEHOLDER_GENERATED=true" >> $GITHUB_ENV
           else
             ls -lh dist-apk/
             APK=$(find dist-apk -name "*.apk" | head -1)
             if [ -n "$APK" ]; then cp "$APK" dist-apk/LineupLab-debug.apk 2>/dev/null || true; fi
+            # Warn if APK is suspiciously small (<1MB likely placeholder or broken)
+            APK_SIZE=$(stat -c%s "$APK" 2>/dev/null || stat -f%z "$APK" 2>/dev/null || echo 0)
+            echo "APK size $APK_SIZE"
+            if [ "$APK_SIZE" -lt 1000000 ]; then
+              echo "::warning::APK is <1MB ($APK_SIZE bytes) — likely not a real build; check tauri-android-full.log"
+            fi
           fi
       - uses: actions/upload-artifact@v4
         if: always()
@@ -254,13 +302,20 @@ jobs:
             echo "::error::No Windows exe found"
             exit 1
           fi
-          # APK/AAB handling: prefer APK, fallback to AAB if APK missing
+          # APK/AAB handling: prefer real APK >1MB, fallback to AAB, warn if placeholder
           APK=$(find ./artifacts -type f -name "*.apk" | grep -v "NO_APK" | head -1)
+          # Prefer largest APK (real debug APK is ~10-50MB vs 9KB placeholder)
+          APK_REAL=$(find ./artifacts -type f -name "*.apk" -exec ls -S {} \; 2>/dev/null | head -1 | awk '{print $NF}'); if [ -z "$APK_REAL" ]; then APK_REAL=$APK; fi
+          if [ -n "$APK_REAL" ]; then APK=$APK_REAL; fi
           AAB=$(find ./artifacts -type f -name "*.aab" | head -1)
-          if [ -n "$APK" ] && [ -s "$APK" ] && [ "$(stat -c%s "$APK")" -gt 1000 ]; then
+          if [ -n "$APK" ] && [ -s "$APK" ] && [ "$(stat -c%s "$APK" 2>/dev/null || stat -f%z "$APK")" -gt 1000 ]; then
+            APK_SIZE=$(stat -c%s "$APK" 2>/dev/null || stat -f%z "$APK")
             cp "$APK" "release/LineupLab-${VERSION}-android.apk"
-            echo "APK -> release/LineupLab-${VERSION}-android.apk ($APK size $(stat -c%s "$APK"))"
-          elif [ -n "$AAB" ] && [ -s "$AAB" ] && [ "$(stat -c%s "$AAB")" -gt 1000 ]; then
+            echo "APK -> release/LineupLab-${VERSION}-android.apk ($APK size $APK_SIZE)"
+            if [ "$APK_SIZE" -lt 1000000 ]; then
+              echo "::warning::APK is only $APK_SIZE bytes (<1MB) — likely placeholder not real build; APK will be published but Android install will fail. Check android job logs (tauri-android-full.log)."
+            fi
+          elif [ -n "$AAB" ] && [ -s "$AAB" ] && [ "$(stat -c%s "$AAB" 2>/dev/null || stat -f%z "$AAB")" -gt 1000 ]; then
             cp "$AAB" "release/LineupLab-${VERSION}-android.aab"
             echo "AAB -> release/LineupLab-${VERSION}-android.aab ($AAB size $(stat -c%s "$AAB"))"
           else
@@ -281,3 +336,4 @@ jobs:
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

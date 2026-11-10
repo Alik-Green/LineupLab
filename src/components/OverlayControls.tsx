@@ -14,6 +14,7 @@ export default function OverlayControls({
   onCornerChange,
   onSizeChange,
   onOpacityChange,
+  isTauri = true,
 }: {
   lineup: Lineup | null;
   isOpen: boolean;
@@ -25,6 +26,7 @@ export default function OverlayControls({
   onCornerChange: (c: Corner) => void;
   onSizeChange: (s: OverlaySize) => void;
   onOpacityChange: (o: number) => void;
+  isTauri?: boolean;
 }) {
   const corners: { id: Corner; label: string; icon: string }[] = [
     { id: "top-left", label: "Top Left", icon: "↖" },
@@ -42,9 +44,15 @@ export default function OverlayControls({
         </span>
       </div>
 
-      <p className="text-xs text-muted leading-relaxed">
-        Separate frameless window that stays **always on top** of Valorant. No title bar. Position it in any corner from here.
-      </p>
+      {!isTauri ? (
+        <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs text-amber-600">
+          <b>Desktop app required.</b> The always-on-top overlay is a separate frameless window (no title bar) outside the app — it does not work in the browser. Download the Windows app from Releases.
+        </div>
+      ) : (
+        <p className="text-xs text-muted leading-relaxed">
+          Separate frameless window outside the app — <b className="text-textPrimary">always on top</b> of Valorant, no title bar, transparent. Position in any corner from here. Stays above game while you learn lineups.
+        </p>
+      )}
 
       {!lineup && (
         <div className="rounded-md bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs text-amber-500">

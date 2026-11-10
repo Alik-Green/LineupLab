@@ -13,7 +13,6 @@ import CreateWizard from "./components/CreateWizard";
 import ImportDialog from "./components/ImportDialog";
 import ExportDialog from "./components/ExportDialog";
 import LANShare from "./components/LANShare";
-import OverlayHost from "./components/OverlayHost";
 import OverlayWindow from "./components/OverlayWindow";
 import OverlayControls from "./components/OverlayControls";
 import { useTauriOverlay } from "./hooks/useTauriOverlay";
@@ -264,19 +263,18 @@ export default function App() {
       )}
       {exportOpen && <ExportDialog filtered={filtered} onClose={()=>setExportOpen(false)} />}
       {lanOpen && <LANShare onClose={()=>setLanOpen(false)} />}
-      {/* In-app fallback overlay for browser (Tauri uses separate window) */}
+      {/* Browser notice: overlay only works in Tauri desktop (separate always-on-top window, no title bar) */}
       {overlayOpen && !tauriOverlay.isTauri && (
-        <OverlayHost
-          lineup={selectedLineup ?? filtered[overlayIdx % Math.max(1,filtered.length)] as any ?? lineups?.[0] as any ?? null}
-          onClose={()=>setOverlayOpen(false)}
-          onPrevLineup={()=> setOverlayIdx(i=> Math.max(0,i-1))}
-          onNextLineup={()=> setOverlayIdx(i=> Math.min(filtered.length-1,i+1))}
-        />
-      )}
-      {/* Tauri separate overlay window controls — visible in main app */}
-      {tauriOverlay.isTauri && (
-        <div className="hidden">
-          {/* keep tauriOverlay state alive */}
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={()=>setOverlayOpen(false)}>
+          <div className="bg-panel border border-borderSubtle rounded-card p-5 w-full max-w-md space-y-3" onClick={e=>e.stopPropagation()}>
+            <h3 className="text-textPrimary font-bold text-lg">Desktop Overlay Required</h3>
+            <p className="text-sm text-muted leading-relaxed">The always-on-top overlay is a <b className="text-textPrimary">separate frameless window</b> outside the app (no title bar, transparent, stays above Valorant). It only works in the <b className="text-textPrimary">Tauri desktop app</b>, not in the browser.</p>
+            <p className="text-xs text-muted">Download <b>LineupLab-0.3.12-windows-setup.exe</b> from GitHub Releases, select a lineup, then press <b>Overlay</b> or <b>Alt+O</b>. You can place it in any corner from the left sidebar controls.</p>
+            <div className="flex gap-2">
+              <button onClick={()=>setOverlayOpen(false)} className="flex-1 py-2.5 rounded-md bg-accent text-white font-bold min-h-[44px]">Got it</button>
+              <a href="https://github.com/Alik-Green/LineupLab/releases" target="_blank" rel="noreferrer" className="px-4 py-2.5 rounded-md bg-tile border border-borderSubtle text-textPrimary font-bold text-xs flex items-center">Releases ↗</a>
+            </div>
+          </div>
         </div>
       )}
       {settingsOpen && (
@@ -285,7 +283,7 @@ export default function App() {
             <h3 className="text-textPrimary font-bold text-lg">Settings</h3>
             <div className="rounded-md bg-tile border border-borderSubtle p-3">
               <p className="text-xs font-bold tracking-widest text-muted">APP</p>
-              <p className="text-sm text-textPrimary mt-1">LineupLab v0.3.12 • Overlay PiP • LAN Share • Capture</p>
+              <p className="text-sm text-textPrimary mt-1">LineupLab v0.3.13 • Separate Overlay (always on top, no chrome) • LAN Share • Capture</p>
               <p className="text-xs text-muted mt-1">Data stored locally in IndexedDB. Export for backup.</p>
               <div className="mt-2 flex gap-2">
                 <button onClick={()=>{ setSettingsOpen(false); setExportOpen(true); }} className="px-3 py-1.5 rounded bg-accent text-white text-xs font-bold">Export backup</button>

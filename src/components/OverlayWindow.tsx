@@ -35,83 +35,100 @@ export default function OverlayWindow({ lineup: initialLineup }: { lineup?: Line
   const [idx, setIdx] = useState(0);
   const [opacity, setOpacity] = useState(0.92);
   const [locked, setLocked] = useState(false);
-  const [isTauri, setIsTauri] = useState(false);
 
   useEffect(() => { setIdx(0); }, [lineup?.id]);
 
-  // Listen for updates from main window via Tauri events or localStorage
+  // Listen for updates from main window via Tauri events, BroadcastChannel, and storage polling
   useEffect(() => {
-    const tauri = (window as any).__TAURI__;
-    const isTauriEnv = !!(tauri?.event?.listen || tauri?.core?.invoke);
-    setIsTauri(isTauriEnv);
-
-    let unlisten: any = null;
+    let unlisten: (() => void) | null = null;
     let bc: BroadcastChannel | null = null;
+    let poll: any = null;
+    let lastJson = "";
+
+    const handlePayload = (payload: any) => {
+      if (!payload) return;
+      const pl = payload.lineup ? payload : (payload.payload ?? payload);
+      if (pl?.lineup) {
+        setLineup(pl.lineup);
+        if (typeof pl.idx === "number") setIdx(pl.idx);
+        if (typeof pl.opacity === "number") setOpacity(pl.opacity);
+        return;
+      }
+      // Direct lineup (from BroadcastChannel)
+      if (pl?.type === "overlay:update" && pl.lineup) {
+        setLineup(pl.lineup);
+        if (typeof pl.idx === "number") setIdx(pl.idx);
+      }
+    };
 
     (async () => {
+      // Prefer Tauri event API via dynamic import (works even if __TAURI__ injection timing is late)
       try {
-        if (isTauriEnv && tauri?.event?.listen) {
-          unlisten = await tauri.event.listen("overlay:update", (e: any) => {
-            const payload = e.payload;
-            if (payload?.lineup) {
-              setLineup(payload.lineup);
-              if (typeof payload.idx === "number") setIdx(payload.idx);
-              if (typeof payload.opacity === "number") setOpacity(payload.opacity);
-            }
-          });
-          // Also listen for corner/size changes via event
-          const unlisten2 = await tauri.event.listen("overlay:corner", () => {});
-          // request initial data
-          const invoke = tauri?.core?.invoke ?? tauri?.invoke;
-          if (invoke) {
-            try {
-              const data = await invoke("get_overlay_data");
-              if (data?.lineup) setLineup(data.lineup);
-            } catch {}
-          }
-          return () => { unlisten?.(); unlisten2?.(); };
+        const { listen } = await import("@tauri-apps/api/event");
+        unlisten = await listen("overlay:update", (e: any) => handlePayload(e.payload ?? e));
+        const unlisten2 = await listen("overlay:corner", () => {});
+        // keep both unlistens
+        const prevUnlisten = unlisten;
+        unlisten = () => { try { prevUnlisten(); } catch{}; try { unlisten2(); } catch{} };
+      } catch {}
+      // Also try legacy window.__TAURI__ event API
+      try {
+        const tauri: any = (window as any).__TAURI__ ?? (window as any).__TAURI_INTERNALS__;
+        if (tauri?.event?.listen) {
+          const legacy = await tauri.event.listen("overlay:update", (e: any) => handlePayload(e.payload));
+          const prev = unlisten;
+          unlisten = () => { try { prev?.(); } catch{}; try { legacy?.(); } catch{} };
         }
       } catch {}
 
-      // Browser fallback: BroadcastChannel + localStorage
       try {
         bc = new BroadcastChannel("lineuplab-overlay");
-        bc.onmessage = (ev) => {
-          if (ev.data?.type === "overlay:update" && ev.data.lineup) {
-            setLineup(ev.data.lineup);
-            if (typeof ev.data.idx === "number") setIdx(ev.data.idx);
-          }
-        };
+        bc.onmessage = (ev) => handlePayload(ev.data);
       } catch {}
 
       const onStorage = (e: StorageEvent) => {
         if (e.key === "lineuplab.overlay" && e.newValue) {
           try {
             const data = JSON.parse(e.newValue);
-            if (data.lineup) setLineup(data.lineup);
-            if (typeof data.idx === "number") setIdx(data.idx);
+            if (data.lineup) handlePayload(data);
           } catch {}
         }
       };
       window.addEventListener("storage", onStorage);
-      // Also check initial storage
+
+      // Initial read from localStorage (cross-window persistence)
+      const readStorage = () => {
+        try {
+          const raw = localStorage.getItem("lineuplab.overlay");
+          if (raw && raw !== lastJson) {
+            lastJson = raw;
+            const data = JSON.parse(raw);
+            if (data?.lineup) handlePayload(data);
+          }
+        } catch {}
+      };
+      readStorage();
+      // Poll for same-origin localStorage updates (storage event doesn't fire in same window, but overlay is separate webview with shared localStorage? In Tauri separate webview, localStorage may be shared via same origin. Poll ensures we catch main window's write.)
+      poll = setInterval(readStorage, 500);
+
+      // Also try Rust get_overlay_data if available
       try {
-        const raw = localStorage.getItem("lineuplab.overlay");
-        if (raw) {
-          const data = JSON.parse(raw);
-          if (data.lineup) setLineup(data.lineup);
-        }
+        const { invoke } = await import("@tauri-apps/api/core");
+        const data: any = await invoke("get_overlay_data");
+        if (data?.lineup) handlePayload(data);
       } catch {}
 
       return () => {
         window.removeEventListener("storage", onStorage);
         bc?.close();
+        if (poll) clearInterval(poll);
       };
     })();
 
     return () => {
       try { unlisten?.(); } catch {}
       bc?.close();
+      if (poll) clearInterval(poll);
     };
   }, []);
 
@@ -129,14 +146,21 @@ export default function OverlayWindow({ lineup: initialLineup }: { lineup?: Line
   const cur = images[idx];
 
   const close = async () => {
-    const tauri: any = (window as any).__TAURI__;
+    // Try Tauri window API first (separate window close)
     try {
-      const win = tauri?.window?.getCurrentWindow?.();
-      if (win) { await win.hide(); await win.close(); return; }
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const win = getCurrentWindow();
+      await win.hide();
+      // don't close process — keep window for next open (Rust will re-show)
+      // But also try Rust command as fallback
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("close_overlay").catch(()=>{});
+      return;
     } catch {}
     try {
-      const invoke = tauri?.core?.invoke ?? tauri?.invoke;
-      if (invoke) await invoke("close_overlay");
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("close_overlay");
+      return;
     } catch {}
     window.close();
   };
@@ -145,12 +169,16 @@ export default function OverlayWindow({ lineup: initialLineup }: { lineup?: Line
     const next = !locked;
     setLocked(next);
     try {
-      const tauri: any = (window as any).__TAURI__;
-      const win = tauri?.window?.getCurrentWindow?.();
-      if (win) {
-        await win.setIgnoreCursorEvents(next);
-      }
-    } catch {}
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const win = getCurrentWindow();
+      await win.setIgnoreCursorEvents(next);
+    } catch {
+      try {
+        const tauri: any = (window as any).__TAURI__;
+        const win = tauri?.window?.getCurrentWindow?.();
+        if (win) await win.setIgnoreCursorEvents(next);
+      } catch {}
+    }
   };
 
   if (!lineup) {
@@ -158,14 +186,14 @@ export default function OverlayWindow({ lineup: initialLineup }: { lineup?: Line
       <div className="h-screen w-screen flex flex-col bg-transparent">
         <div className="flex-1 m-2 rounded-xl bg-black/80 border border-white/10 backdrop-blur-xl flex flex-col overflow-hidden select-none">
           <div className="h-7 flex items-center justify-between px-3 bg-white/5 border-b border-white/10" data-tauri-drag-region>
-            <span className="text-[11px] font-bold tracking-widest text-white/60">LINEUPLAB OVERLAY</span>
+            <span className="text-[11px] font-bold tracking-widest text-white/60">LINEUPLAB OVERLAY — Separate Window • Always on Top</span>
             <button onClick={close} className="w-6 h-6 rounded-full bg-white/10 hover:bg-red-500 text-white flex items-center justify-center text-xs">✕</button>
           </div>
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center gap-3">
             <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-xl">◎</div>
             <p className="text-sm font-bold text-white">No lineup selected</p>
-            <p className="text-xs text-white/50 leading-relaxed">Select a lineup in the main app<br/>and press <b className="text-white">Overlay</b> or <b className="text-white">Alt+O</b></p>
-            <p className="text-[10px] text-white/30 mt-2">This window stays always on top of Valorant</p>
+            <p className="text-xs text-white/50 leading-relaxed">In the main LineupLab window, select a lineup<br/>then press <b className="text-white">Overlay</b> or <b className="text-white">Alt+O</b></p>
+            <p className="text-[10px] text-white/30 mt-2">This frameless window stays always on top of Valorant.<br/>No title bar — drag the header to move. Use corner buttons in main app.</p>
           </div>
         </div>
       </div>
@@ -183,7 +211,7 @@ export default function OverlayWindow({ lineup: initialLineup }: { lineup?: Line
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white/70 border border-white/10">{cur?.slot ?? `${idx+1}/${images.length}`}</span>
           </div>
           <div className="flex items-center gap-1 shrink-0" data-tauri-drag-region="false" style={{ WebkitAppRegion: "no-drag" } as any}>
-            <button onClick={toggleLock} title={locked ? "Unlock (allow clicks)" : "Lock (click-through)"} className={`w-7 h-7 rounded-full border flex items-center justify-center text-[11px] ${locked ? "bg-amber-500 border-amber-500 text-white" : "bg-white/10 border-white/10 text-white/70 hover:bg-white/20"}`}>
+            <button onClick={toggleLock} title={locked ? "Unlock (allow clicks through)" : "Lock (click-through — overlay ignores clicks)"} className={`w-7 h-7 rounded-full border flex items-center justify-center text-[11px] ${locked ? "bg-amber-500 border-amber-500 text-white" : "bg-white/10 border-white/10 text-white/70 hover:bg-white/20"}`}>
               {locked ? "🔒" : "🔓"}
             </button>
             <button onClick={close} className="w-7 h-7 rounded-full bg-white/10 hover:bg-red-500 border border-white/10 text-white flex items-center justify-center text-xs" title="Close overlay">✕</button>

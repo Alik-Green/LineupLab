@@ -95,7 +95,7 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
           )}
         </nav>
         <div className="ml-auto flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as any}>
-          <button onClick={onOverlay} aria-label="Overlay" className="w-10 h-10 rounded-md bg-panel border border-borderSubtle text-muted hover:text-textPrimary flex items-center justify-center" title="Overlay (Alt+O) • Game overlay with Normal/Minimal modes">
+          <button onClick={onOverlay} aria-label="Overlay" className="w-10 h-10 rounded-md bg-panel border border-borderSubtle text-muted hover:text-textPrimary flex items-center justify-center" title="Overlay (Alt+O) • Separate always-on-top window outside app (no title bar) — stays above Valorant">
             {/* overlay: monitor + eye */}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
