@@ -11,6 +11,9 @@ import DetailPanel from "./components/DetailPanel";
 import LoadingScreen from "./components/LoadingScreen";
 import CreateWizard from "./components/CreateWizard";
 import ImportDialog from "./components/ImportDialog";
+import ExportDialog from "./components/ExportDialog";
+import LANShare from "./components/LANShare";
+import OverlayHost from "./components/OverlayHost";
 import { useValorantData } from "./hooks/useValorantData";
 import { useAppStore } from "./stores/appStore";
 import { getAllLineups, removeDemoData, seedDemoIfEmpty, deleteLineup } from "./lib/indexedDBRepository";
@@ -59,6 +62,11 @@ export default function App() {
   const [importOpen, setImportOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
   const [createMode, setCreateMode] = useState<"capture" | "setup">("capture");
+  const [shareOpen, setShareOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [lanOpen, setLanOpen] = useState(false);
+  const [overlayOpen, setOverlayOpen] = useState(false);
+  const [overlayIdx, setOverlayIdx] = useState(0);
 
   const store = useAppStore();
 
@@ -136,9 +144,19 @@ export default function App() {
   const selectedLineup = useMemo(() => filtered.find((l) => l.id === selectedId) ?? lineups?.find((l) => l.id === selectedId) ?? null, [filtered, lineups, selectedId]);
 
   useEffect(() => {
-    if (settingsOpen || importOpen || mobileFiltersOpen || selectedLineup) document.body.style.overflow = "hidden";
+    if (settingsOpen || importOpen || mobileFiltersOpen || selectedLineup || shareOpen || exportOpen || lanOpen || overlayOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
-  }, [settingsOpen, importOpen, mobileFiltersOpen, selectedLineup]);
+  }, [settingsOpen, importOpen, mobileFiltersOpen, selectedLineup, shareOpen, exportOpen, lanOpen, overlayOpen]);
+
+  // global Alt+O for overlay, Alt+E for export
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.altKey && e.key.toLowerCase() === "o") { e.preventDefault(); if (selectedLineup || filtered.length>0) setOverlayOpen(v=>!v); }
+      if (e.altKey && e.key.toLowerCase() === "e" && !e.ctrlKey) { e.preventDefault(); setExportOpen(true); }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [selectedLineup, filtered]);
 
   if (loading || !maps || !agents) return <LoadingScreen error={error} onRetry={retry} />;
   const showLineupsErrorBanner = !!lineupsError;
@@ -149,7 +167,7 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         onOpenSettings={() => setSettingsOpen((v) => !v)}
-        onImport={() => setImportOpen(true)}
+        onImport={() => setShareOpen(true)}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         createMode={createMode}
@@ -162,6 +180,40 @@ export default function App() {
         </div>
       )}
       {importOpen && <ImportDialog onClose={() => setImportOpen(false)} onImported={refreshLineups} />}
+      {shareOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={()=>setShareOpen(false)}>
+          <div className="bg-panel border border-borderSubtle rounded-card w-full max-w-sm overflow-hidden" onClick={e=>e.stopPropagation()}>
+            <div className="p-4 border-b border-borderSubtle flex items-center justify-between">
+              <h3 className="text-textPrimary font-bold">Share & Transfer</h3>
+              <button onClick={()=>setShareOpen(false)} className="w-8 h-8 rounded bg-tile flex items-center justify-center text-muted">✕</button>
+            </div>
+            <div className="p-3 space-y-2">
+              <button onClick={()=>{ setShareOpen(false); setImportOpen(true); }} className="w-full text-left px-3 py-3 rounded-md bg-tile hover:bg-tileHover border border-borderSubtle flex items-center gap-3">
+                <span className="w-8 h-8 rounded bg-accent/20 flex items-center justify-center text-accent">↓</span>
+                <div><div className="text-sm font-bold text-textPrimary">Import Pack</div><div className="text-xs text-muted">.zip with manifest + media</div></div>
+              </button>
+              <button onClick={()=>{ setShareOpen(false); setExportOpen(true); }} className="w-full text-left px-3 py-3 rounded-md bg-tile hover:bg-tileHover border border-borderSubtle flex items-center gap-3">
+                <span className="w-8 h-8 rounded bg-accent/20 flex items-center justify-center text-accent">↑</span>
+                <div><div className="text-sm font-bold text-textPrimary">Export</div><div className="text-xs text-muted">All / filtered / selected → v2 jpg zip</div></div>
+              </button>
+              <button onClick={()=>{ setShareOpen(false); setLanOpen(true); }} className="w-full text-left px-3 py-3 rounded-md bg-tile hover:bg-tileHover border border-borderSubtle flex items-center gap-3">
+                <span className="w-8 h-8 rounded bg-accent/20 flex items-center justify-center text-accent">◉</span>
+                <div><div className="text-sm font-bold text-textPrimary">LAN Share</div><div className="text-xs text-muted">Host / Join on local network (UI preview)</div></div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {exportOpen && <ExportDialog filtered={filtered} onClose={()=>setExportOpen(false)} />}
+      {lanOpen && <LANShare onClose={()=>setLanOpen(false)} />}
+      {overlayOpen && (
+        <OverlayHost
+          lineup={selectedLineup ?? filtered[overlayIdx % Math.max(1,filtered.length)] as any ?? lineups?.[0] as any ?? null}
+          onClose={()=>setOverlayOpen(false)}
+          onPrevLineup={()=> setOverlayIdx(i=> Math.max(0,i-1))}
+          onNextLineup={()=> setOverlayIdx(i=> Math.min(filtered.length-1,i+1))}
+        />
+      )}
       {settingsOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSettingsOpen(false)}>
           <div className="bg-panel border border-borderSubtle rounded-card p-5 w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-auto" onClick={(e)=>e.stopPropagation()}>
@@ -202,7 +254,7 @@ export default function App() {
             )}
             <button onClick={() => setMobileFiltersOpen(true)} className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 rounded-md bg-panel border border-borderSubtle text-textPrimary font-bold shadow-xl min-h-[48px]">Filters • {filtered.length}</button>
             {selectedLineup && (
-              <DetailPanel lineup={selectedLineup as any} agent={agentsMap.get(selectedLineup.agentUuid)} onClose={() => setSelectedId(null)} onDelete={async (id) => { await deleteLineup(id); await refreshLineups(); setSelectedId(null); }} onEdit={() => { setActiveTab("create"); setSelectedId(null); }} />
+              <DetailPanel lineup={selectedLineup as any} agent={agentsMap.get(selectedLineup.agentUuid)} onClose={() => setSelectedId(null)} onDelete={async (id) => { await deleteLineup(id); await refreshLineups(); setSelectedId(null); }} onEdit={() => { setActiveTab("create"); setSelectedId(null); }} onOverlay={() => setOverlayOpen(true)} />
             )}
           </div>
         )}

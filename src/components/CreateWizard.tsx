@@ -91,36 +91,55 @@ export default function CreateWizard({
     setSlotBlob(selectedSlot, file);
   };
 
-  const captureScreen = async () => {
-    // Tauri or browser screen capture via getDisplayMedia
+  const detectValorant = async (): Promise<boolean> => {
     try {
-      // @ts-ignore
-      if (navigator.mediaDevices?.getDisplayMedia) {
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true } as any);
-        const track = stream.getVideoTracks()[0];
-        // create video element to snapshot
-        const video = document.createElement("video");
-        video.srcObject = stream;
-        await video.play();
-        // wait a bit for frame
-        await new Promise(r => setTimeout(r, 200));
-        const canvas = document.createElement("canvas");
-        canvas.width = video.videoWidth || 1920;
-        canvas.height = video.videoHeight || 1080;
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), "image/png"));
-          if (blob) setSlotBlob(selectedSlot, blob);
-          else toast("Capture failed");
-        }
-        stream.getTracks().forEach(t => t.stop());
-        video.remove();
-      } else {
-        toast("Screen capture not supported in this browser");
+      const tauri = (window as any).__TAURI__;
+      if (tauri?.core?.invoke) {
+        const running = await tauri.core.invoke("is_valorant_running");
+        return !!running;
       }
+      if (tauri?.invoke) {
+        const running = await tauri.invoke("is_valorant_running");
+        return !!running;
+      }
+    } catch {}
+    return false;
+  };
+
+  const captureScreen = async () => {
+    try {
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        toast("Screen capture not supported");
+        return;
+      }
+      const valorantRunning = await detectValorant();
+      // if Valorant detected, prompt for window, else entire screen
+      const displaySurface = valorantRunning ? "window" : "monitor";
+      if (valorantRunning) toast("Valorant detected — select Valorant window");
+      else toast("Valorant not running — capturing entire screen");
+
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface } as any,
+        audio: false,
+      } as any);
+      const video = document.createElement("video");
+      video.srcObject = stream;
+      await video.play();
+      await new Promise(r => setTimeout(r, 250));
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth || 1920;
+      canvas.height = video.videoHeight || 1080;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const blob: Blob | null = await new Promise(res => canvas.toBlob(b => res(b), "image/png"));
+        if (blob) setSlotBlob(selectedSlot, blob);
+        else toast("Capture failed");
+      }
+      stream.getTracks().forEach(t => t.stop());
+      video.remove();
     } catch (e: any) {
-      if (e?.name === "NotAllowedError") toast("Capture cancelled");
+      if (e?.name === "NotAllowedError" || e?.name === "AbortError") toast("Capture cancelled");
       else toast("Capture failed: " + String(e?.message ?? e));
     }
   };
@@ -184,7 +203,13 @@ export default function CreateWizard({
       const d = Math.hypot(nx - pt.x, ny - pt.y);
       if (d < bestDist) { bestDist = d; best = c; }
     }
-    return best?.regionName ?? best?.superRegionName ?? null;
+    if (!best) return null;
+    const reg = (best.regionName ?? "").trim();
+    const sup = (best.superRegionName ?? "").trim();
+    if (sup && reg && sup.toLowerCase() !== reg.toLowerCase() && !reg.toLowerCase().includes(sup.toLowerCase())) {
+      return `${sup} ${reg}`;
+    }
+    return reg || sup || null;
   };
 
   const generateTitle = () => {
@@ -379,7 +404,7 @@ export default function CreateWizard({
               {effectiveMap ? (
                 <>
                   <div className="flex-1 min-h-0 flex flex-col">
-                    <Minimap map={effectiveMap} lineups={previewLineups} agentsMap={agentsMap} hoveredId={null} setHoveredId={()=>{}} selectedId={null} onSelect={()=>{}} zoom={pinZoom} pan={pinPan} onZoom={setPinZoom} onPan={setPinPan} showEmpty={false} onMapClick={handleMapClick} />
+                    <Minimap map={effectiveMap} lineups={previewLineups} agentsMap={agentsMap} hoveredId={null} setHoveredId={()=>{}} selectedId={null} onSelect={()=>{}} zoom={pinZoom} pan={pinPan} onZoom={setPinZoom} onPan={setPinPan} showEmpty={false} onMapClick={handleMapClick} createPins={{ start: startPin, end: endPin, active: activePin }} />
                   </div>
                   {!startPin && activePin==="start" && (
                     <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded-full pointer-events-none z-10">Click map to place start pin</div>

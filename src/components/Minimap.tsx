@@ -16,6 +16,7 @@ type Props = {
   onPan: (p: { x: number; y: number }) => void;
   showEmpty?: boolean;
   onMapClick?: (pt: { x: number; y: number }) => void;
+  createPins?: { start: { x: number; y: number } | null; end: { x: number; y: number } | null; active?: "start" | "end" };
 };
 
 function importanceRing(imp: string) {
@@ -48,6 +49,7 @@ export default function Minimap({
   onPan,
   showEmpty = true,
   onMapClick,
+  createPins,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ w: 800, h: 600 });
@@ -182,7 +184,17 @@ export default function Minimap({
       .map((c) => {
         const norm = calloutToNorm(c, map);
         if (!norm) return null;
-        return { label: c.regionName ?? c.superRegionName ?? "?", superRegion: c.superRegionName, norm };
+        // combine superRegion + region for "A Yard" instead of just "Yard"
+        let label = c.regionName ?? c.superRegionName ?? "?";
+        const superR = (c.superRegionName ?? "").trim();
+        const reg = (c.regionName ?? "").trim();
+        if (superR && reg && superR.toLowerCase() !== reg.toLowerCase() && !reg.toLowerCase().includes(superR.toLowerCase())) {
+          // include site/spawn: "A" + "Yard" => "A Yard", keep special names like "Attacker Spawn" combined
+          label = `${superR} ${reg}`;
+        } else if (!reg && superR) {
+          label = superR;
+        }
+        return { label, superRegion: c.superRegionName, norm };
       })
       .filter(Boolean) as { label: string; superRegion: string; norm: { x: number; y: number } }[];
   }, [map]);
@@ -394,6 +406,34 @@ export default function Minimap({
                 style={{ left: endPos.x, top: endPos.y }}
               />
             </>
+          );
+        })()}
+
+        {/* Create mode pins - show start/end even when only one placed */}
+        {createPins?.start && (() => {
+          const p = getMarkerPos(createPins.start!);
+          return (
+            <div className="absolute w-[22px] h-[22px] rounded-full bg-white border-2 border-accent flex items-center justify-center shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none" style={{ left: p.x, top: p.y }}>
+              <span className="w-2 h-2 rounded-full bg-accent" />
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[9px] font-bold px-1 py-0.5 rounded whitespace-nowrap">Start</span>
+            </div>
+          );
+        })()}
+        {createPins?.end && (() => {
+          const p = getMarkerPos(createPins.end!);
+          return (
+            <div className="absolute w-[18px] h-[18px] rounded-full bg-accent border-2 border-white flex items-center justify-center shadow-md -translate-x-1/2 -translate-y-1/2 pointer-events-none" style={{ left: p.x, top: p.y }}>
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-black/80 text-white text-[9px] font-bold px-1 py-0.5 rounded whitespace-nowrap">Land</span>
+            </div>
+          );
+        })()}
+        {createPins?.start && createPins?.end && (() => {
+          const s = getMarkerPos(createPins.start!);
+          const e = getMarkerPos(createPins.end!);
+          return (
+            <svg className="absolute inset-0 pointer-events-none" width={containerSize.w} height={containerSize.h} style={{ overflow: "visible" }}>
+              <line x1={s.x} y1={s.y} x2={e.x} y2={e.y} stroke="#E8404F" strokeWidth="2" strokeDasharray="5 4" opacity="0.85" />
+            </svg>
           );
         })()}
       </div>

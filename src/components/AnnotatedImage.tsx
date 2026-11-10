@@ -62,16 +62,20 @@ export default function AnnotatedImage({
       {/* SVG circles overlay - not for video */}
       {!isVideo && circles && circles.length > 0 && (
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {circles.map((c) => (
+          {circles.map((c) => {
+            const nx = c.x > 1 ? c.x / 100 : c.x;
+            const ny = c.y > 1 ? c.y / 100 : c.y;
+            const nr = c.r != null ? (c.r > 1 ? c.r / 100 : c.r) : 0.03;
+            return (
             <g key={c.id}>
-              <circle cx={c.x * 100} cy={c.y * 100} r={(c.r ?? 0.03) * 100} fill="none" stroke={c.color ?? "#E04050"} strokeWidth={1.2} strokeDasharray="2 1" />
+              <circle cx={nx * 100} cy={ny * 100} r={nr * 100} fill="none" stroke={c.color ?? "#E04050"} strokeWidth={1.2} strokeDasharray="2 1" />
               {c.label && (
-                <text x={c.x * 100} y={c.y * 100 - (c.r ?? 0.03) * 100 - 1} fontSize={3} fill={c.color ?? "#E04050"} textAnchor="middle" fontWeight={700}>
+                <text x={nx * 100} y={ny * 100 - nr * 100 - 1} fontSize={3} fill={c.color ?? "#E04050"} textAnchor="middle" fontWeight={700}>
                   {c.label}
                 </text>
               )}
             </g>
-          ))}
+          ); })}
         </svg>
       )}
       {showLens && zoomPos && (

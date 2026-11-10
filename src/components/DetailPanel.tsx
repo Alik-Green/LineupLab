@@ -10,9 +10,9 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
   const slotKeys: Array<{ key: string; fallback?: string }> = [
     { key: "stand1", fallback: "standImage" },
     { key: "aim1", fallback: "aimImage" },
-    { key: "stand2" },
     { key: "aim2" },
     { key: "landing", fallback: "landingImage" },
+    { key: "stand2" },
   ];
   const slotCirclesMap: Record<string, any[]> =
     (lineup as any).slotCircles ??
@@ -84,7 +84,6 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
 
   const dedup = new Map<string, ImageEntry>();
   for (const e of entries) {
-    // dedup by basename lowercased (handles media/asset.jpg vs asset.jpg vs http url variants)
     const base = e.src.split("/").pop()!.split("?")[0].split("#")[0].toLowerCase();
     const norm = base;
     const existing = dedup.get(norm);
@@ -99,7 +98,30 @@ function buildImageEntries(lineup: Lineup): ImageEntry[] {
       dedup.set(norm, { src: e.src, circles: [...e.circles], slot: e.slot, throwInfo: e.throwInfo });
     }
   }
-  return Array.from(dedup.values());
+  let out = Array.from(dedup.values());
+  const order: Record<string, number> = { stand1: 0, stand: 0, standImage: 0, aim1: 1, aim2: 2, landing: 3, landingImage: 3, stand2: 4, step: 5 };
+  out.sort((a, b) => {
+    const oa = order[a.slot ?? ""] ?? 10;
+    const ob = order[b.slot ?? ""] ?? 10;
+    if (oa !== ob) return oa - ob;
+    return 0;
+  });
+  // fallback: if no per-image circles but lineup has global circles, distribute to all aim images or all
+  const globalCircles: any[] = (lineup as any).circles ?? [];
+  if (globalCircles.length > 0 && out.every(e => !e.circles || e.circles.length === 0)) {
+    const aimOut = out.filter(e => e.slot?.startsWith("aim"));
+    const targets = aimOut.length > 0 ? aimOut : out;
+    for (const t of targets) { t.circles = [...globalCircles]; }
+  }
+  // also attach global circles to any image that already has throwInfo but no circles (charge/bounce info includes circles)
+  if (globalCircles.length > 0) {
+    for (const e of out) {
+      if (e.circles.length === 0 && e.throwInfo?.circles) {
+        e.circles = [...e.throwInfo.circles];
+      }
+    }
+  }
+  return out;
 }
 
 export default function DetailPanel({
@@ -108,12 +130,14 @@ export default function DetailPanel({
   onClose,
   onDelete,
   onEdit,
+  onOverlay,
 }: {
   lineup: Lineup | null;
   agent: any;
   onClose: () => void;
   onDelete?: (id: string) => void;
   onEdit?: (id: string) => void;
+  onOverlay?: (id: string) => void;
 }) {
   if (!lineup) return null;
   if (!lineup.start || !lineup.end) {
@@ -197,14 +221,61 @@ export default function DetailPanel({
   const currentCircles = current?.circles;
   const ability = agent?.abilities?.find((a: any) => a.slot === lineup.abilitySlot);
 
+  const ChargeOverlay = ({ info }: { info: any }) => {
+    if (!info) return null;
+    const bars = info.chargeBars ?? info.chargeStage ?? info.charge ?? null;
+    const bounces = info.bounces ?? info.bounceCount ?? null;
+    const bounceArr = Array.isArray(bounces) ? bounces : typeof bounces === "number" ? Array(bounces).fill(0) : null;
+    if (bars == null && !bounceArr) return null;
+    return (
+      <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-2 pointer-events-none">
+        {bars != null && (
+          <div className="flex items-center gap-1 bg-black/75 px-2 py-1 rounded text-xs font-bold text-white border border-white/20">
+            <span className="text-[10px] tracking-widest opacity-80">CHARGE</span>
+            <div className="flex gap-0.5 ml-1">
+              {[1,2,3].map(i => {
+                const max = typeof bars === "object" ? 3 : Number(bars) > 3 ? Number(bars) : 3;
+                const fill = Number(info.chargeStage ?? bars ?? 0);
+                const isFilled = i <= fill;
+                return <div key={i} className={`w-6 h-2 rounded-sm ${isFilled ? "bg-[#0ea5e9]" : "bg-white/20 border border-white/30"}`} />;
+              })}
+            </div>
+          </div>
+        )}
+        {bounceArr && bounceArr.length > 0 && (
+          <div className="flex items-center gap-1 bg-black/75 px-2 py-1 rounded text-xs font-bold text-white border border-white/20">
+            <span className="w-2 h-2 rounded-full bg-[#EAB308] border border-white/50" />
+            <span className="text-[10px]">{bounceArr.length} bounce{bounceArr.length>1?"s":""}</span>
+          </div>
+        )}
+        {typeof bounces === "number" && bounces >0 && !bounceArr && (
+          <div className="flex items-center gap-1 bg-black/75 px-2 py-1 rounded text-xs font-bold text-white border border-white/20">
+            <span className="w-2 h-2 rounded-full bg-[#EAB308]" /> {bounces} bounce{bounces>1?"s":""}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-panel border border-borderSubtle rounded-card w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl" onClick={(e)=>e.stopPropagation()}>
+    <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
+      <div className="bg-panel border border-borderSubtle rounded-card w-[96vw] h-[92vh] max-w-[1600px] max-h-[95vh] sm:w-[90vw] md:w-[85vw] lg:w-[80vw] flex flex-col overflow-hidden shadow-2xl" onClick={(e)=>e.stopPropagation()}>
         <div className="p-4 border-b border-borderSubtle flex items-start justify-between shrink-0 gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="text-[20px] font-extrabold text-textPrimary leading-tight">{lineup.title}</h3>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
+            <button onClick={()=> onOverlay?.(lineup.id)} className="w-8 h-8 rounded bg-tile hover:bg-tileHover border border-borderSubtle flex items-center justify-center text-muted" aria-label="Overlay" title="Overlay (Alt+O)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </button>
+            <button onClick={async () => {
+              try {
+                const { exportLineups } = await import("../lib/exporter");
+                await exportLineups([lineup], `lineuplab-${lineup.id}.zip`);
+              } catch(e:any){ alert("Export failed: "+String(e)); }
+            }} className="w-8 h-8 rounded bg-tile hover:bg-tileHover border border-borderSubtle flex items-center justify-center text-muted" aria-label="Export" title="Export lineup">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
             <button onClick={() => { if (onEdit) onEdit(lineup.id); else alert("Edit coming soon."); }} className="w-8 h-8 rounded bg-tile hover:bg-tileHover border border-borderSubtle flex items-center justify-center text-muted" aria-label="Edit" title="Edit">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L11 16l-4 1 1-4 10.5-10.5z"/></svg>
             </button>
@@ -222,11 +293,12 @@ export default function DetailPanel({
                 <AnnotatedImage src={current.src} circles={currentCircles} />
                 {current?.throwInfo && (
                   <div className="absolute top-2 left-2 bg-accent text-white text-xs font-bold px-2 py-1 rounded shadow">
-                    {current.throwInfo.type ?? current.throwInfo.label ?? "Throw"} {current.throwInfo.note ? `• ${current.throwInfo.note}` : ""}
+                    {current.throwInfo.type ?? current.throwInfo.label ?? "Throw"} {current.throwInfo.timing ? `• ${current.throwInfo.timing}` : ""} {current.throwInfo.note ? `• ${current.throwInfo.note}` : ""}
                   </div>
                 )}
                 {current?.slot === "landing" && <div className="absolute top-2 left-2 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded">Landing</div>}
                 {current?.slot?.startsWith("stand") && <div className="absolute top-2 left-2 bg-black/70 text-white text-xs font-bold px-2 py-1 rounded">Stand position</div>}
+                <ChargeOverlay info={current?.throwInfo} />
                 {allImages.length > 1 && (
                   <div className="flex items-center justify-between mt-2">
                     <button onClick={() => setIdx((i) => Math.max(0, i - 1))} className="px-3 py-1.5 rounded bg-tile text-sm text-textPrimary min-h-[40px] disabled:opacity-40" disabled={idx === 0}>‹ Prev</button>
