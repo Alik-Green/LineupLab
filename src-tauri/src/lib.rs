@@ -1,14 +1,7 @@
 #[tauri::command]
 fn is_valorant_running() -> bool {
-  use sysinfo::{System, SystemExt};
-  let mut sys = System::new_all();
-  sys.refresh_all();
-  for (_, proc) in sys.processes() {
-    let name = format!("{:?}", proc.name()).to_lowercase();
-    if name.contains("valorant") {
-      return true;
-    }
-  }
+  // JS-side detection via mediaDevices is primary; this stub keeps API compat
+  // without requiring sysinfo crate which breaks Windows build in 0.30
   false
 }
 
