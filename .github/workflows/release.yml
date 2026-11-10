@@ -92,14 +92,19 @@ jobs:
         run: |
           set -x
           ls -lh src-tauri/gen/android 2>&1 | head -20 || echo "no gen yet"
+          # Fix for v0.3.14 error: placeholder gen folder lacks app/src/main/java/com/lineuplab/app —
+          # tauri android init then fails with "Project directory does not exist. Delete gen/android and recreate".
+          if [ -d "src-tauri/gen/android" ] && [ ! -f "src-tauri/gen/android/app/build.gradle.kts" ] && [ ! -f "src-tauri/gen/android/app/build.gradle" ]; then
+            echo "Incomplete gen/android detected (only README) — removing for fresh init"
+            rm -rf src-tauri/gen/android
+          fi
           if [ ! -f "src-tauri/gen/android/app/build.gradle.kts" ] && [ ! -f "src-tauri/gen/android/build.gradle.kts" ] && [ ! -f "src-tauri/gen/android/app/build.gradle" ]; then
             echo "Init Android project with --ci..."
-            # Prefer --ci to avoid any prompt; stdin not a TTY in GH Actions auto-skips but be explicit
-            npx tauri android init --ci 2>&1 | tee /tmp/tauri-init.log | tail -100
+            npx tauri android init --ci 2>&1 | tee /tmp/tauri-init.log | tail -150
             echo "Init exit: ${PIPESTATUS[0]}"
-            cat /tmp/tauri-init.log | tail -80
+            cat /tmp/tauri-init.log | tail -100
             echo "Init done, listing gen:"
-            ls -R src-tauri/gen/android 2>&1 | head -200 || true
+            ls -R src-tauri/gen/android 2>&1 | head -300 || true
             # Ensure local.properties points to correct SDK/NDK (Tauri init may not set correctly in CI)
             NDK_PATH=$(ls -d $ANDROID_HOME/ndk/* 2>/dev/null | head -1)
             echo "Detected NDK: $NDK_PATH"
