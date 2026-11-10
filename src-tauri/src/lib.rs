@@ -18,7 +18,8 @@ fn capture_screen() -> Result<String, String> {
   Err("native capture not available — use getDisplayMedia".to_string())
 }
 
-// ----- Overlay window commands (separate frameless always-on-top window) -----
+// ----- Overlay window commands (desktop only — separate frameless always-on-top window) -----
+#[cfg(desktop)]
 #[tauri::command]
 async fn open_overlay(app: tauri::AppHandle, lineup: serde_json::Value, idx: Option<u32>) -> Result<String, String> {
     let w = create_or_get_overlay(app.clone()).await?;
@@ -30,6 +31,13 @@ async fn open_overlay(app: tauri::AppHandle, lineup: serde_json::Value, idx: Opt
     Ok("opened".to_string())
 }
 
+#[cfg(not(desktop))]
+#[tauri::command]
+async fn open_overlay(_app: tauri::AppHandle, _lineup: serde_json::Value, _idx: Option<u32>) -> Result<String, String> {
+    Ok("overlay not supported on mobile".to_string())
+}
+
+#[cfg(desktop)]
 #[tauri::command]
 async fn close_overlay(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("overlay") {
@@ -38,6 +46,13 @@ async fn close_overlay(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[cfg(not(desktop))]
+#[tauri::command]
+async fn close_overlay(_app: tauri::AppHandle) -> Result<(), String> {
+    Ok(())
+}
+
+#[cfg(desktop)]
 #[tauri::command]
 async fn set_overlay_corner(app: tauri::AppHandle, corner: String) -> Result<(), String> {
     let label = "overlay";
@@ -47,11 +62,24 @@ async fn set_overlay_corner(app: tauri::AppHandle, corner: String) -> Result<(),
     Ok(())
 }
 
+#[cfg(not(desktop))]
+#[tauri::command]
+async fn set_overlay_corner(_app: tauri::AppHandle, _corner: String) -> Result<(), String> {
+    Ok(())
+}
+
+#[cfg(desktop)]
 #[tauri::command]
 async fn set_overlay_size(app: tauri::AppHandle, width: f64, height: f64) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("overlay") {
         let _ = w.set_size(tauri::Size::Physical(tauri::PhysicalSize { width: width as u32, height: height as u32 })).map_err(|e| e.to_string());
     }
+    Ok(())
+}
+
+#[cfg(not(desktop))]
+#[tauri::command]
+async fn set_overlay_size(_app: tauri::AppHandle, _width: f64, _height: f64) -> Result<(), String> {
     Ok(())
 }
 
@@ -69,6 +97,7 @@ fn lan_host_stop() -> Result<(), String> { Ok(()) }
 #[tauri::command]
 fn lan_join(addr: String) -> Result<String, String> { Ok(format!("joined {}", addr)) }
 
+#[cfg(desktop)]
 async fn create_or_get_overlay(app: tauri::AppHandle) -> Result<tauri::WebviewWindow, String> {
     if let Some(w) = app.get_webview_window("overlay") {
         return Ok(w);
@@ -89,6 +118,7 @@ async fn create_or_get_overlay(app: tauri::AppHandle) -> Result<tauri::WebviewWi
     Ok(win)
 }
 
+#[cfg(desktop)]
 async fn position_overlay_window(win: &tauri::WebviewWindow, app: &tauri::AppHandle, corner: &str) -> Result<(), String> {
     let monitor = win.current_monitor().map_err(|e| e.to_string())?.ok_or("no monitor")?;
     let scale = monitor.scale_factor();
