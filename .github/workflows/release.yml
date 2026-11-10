@@ -110,8 +110,21 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_SDK_ROOT }}
+          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
+          NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
         run: |
           set -x
+          # Ensure NDK env is set for both Tauri and Gradle
+          export ANDROID_HOME=${ANDROID_HOME:-$ANDROID_SDK_ROOT}
+          export ANDROID_SDK_ROOT=$ANDROID_HOME
+          export ANDROID_NDK_HOME=${ANDROID_NDK_HOME:-$ANDROID_HOME/ndk/26.1.10909125}
+          export NDK_HOME=$ANDROID_NDK_HOME
+          echo "NDK_HOME=$NDK_HOME"
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME"
+          ls -lh $NDK_HOME 2>&1 | head -20 || true
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /tmp/keystore.jks
             echo "Using release keystore from secrets"
