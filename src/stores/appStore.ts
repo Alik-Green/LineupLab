@@ -23,6 +23,9 @@ type State = {
   setSingleAbility: (slot: AbilitySlot) => void;
   setSingleImportance: (imp: Importance) => void;
   setSingleDifficulty: (d: Difficulty) => void;
+  setImportanceSet: (s: Set<Importance>) => void;
+  setDifficultySet: (s: Set<Difficulty>) => void;
+  restoreFilters: (abilities: Set<AbilitySlot>, importance: Set<Importance>, difficulty: Set<Difficulty>) => void;
   resetFilters: () => void;
   setZoom: (z: number) => void;
   setPan: (p: { x: number; y: number }) => void;
@@ -106,6 +109,18 @@ export const useAppStore = create<State>((set, get) => ({
   },
   setSingleDifficulty: (d) => {
     set({ difficulty: new Set([d]) });
+    persist(get());
+  },
+  setImportanceSet: (s) => {
+    set({ importance: new Set(s) });
+    persist(get());
+  },
+  setDifficultySet: (s) => {
+    set({ difficulty: new Set(s) });
+    persist(get());
+  },
+  restoreFilters: (abilities, importance, difficulty) => {
+    set({ selectedAbilities: new Set(abilities), importance: new Set(importance), difficulty: new Set(difficulty) });
     persist(get());
   },
   resetFilters: () => {

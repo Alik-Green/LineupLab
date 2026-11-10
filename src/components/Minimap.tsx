@@ -76,9 +76,11 @@ export default function Minimap({
   const clampPan = (p: { x: number; y: number }, z: number = zoom) => {
     const imgW = baseImageSize.w * z;
     const imgH = baseImageSize.h * z;
-    // tighter cap: keep map centre within ~30% of container, scales modestly with zoom
-    const maxX = Math.min(containerSize.w * 0.32, imgW * 0.28);
-    const maxY = Math.min(containerSize.h * 0.32, imgH * 0.28);
+    // allow panning until map edge meets container edge — grows with zoom
+    const maxX = Math.max(0, (imgW - containerSize.w) / 2);
+    const maxY = Math.max(0, (imgH - containerSize.h) / 2);
+    // small padding so you don't see background when exactly at edge, but not far off
+    // keeps center visible when not zoomed, allows full exploration when zoomed
     return {
       x: Math.max(-maxX, Math.min(maxX, p.x)),
       y: Math.max(-maxY, Math.min(maxY, p.y)),

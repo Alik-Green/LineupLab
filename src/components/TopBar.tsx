@@ -13,17 +13,14 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
   const isTauriEnv = typeof window !== "undefined" && ((window as any).__TAURI__ !== undefined || (window as any).__TAURI_INTERNALS__ !== undefined);
 
   const getWin = async () => {
-    // Try static import first (tree-shaken), fallback to dynamic
     try {
       // @ts-ignore - dynamic for CSP
       const mod = await import("@tauri-apps/api/window");
       return mod.getCurrentWindow();
     } catch {
-      // fallback via window.__TAURI__ direct invoke
       const tauri = (window as any).__TAURI__ as any;
       if (tauri?.window?.getCurrentWindow) return tauri.window.getCurrentWindow();
       if (tauri?.core?.invoke) {
-        // fallback: use core invoke directly
         return {
           minimize: () => tauri.core.invoke("plugin:window|minimize", { label: "main" }),
           maximize: () => tauri.core.invoke("plugin:window|maximize", { label: "main" }),
@@ -58,7 +55,6 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
 
   return (
     <header className="h-[56px] shrink-0 flex items-center bg-[#1B1B1F] border-b border-[#2A2B32] sticky top-0 z-30 select-none relative">
-      {/* drag handle behind content */}
       <div data-tauri-drag-region className="absolute inset-0" style={{ WebkitAppRegion: "drag" } as any} aria-hidden />
 
       <div className="relative flex-1 flex items-center px-4 h-full gap-2 z-10">
@@ -98,8 +94,20 @@ export default function TopBar({ activeTab, onTabChange, onOpenSettings, onImpor
           )}
         </nav>
         <div className="ml-auto flex items-center gap-2" style={{ WebkitAppRegion: "no-drag" } as any}>
-          <button onClick={onImport} className="min-h-[40px] px-3 rounded-md bg-accent text-white text-sm font-semibold hover:bg-accentHover">Import</button>
-          <button onClick={onOpenSettings} className="min-h-[40px] px-3 rounded-md bg-panel text-muted hover:text-textPrimary text-sm border border-borderSubtle" aria-label="Open settings">⚙ Settings</button>
+          <button onClick={onImport} aria-label="Share" className="w-10 h-10 rounded-md bg-panel border border-borderSubtle text-muted hover:text-textPrimary flex items-center justify-center">
+            {/* share icon */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+              <path d="M8.6 10.7l6.8-4M8.6 13.3l6.8 4" />
+            </svg>
+          </button>
+          <button onClick={onOpenSettings} aria-label="Settings" className="w-10 h-10 rounded-md bg-panel border border-borderSubtle text-muted hover:text-textPrimary flex items-center justify-center">
+            {/* gear icon */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" />
+            </svg>
+          </button>
         </div>
       </div>
 

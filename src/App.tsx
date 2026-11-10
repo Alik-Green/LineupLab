@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import TopBar from "./components/TopBar";
 import MapCard from "./components/MapCard";
 import AgentCard from "./components/AgentCard";
@@ -86,9 +86,17 @@ export default function App() {
     }
   }, [maps]);
 
-  // When entering create, enforce single-select: collapse multi-selects to last selected (or first)
+  const filtersSnapshot = useRef<{ abilities: Set<any>; importance: Set<any>; difficulty: Set<any> } | null>(null);
+  // When entering create, enforce single-select: collapse multi-selects to last selected (or first) and snapshot for restore
   useEffect(() => {
     if (activeTab === "create") {
+      if (!filtersSnapshot.current) {
+        filtersSnapshot.current = {
+          abilities: new Set(store.selectedAbilities),
+          importance: new Set(store.importance),
+          difficulty: new Set(store.difficulty),
+        };
+      }
       if (store.selectedAbilities.size > 1) {
         const arr = Array.from(store.selectedAbilities);
         store.setSingleAbility(arr[arr.length - 1] as any);
@@ -100,6 +108,11 @@ export default function App() {
       if (store.difficulty.size > 1) {
         const arr = Array.from(store.difficulty);
         store.setSingleDifficulty(arr[arr.length - 1] as any);
+      }
+    } else {
+      if (filtersSnapshot.current) {
+        store.restoreFilters(filtersSnapshot.current.abilities, filtersSnapshot.current.importance, filtersSnapshot.current.difficulty);
+        filtersSnapshot.current = null;
       }
     }
   }, [activeTab]);

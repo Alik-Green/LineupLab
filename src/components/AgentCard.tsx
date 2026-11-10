@@ -1,5 +1,4 @@
 import { useState } from "react";
-import ValImage from "./ValImage";
 import type { ValorantAgent } from "../types/lineup";
 
 export default function AgentCard({
@@ -19,14 +18,19 @@ export default function AgentCard({
       <div className="rounded-card bg-panel border border-borderSubtle overflow-hidden flex-1 flex flex-col">
         <button
           onClick={() => setOpen(true)}
-          className="relative w-full aspect-square overflow-hidden text-left group min-h-[88px] bg-tile"
+          className="relative w-full aspect-square overflow-hidden text-left group min-h-[88px] bg-black"
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-label="Select agent"
         >
           {selectedAgent ? (
             <>
-              <ValImage src={selectedAgent.displayIcon} alt={selectedAgent.displayName} className="absolute inset-0" />
+              <img
+                src={selectedAgent.displayIcon}
+                alt={selectedAgent.displayName}
+                className="absolute inset-0 w-full h-full object-cover object-center"
+                draggable={false}
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-2">
                 <div className="text-white font-extrabold text-[13px] leading-none truncate text-center">{selectedAgent.displayName}</div>
@@ -54,21 +58,20 @@ export default function AgentCard({
                       onSelect(ag.uuid);
                       setOpen(false);
                     }}
-                    className={`relative rounded-md overflow-hidden aspect-square bg-tile border-2 flex flex-col items-center justify-end ${selectedAgent?.uuid === ag.uuid ? "border-accent" : "border-transparent hover:border-borderSubtle"}`}
+                    className={`relative rounded-md overflow-hidden aspect-square bg-black border-2 ${selectedAgent?.uuid === ag.uuid ? "border-accent" : "border-transparent hover:border-borderSubtle"}`}
                     title={ag.displayName}
                   >
-                    <ValImage src={ag.displayIcon} alt={ag.displayName} className="absolute inset-0" />
+                    <img
+                      src={ag.displayIcon}
+                      alt={ag.displayName}
+                      className="absolute inset-0 w-full h-full object-cover object-center"
+                      draggable={false}
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
-                    <span className="relative z-10 w-full text-white text-[11px] font-bold text-center leading-3 py-1.5 truncate px-1">{ag.displayName}</span>
+                    <span className="absolute bottom-0 left-0 right-0 text-white text-[11px] font-bold text-center leading-3 py-1.5 truncate px-1">{ag.displayName}</span>
                   </button>
                 ))}
               </div>
-              <button
-                onClick={() => { onSelect(""); setOpen(false); }}
-                className="mt-3 w-full min-h-[44px] rounded bg-tile hover:bg-tileHover text-muted text-sm border border-borderSubtle"
-              >
-                Clear selection
-              </button>
             </div>
           </div>
         </div>
