@@ -1,4 +1,4 @@
-use tauri::Manager;
+use tauri::{Manager, Emitter};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -18,15 +18,13 @@ fn capture_screen() -> Result<String, String> {
   Err("native capture not available — use getDisplayMedia".to_string())
 }
 
-// ----- Overlay window commands -----
+// ----- Overlay window commands (separate frameless always-on-top window) -----
 #[tauri::command]
 async fn open_overlay(app: tauri::AppHandle, lineup: serde_json::Value, idx: Option<u32>) -> Result<String, String> {
-    let label = "overlay";
     let w = create_or_get_overlay(app.clone()).await?;
     let _ = w.set_always_on_top(true).map_err(|e| e.to_string());
     let _ = w.show().map_err(|e| e.to_string());
     let _ = w.set_focus().map_err(|e| e.to_string());
-    // Emit to overlay window
     let payload = serde_json::json!({ "lineup": lineup, "idx": idx.unwrap_or(0) });
     let _ = app.emit("overlay:update", payload);
     Ok("opened".to_string())
@@ -58,8 +56,7 @@ async fn set_overlay_size(app: tauri::AppHandle, width: f64, height: f64) -> Res
 }
 
 #[tauri::command]
-fn get_overlay_data(app: tauri::AppHandle) -> Option<serde_json::Value> {
-    // Return last emitted overlay data if stored in app state — for now return None, frontend will use localStorage fallback
+fn get_overlay_data(_app: tauri::AppHandle) -> Option<serde_json::Value> {
     None
 }
 
@@ -82,14 +79,12 @@ async fn create_or_get_overlay(app: tauri::AppHandle) -> Result<tauri::WebviewWi
         .min_inner_size(280.0, 180.0)
         .decorations(false)
         .transparent(true)
-        .shadow(false)
         .always_on_top(true)
         .skip_taskbar(true)
         .resizable(true)
         .visible(false)
         .build()
         .map_err(|e| e.to_string())?;
-    // Position to bottom-right by default after creation
     let _ = position_overlay_window(&win, &app, "bottom-right").await;
     Ok(win)
 }
@@ -108,7 +103,6 @@ async fn position_overlay_window(win: &tauri::WebviewWindow, app: &tauri::AppHan
         _ => (mon_size.width as i32 - win_size.width as i32 - pad, mon_size.height as i32 - win_size.height as i32 - pad),
     };
     let _ = win.set_position(tauri::Position::Physical(tauri::PhysicalPosition { x, y })).map_err(|e| e.to_string());
-    // Also emit corner to overlay so it can persist
     let _ = app.emit("overlay:corner", corner.to_string());
     Ok(())
 }
